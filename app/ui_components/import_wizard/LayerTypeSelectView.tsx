@@ -43,7 +43,7 @@ export class  LayerTypeSelectView extends React.Component<ILayerTypeSelectProps,
               type = {LayerTypes.SymbolMap}
               imageLocation = 'app/images/symbolpreview.png'
               description = 'All images are placeholders'
-              enabled = {false}
+              enabled = {true}
               onClick = {this.selectMapType.bind(this)}
 
             />

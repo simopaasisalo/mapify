@@ -29,11 +29,11 @@ export class FilePreProcessModel{
    * public - Converts input data into Leaflet layer
    * TODO: implement support for other formats besides CSV
    *
-   * @param  {string} input      the import file in text format
-   * @param  {string} latField  latitude field name
-   * @param  {string} lonField  longitude field name
-   * @param  {string} fileFormat the file extension
-   * @param  {string} delim     delimiter
+   * @param  input      the import file in text format
+   * @param  latField  latitude field name
+   * @param  lonField  longitude field name
+   * @param  fileFormat the file extension
+   * @param  delim     delimiter
    * @return {object}            GeoJSON featurecollection
    */
   public ParseData(input:string, latField: string, lonField: string, fileFormat:string, delim:string, coordSystem: string){
@@ -58,13 +58,12 @@ export class FilePreProcessModel{
     }
     function projectCoords(geoJSON, fromProj:string){
       geoJSON.features.forEach(feature => {
-        let x = feature.geometry.coordinates[1];
-        let y = feature.geometry.coordinates[0];
+        let x = feature.geometry.coordinates[0];
+        let y = feature.geometry.coordinates[1];
         let convert = proj4(fromProj,'WGS84', [x, y]);
         feature.geometry.coordinates[1]=convert[1];
         feature.geometry.coordinates[0]=convert[0];
       });
-      console.log(geoJSON);
       return geoJSON;
 
     }

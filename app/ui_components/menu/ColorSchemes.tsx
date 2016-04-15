@@ -5,7 +5,6 @@ let ChromaStrings : Array<string> = [ 'Greys', 'Reds', 'Blues', 'Greens', 'OrRd'
 export class ColorSchemes extends React.Component<IColorSchemeProps, {}>{
 
   render(){
-    console.log('asd?')
     return <div>
       {this.createGradients()}
     </div>
@@ -15,7 +14,6 @@ export class ColorSchemes extends React.Component<IColorSchemeProps, {}>{
     for (let name in ChromaStrings){
       gradients.push(<div className='gradient'>{this.getChromaScale(name, this.props.steps)}</div>);
     }
-    console.log(gradients);
     return gradients;
   }
   getChromaScale (chromaString: string, steps: number){

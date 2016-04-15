@@ -8,12 +8,12 @@ export class  ColorMenu extends React.Component<IColorOptionsProps, IColorOption
     super();
     this.state =
       {
-        selectedVar: ''
+        propertyVar: ''
       };
     }
   variableChanged(val){
     this.setState({
-      selectedVar : val.value
+      propertyVar : val.value
     });
   }
   schemeChanged(val){
@@ -23,7 +23,7 @@ export class  ColorMenu extends React.Component<IColorOptionsProps, IColorOption
 
     this.props.saveValues({
       choroplethOptions : {
-        valueProperty: this.state.selectedVar,
+        valueProperty: this.state.propertyVar,
         steps : 7,
         scale : ['white','yellow','orange','red'],
         mode : 'q'
@@ -36,7 +36,7 @@ export class  ColorMenu extends React.Component<IColorOptionsProps, IColorOption
     return(
       <div className="mapify-options">
         <h4>Select the variable to color by</h4>
-        <Select options={this.props.headers} onChange={this.variableChanged.bind(this)} value={this.state.selectedVar} />
+        <Select options={this.props.headers} onChange={this.variableChanged.bind(this)} value={this.state.propertyVar} />
         <h4>Select the color scale</h4>
         <Select>
           <ColorSchemes steps={7}/>

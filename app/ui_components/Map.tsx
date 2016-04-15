@@ -80,6 +80,8 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
    */
   refreshMap(options: IVisualizationOptions){
       //TODO: interaction logic for efficiently updating layer
+      console.log(options)
+      console.log(this);
       let layerData : ILayerData;
       for (let data of this.state.layers){
         if (data.layerName == options.layerName){
@@ -88,6 +90,7 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         }
       }
       if (layerData){
+        console.log(layerData)
         if (layerData.layerType === LayerTypes.ChoroplethMap){
           //For leaflet-choropleth there may be no other way than to delete->redraw
           map.removeLayer(layerData.layer);
@@ -96,6 +99,20 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
           let layer = this.createChoroplethLayer(layerData, options.colorOptions.choroplethOptions);
           layer.addTo(map);
           layerData.layer = layer;
+        }
+        else if (layerData.layerType === LayerTypes.SymbolMap){
+          console.log(1)
+          if (options.symbolOptions.sizeVariable){
+            console.log(layerData.layer)
+
+            layerData.layer.eachLayer(function(layer){
+                console.log(layer);
+                let val = layer.feature.properties[options.symbolOptions.sizeVariable];
+                let radius =  Math.sqrt(val*8/Math.PI)*2;
+                layer.setRadius(radius);
+                console.log(layer);
+            });
+          }
         }
       }
   }
@@ -111,7 +128,11 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
       layer = this.createChoroplethLayer(layerData, defaultChoroplethOptions);
     }
     else{
-      layer = L.geoJson(layerData.geoJSON);
+      layer = L.geoJson(layerData.geoJSON, {
+        pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng, defaultCircleMarkerOptions);
+        },
+      });
     }
     layerData.layer = layer;
     layer.addTo(map);
@@ -132,21 +153,21 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
   /**
    * createChoroplethLayer - Create a new choropleth layer by leaflet-choropleth.js
    *
-   * @param  {ILayerData} layerData               the data containing the GeoJSON string and the color variable
-   * @param  {IVisualizationOptions} visOptions   the visualization options. If empty, uses default values
+   * @param  layerData               the data containing the GeoJSON string and the color variable
+   * @param  visOptions   the visualization options. If empty, uses default values
    * @return {L.GeoJSON}                          the GeoJSON layer coloured according to the visOptions
    */
-  createChoroplethLayer(layerData: ILayerData, visOptions : L.ChoroplethOptions){
-    if (visOptions.valueProperty === ''){
-      visOptions.valueProperty = layerData.headers[0].label;
+  createChoroplethLayer(layerData: ILayerData, options : L.ChoroplethOptions){
+    if (options.valueProperty === ''){
+      options.valueProperty = layerData.headers[0].label;
     }
-    if (!visOptions.pointToLayer){
-      visOptions.pointToLayer = defaultChoroplethOptions.pointToLayer;
+    if (!options.pointToLayer){
+      options.pointToLayer = defaultChoroplethOptions.pointToLayer;
     }
-    if (!visOptions.onEachFeature){
-      visOptions.pointToLayer = defaultChoroplethOptions.pointToLayer;
+    if (!options.onEachFeature){
+      options.pointToLayer = defaultChoroplethOptions.pointToLayer;
     }
-    return L.choropleth(layerData.geoJSON, visOptions);
+    return L.choropleth(layerData.geoJSON, options);
   }
 
 
