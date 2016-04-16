@@ -31,3 +31,10 @@ h2,h3{
 .disabled{
   background: gray;
 }
+
+div.gradient div {
+    display: inline-block;
+
+    height: 15px;
+    color: rgba(0,0,0,0);
+}

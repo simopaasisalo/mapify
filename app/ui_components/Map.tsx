@@ -20,7 +20,7 @@ let defaultCircleMarkerOptions = {
 
 let defaultChoroplethOptions : L.ChoroplethOptions = {
     valueProperty : '',
-    scale : ['white', 'black'],
+    scale : 'Greys',
     steps : 7,
     mode : 'q',
     pointToLayer: function (feature, latlng) {
@@ -79,9 +79,7 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
    * @param  {IVisualizationOptions} options  The updated visualization options
    */
   refreshMap(options: IVisualizationOptions){
-      //TODO: interaction logic for efficiently updating layer
-      console.log(options)
-      console.log(this);
+
       let layerData : ILayerData;
       for (let data of this.state.layers){
         if (data.layerName == options.layerName){
@@ -90,27 +88,21 @@ export class  MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         }
       }
       if (layerData){
-        console.log(layerData)
         if (layerData.layerType === LayerTypes.ChoroplethMap){
           //For leaflet-choropleth there may be no other way than to delete->redraw
           map.removeLayer(layerData.layer);
-          //let index: number = this.state.layers.indexOf(layerData);
-
           let layer = this.createChoroplethLayer(layerData, options.colorOptions.choroplethOptions);
           layer.addTo(map);
           layerData.layer = layer;
         }
         else if (layerData.layerType === LayerTypes.SymbolMap){
-          console.log(1)
+
           if (options.symbolOptions.sizeVariable){
-            console.log(layerData.layer)
 
             layerData.layer.eachLayer(function(layer){
-                console.log(layer);
                 let val = layer.feature.properties[options.symbolOptions.sizeVariable];
                 let radius =  Math.sqrt(val*8/Math.PI)*2;
                 layer.setRadius(radius);
-                console.log(layer);
             });
           }
         }

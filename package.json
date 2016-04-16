@@ -8,7 +8,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chroma": "0.0.1",
     "chroma-js": "^1.1.1",
     "csv2geojson": "^5.0.0",
     "impromptu-react-sidemenu": "^0.1.1",

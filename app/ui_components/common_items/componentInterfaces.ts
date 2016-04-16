@@ -102,10 +102,9 @@ declare enum LayerTypes{
   }
 
   interface IMenuStates{
-    colorOptionsShown: boolean,
-    symbolOptionsShown: boolean,
+    colorOptionsShown?: boolean,
+    symbolOptionsShown?: boolean,
     activeLayer? : ILayerData,
-    currentOptions?: IVisualizationOptions,
 
   }
 
@@ -116,7 +115,8 @@ declare enum LayerTypes{
   }
 
   interface IColorOptionsStates{
-    propertyVar: string,
+    propertyVar?: string,
+    choroplethGradientName? :string
   }
 
   interface ISymbolOptionsProps{
@@ -129,6 +129,7 @@ declare enum LayerTypes{
   }
 
   interface IColorSchemeProps{
+    gradientName: string,
     steps: number
   }
 
