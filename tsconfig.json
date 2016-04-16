@@ -23,6 +23,7 @@
     "compileOnSave": true,
     "buildOnSave": false,
     "atom": {
-        "rewriteTsconfig": false
+        "rewriteTsconfig": false,
+        "formatOnSave": true
     }
 }

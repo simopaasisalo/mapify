@@ -6,3 +6,4 @@ typings/
 *.log.*
 *.log
 *.tgz
+tsconfig.*
