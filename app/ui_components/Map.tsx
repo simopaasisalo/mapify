@@ -10,36 +10,33 @@ import 'leaflet';
 import 'leaflet-choropleth';
 let Modal = require('react-modal');
 
-let defaultCircleMarkerOptions = {
-    radius: 8,
-    color: "#000",
-    weight: 1,
-    opacity: 1,
-    fillOpacity: 0.8,
-}
-
-let defaultChoroplethOptions: L.ChoroplethOptions = {
-    valueProperty: '',
-    scale: 'Greys',
-    steps: 7,
-    mode: 'q',
-    pointToLayer: function(feature, latlng) {
-        return L.circleMarker(latlng, defaultCircleMarkerOptions);
-    },
-    onEachFeature: this.addPopupsToLayer
-}
-
-let defaultVisOptions: IVisualizationOptions = {
-    colorOptions: {
-        choroplethOptions: defaultChoroplethOptions
-    },
-    symbolOptions: {}
-}
-
 var map: L.Map;
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 
 export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
+    private defaultCircleMarkerOptions = {
+        radius: 8,
+        color: "#000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8,
+    }
+
+    private defaultChoroplethOptions: L.ChoroplethOptions = {
+        valueProperty: '',
+        scale: 'Greys',
+        steps: 7,
+        mode: 'q',
+    }
+
+    private defaultVisOptions: IVisualizationOptions = {
+        colorOptions: {},
+        symbolOptions: {},
+        onEachFeature: this.addPopupsToLayer,
+        pointToLayer: this.pointsToCircleMarkers,
+
+
+    }
     constructor() {
         super();
         this.state = {
@@ -47,12 +44,17 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
             menuShown: false,
             layers: null
         };
+
     }
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
     }
-
+    shouldComponentUpdate(nextProps: IMapMainProps, nextState: IMapMainStates) {
+        return this.state.importWizardShown !== nextState.importWizardShown ||
+            this.state.menuShown !== nextState.menuShown ||
+            this.state.layers !== nextState.layers
+    }
 
     /**
      * initMap - Initializes the map with basic options
@@ -74,42 +76,6 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
 
     }
 
-    /**
-     * refreshMap - Update the map after the user has changed the visualization options
-     *  Gets the layer to update by the options.layerName
-     * @param  {IVisualizationOptions} options  The updated visualization options
-     */
-    refreshMap(options: IVisualizationOptions) {
-
-        let layerData: ILayerData;
-        for (let data of this.state.layers) {
-            if (data.layerName == options.layerName) {
-                layerData = data;
-                break;
-            }
-        }
-        if (layerData) {
-            if (layerData.layerType === LayerTypes.ChoroplethMap) {
-                //For leaflet-choropleth there may be no other way than to delete->redraw
-                map.removeLayer(layerData.layer);
-                let layer = this.createChoroplethLayer(layerData, options.colorOptions.choroplethOptions);
-                layer.addTo(map);
-                layerData.layer = layer;
-            }
-            else if (layerData.layerType === LayerTypes.SymbolMap) {
-
-                if (options.symbolOptions.sizeVariable) {
-
-                    layerData.layer.eachLayer(function(layer) {
-                        let val = layer.feature.properties[options.symbolOptions.sizeVariable];
-                        let radius = Math.sqrt(val * 8 / Math.PI) * 2;
-                        layer.setRadius(radius);
-                    });
-                }
-            }
-        }
-    }
-
     cancelLayerImport() {
         this.setState({
             importWizardShown: false,
@@ -124,14 +90,17 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
      */
     layerImportSubmit(layerData: ILayerData) {
         let layer: L.GeoJSON;
+        layerData.visOptions = this.defaultVisOptions;
+
         if (layerData.layerType == LayerTypes.ChoroplethMap) {
-            layer = this.createChoroplethLayer(layerData, defaultChoroplethOptions);
+            layerData.visOptions.colorOptions.choroplethOptions = this.defaultChoroplethOptions;
+            layer = this.createChoroplethLayer(layerData);
+
         }
         else {
             layer = L.geoJson(layerData.geoJSON, {
-                pointToLayer: function(feature, latlng) {
-                    return L.circleMarker(latlng, defaultCircleMarkerOptions);
-                },
+                pointToLayer: layerData.visOptions.pointToLayer.bind(this),
+                onEachFeature: layerData.visOptions.onEachFeature.bind(this)
             });
         }
         layerData.layer = layer;
@@ -145,28 +114,50 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
             importWizardShown: false,
             menuShown: true,
         });
-
-
-
     }
 
+    /**
+     * refreshLayer - Update the layer on the map after the user has changed the visualization options
+     * @param  layerData  The layer to update
+     */
+    refreshLayer(layerData: ILayerData) {
+        if (layerData) {
+            if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethOptions) {
+                map.removeLayer(layerData.layer);
+                let layer = this.createChoroplethLayer(layerData);
+                delete layerData.visOptions.colorOptions.choroplethOptions.style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
+
+                layer.addTo(map);
+                layerData.layer = layer;
+            }
+            if (layerData.layerType === LayerTypes.SymbolMap) {
+                if (layerData.visOptions.symbolOptions.sizeVariable) {
+                    layerData.layer.eachLayer(function(layer) {
+                        let val = layer.feature.properties[layerData.visOptions.symbolOptions.sizeVariable];
+                        let radius = Math.sqrt(val * 8 / Math.PI) * 2;
+                        layer.setRadius(radius);
+                    });
+                }
+            }
+        }
+    }
 
     /**
      * createChoroplethLayer - Create a new choropleth layer by leaflet-choropleth.js
      *
-     * @param  layerData               the data containing the GeoJSON string and the color variable
-     * @param  visOptions   the visualization options. If empty, uses default values
-     * @return {L.GeoJSON}                          the GeoJSON layer coloured according to the visOptions
+     * @param  layerData    the data containing the GeoJSON string and the color variable
+     * @return {L.GeoJSON}  the GeoJSON layer coloured according to the visOptions
      */
-    createChoroplethLayer(layerData: ILayerData, options: L.ChoroplethOptions) {
+    createChoroplethLayer(layerData: ILayerData) {
+        let options = layerData.visOptions.colorOptions.choroplethOptions;
         if (options.valueProperty === '') {
             options.valueProperty = layerData.headers[0].label;
         }
         if (!options.pointToLayer) {
-            options.pointToLayer = defaultChoroplethOptions.pointToLayer;
+            options.pointToLayer = this.defaultVisOptions.pointToLayer.bind(this);
         }
         if (!options.onEachFeature) {
-            options.onEachFeature = defaultChoroplethOptions.onEachFeature;
+            options.onEachFeature = this.defaultVisOptions.onEachFeature.bind(this);
         }
         return L.choropleth(layerData.geoJSON, options);
     }
@@ -175,9 +166,8 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
     /**
      * addPopupsToLayer - adds the feature details popup to layer
      *
-     * @param   feature GeoJSON features
+     * @param   feature GeoJSON feature
      * @param   layer   layer to add popup to
-     * @return {void}
      */
     addPopupsToLayer(feature, layer: L.GeoJSON) {
         var popupContent = '';
@@ -187,6 +177,10 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         }
         if (popupContent != '')
             layer.bindPopup(popupContent);
+    }
+
+    pointsToCircleMarkers(feature, latlng: L.LatLng) {
+        return L.circleMarker(latlng, this.defaultCircleMarkerOptions);
     }
 
 
@@ -209,14 +203,17 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
                 <Modal isOpen={this.state.importWizardShown}>
                     <LayerImportWizard
                         submit={this.layerImportSubmit.bind(this) }
-                        cancel={this.cancelLayerImport.bind(this) }/>
+                        cancel={this.cancelLayerImport.bind(this) }
+                        />
                 </Modal>
-                {this.state.menuShown ?
-                    <MapifyMenu
-                        layers = {this.state.layers}
-                        originalOptions={defaultVisOptions}
-                        refreshMap={this.refreshMap.bind(this) }
-                        addLayer = {this.addNewLayer.bind(this) }/> : null}/>
+
+                <MapifyMenu
+                    layers = {this.state.layers}
+                    refreshMap={this.refreshLayer.bind(this) }
+                    addLayer = {this.addNewLayer.bind(this) }
+                    visible={this.state.menuShown}
+                    />
+                />
             </div>
         );
     }

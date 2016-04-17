@@ -39,8 +39,8 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
             reader.readAsText(file);
         });
     }
-    layerNameChanged(val) {
-        this.setState({ layerName: val.target.value })
+    layerNameChanged(e) {
+        this.setState({ layerName: e.target.value })
     }
     goBack() {
         this.props.goBack();

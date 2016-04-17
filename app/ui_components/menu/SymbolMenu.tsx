@@ -3,17 +3,19 @@ let Select = require('react-select');
 
 
 export class SymbolMenu extends React.Component<ISymbolOptionsProps, ISymbolOptionsStates>{
-    constructor() {
-        super();
+    constructor(props: ISymbolOptionsProps) {
+        super(props);
         this.state =
             {
-                sizeVar: ''
+                sizeVar: this.props.prevOptions ? this.props.prevOptions.sizeVariable : '',
+                sizeMultiplier: 1,
             };
     }
     shouldComponentUpdate(nextProps: ISymbolOptionsProps, nextState: ISymbolOptionsStates) {
         return nextProps.isVisible !== this.props.isVisible ||
             nextProps.headers !== this.props.headers ||
-            nextState.sizeVar !== this.state.sizeVar;
+            nextState.sizeVar !== this.state.sizeVar ||
+            nextState.sizeMultiplier !== this.state.sizeMultiplier;
     }
 
     sizeVariableChanged(val) {
@@ -21,9 +23,15 @@ export class SymbolMenu extends React.Component<ISymbolOptionsProps, ISymbolOpti
             sizeVar: val.value
         });
     }
+    sizeMultiplierChanged(e) {
+        this.setState({
+            sizeMultiplier: e.currentTarget.valueAsNumber
+        });
+    }
     saveOptions() {
         this.props.saveValues({
-            sizeVariable: this.state.sizeVar
+            sizeVariable: this.state.sizeVar,
+            sizeMultiplier: this.state.sizeMultiplier
         });
     }
     render() {
@@ -36,8 +44,8 @@ export class SymbolMenu extends React.Component<ISymbolOptionsProps, ISymbolOpti
                         onChange={this.sizeVariableChanged.bind(this) }
                         value={this.state.sizeVar}
                         />
-                    <h4>Select the base color size</h4>
-                    <input  type="range"/>
+                    <h4>Select the size multiplier</h4>
+                    <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={1} max={10}/>
                     <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
                 </div>
         );

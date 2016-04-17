@@ -5,7 +5,6 @@ import {LayerTypes} from '../common_items/common';
 
 let Select = require('react-select');
 let Menu = require('impromptu-react-sidemenu');
-let _currentOptions: IVisualizationOptions;
 
 export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     componentWillMount() {
@@ -14,8 +13,13 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             symbolOptionsShown: false,
             activeLayer: this.props.layers ? this.props.layers[0] : null,
         };
-        _currentOptions = this.props.originalOptions;
-        _currentOptions.layerName = this.state.activeLayer ? this.state.activeLayer.layerName : '';
+    }
+    shouldComponentUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
+        return this.props.layers !== nextProps.layers ||
+            this.props.visible !== nextProps.visible ||
+            this.state.colorOptionsShown !== nextState.colorOptionsShown ||
+            this.state.symbolOptionsShown !== nextState.symbolOptionsShown ||
+            this.state.activeLayer !== nextState.activeLayer;
     }
     handleSelection(item) {
 
@@ -35,7 +39,6 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         }
     }
     activeLayerChanged(val: { label: string, value: ILayerData }) {
-        _currentOptions.layerName = val.label;
         this.setState({
             colorOptionsShown: false,
             symbolOptionsShown: false,
@@ -43,6 +46,12 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         });
 
     }
+    componentWillReceiveProps(nextProps: IMenuProps) {
+        this.setState({
+            activeLayer: this.state.activeLayer ? this.state.activeLayer : nextProps.layers ? nextProps.layers[0] : null
+        });
+    }
+
     deleteLayer(e: Event) {
         e.preventDefault();
         console.log(e);
@@ -55,16 +64,25 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         this.props.addLayer();
     }
     refreshColorOptions(options: IColorOptions) {
+        let lyr: ILayerData = this.state.activeLayer;
+        lyr.visOptions.colorOptions = options;
 
-        _currentOptions.colorOptions = options;
+        this.setState({
+            activeLayer: lyr
+        })
         this.refreshMap();
     }
     refreshSymbolOptions(options: ISymbolOptions) {
-        _currentOptions.symbolOptions = options;
+        let lyr: ILayerData = this.state.activeLayer;
+        lyr.visOptions.symbolOptions = options;
+
+        this.setState({
+            activeLayer: lyr
+        })
         this.refreshMap();
     }
     refreshMap() {
-        this.props.refreshMap(_currentOptions);
+        this.props.refreshMap(this.state.activeLayer);
     }
     showLayerNameOnMenu(option) {
 
@@ -81,7 +99,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 layers.push({ value: layer, label: layer.layerName });
             }
         }
-        return (
+        return (!this.props.visible ? null :
             <Menu.Menu showDividers={true}>
 
                 <Menu.Brand>
@@ -102,6 +120,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
                         saveValues = {this.refreshColorOptions.bind(this) }
                         isVisible = {this.state.colorOptionsShown}
+                        prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
                         />
                 </Menu.Item>
                 {this.state.activeLayer && this.state.activeLayer.layerType != LayerTypes.ChoroplethMap ?
@@ -111,6 +130,8 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                             headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
                             saveValues = {this.refreshSymbolOptions.bind(this) }
                             isVisible = {this.state.symbolOptionsShown}
+                            prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.symbolOptions : null}
+
                             />
                     </Menu.Item>
                     : <div/>

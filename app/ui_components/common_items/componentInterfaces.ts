@@ -11,6 +11,15 @@ declare enum LayerTypes {
 
 //import {GeoJSON} from 'leaflet';
 
+interface ILayerData {
+    layerName: string,
+    geoJSON: Object,
+    layerType: LayerTypes,
+    headers: { value: string, label: string }[],
+    layer?: any,
+    visOptions?: IVisualizationOptions
+}
+
 interface ILayerImportProps {
     submit: (ILayerData) => void,
     cancel: () => void,
@@ -74,13 +83,7 @@ interface IFileDetailsStates {
     coordinateSystem: string,
 }
 
-interface ILayerData {
-    layerName: string,
-    geoJSON: Object,
-    layerType: LayerTypes
-    headers: { value: string, label: string }[]
-    layer?: any
-}
+
 
 interface IMapMainProps {
 
@@ -94,9 +97,9 @@ interface IMapMainStates {
 
 interface IMenuProps {
     layers: Array<ILayerData>,
-    originalOptions: IVisualizationOptions,
-    refreshMap: (options: IVisualizationOptions) => void,
+    refreshMap: (options: ILayerData) => void,
     addLayer: () => void,
+    visible: boolean,
 }
 
 interface IMenuStates {
@@ -108,6 +111,7 @@ interface IMenuStates {
 
 interface IColorOptionsProps {
     headers: { value: string, label: string }[],
+    prevOptions: IColorOptions,
     saveValues: (values: IColorOptions) => void,
     isVisible: boolean
 }
@@ -119,12 +123,16 @@ interface IColorOptionsStates {
 
 interface ISymbolOptionsProps {
     headers: { value: string, label: string }[],
+    prevOptions: ISymbolOptions,
     saveValues: (values: ISymbolOptions) => void,
     isVisible: boolean,
 }
 
 interface ISymbolOptionsStates {
     sizeVar?: string,
+    sizeLowLimit?: number,
+    sizeUpLimit?: number,
+    sizeMultiplier?: number,
 }
 
 interface IColorSchemeProps {
@@ -148,12 +156,20 @@ interface ISymbolOptions {
     iconURL?: string,
     /** the variable by which to scale the symbol size */
     sizeVariable?: string,
+
+    sizeLowerLimit?: number,
+    sizeUpperLimit?: number,
+    sizeMultiplier?: number,
 }
 
 
 /** The complete object to be transferred between Menu<->Map */
 interface IVisualizationOptions {
     layerName?: string
+    onEachFeature?: (feature: any, layer: L.GeoJSON) => void,
+    pointToLayer: (featureData: any, latlng: L.LatLng) => L.ILayer
     colorOptions: IColorOptions,
     symbolOptions: ISymbolOptions,
+
+
 }

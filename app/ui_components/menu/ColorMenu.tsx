@@ -17,16 +17,19 @@ const _gradientOptions: { value: string, label: string }[] =
 
 
 export class ColorMenu extends React.Component<IColorOptionsProps, IColorOptionsStates>{
-    constructor() {
-        super();
+    constructor(props: IColorOptionsProps) {
+        super(props);
+        let prev = this.props.prevOptions;
+
         this.state =
             {
-                propertyVar: ''
+                propertyVar: prev && prev.choroplethOptions ? prev.choroplethOptions.valueProperty : '',
+                choroplethGradientName: prev && prev.choroplethOptions ? prev.choroplethOptions.scale : ''
             };
     }
     shouldComponentUpdate(nextProps: IColorOptionsProps, nextState: IColorOptionsStates) {
         return nextProps.isVisible !== this.props.isVisible ||
-            nextProps.headers !== this.props.headers ||
+            nextProps.prevOptions !== this.props.prevOptions ||
             nextState.propertyVar !== this.state.propertyVar ||
             nextState.choroplethGradientName !== this.state.choroplethGradientName;
     }
