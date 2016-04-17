@@ -85,6 +85,7 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
             values.geoJSON = _fileModel.ParseToGeoJSON(values.rawContent, values.latField, values.lonField, values.fileExtension, values.delimiter, values.coordinateSystem);
         }
         let submitData: ILayerData = {
+            id: -1,
             layerName: values.layerName,
             geoJSON: values.geoJSON,
             layerType: values.layerType,

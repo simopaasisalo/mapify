@@ -12,6 +12,7 @@ declare enum LayerTypes {
 //import {GeoJSON} from 'leaflet';
 
 interface ILayerData {
+    id: number,
     layerName: string,
     geoJSON: Object,
     layerType: LayerTypes,
@@ -98,11 +99,14 @@ interface IMapMainStates {
 interface IMenuProps {
     layers: Array<ILayerData>,
     refreshMap: (options: ILayerData) => void,
+    changeLayerOrder: (order: number[]) => void,
     addLayer: () => void,
+    deleteLayer: (id: number) => void,
     visible: boolean,
 }
 
 interface IMenuStates {
+    layerOptionsShown?: boolean,
     colorOptionsShown?: boolean,
     symbolOptionsShown?: boolean,
     activeLayer?: ILayerData,
@@ -172,4 +176,19 @@ interface IVisualizationOptions {
     symbolOptions: ISymbolOptions,
 
 
+}
+
+interface ILayerControlProps {
+    layers: ILayerData[],
+    addNewLayer: () => void,
+    deleteLayer: (id: number) => void,
+    saveOrder: (order: number[]) => void,
+    isVisible: boolean,
+
+}
+interface ILayerControlStates {
+    /**
+     * The new order of layer.id's
+     */
+    order: { name: string, id: number }[],
 }

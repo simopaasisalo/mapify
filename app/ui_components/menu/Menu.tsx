@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {LayerMenu} from './LayerMenu';
 import {ColorMenu} from './ColorMenu';
 import {SymbolMenu} from './SymbolMenu';
 import {LayerTypes} from '../common_items/common';
@@ -11,29 +12,52 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         this.state = {
             colorOptionsShown: false,
             symbolOptionsShown: false,
+            layerOptionsShown: false,
             activeLayer: this.props.layers ? this.props.layers[0] : null,
         };
     }
     shouldComponentUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
+
         return this.props.layers !== nextProps.layers ||
             this.props.visible !== nextProps.visible ||
             this.state.colorOptionsShown !== nextState.colorOptionsShown ||
             this.state.symbolOptionsShown !== nextState.symbolOptionsShown ||
+            this.state.layerOptionsShown !== nextState.layerOptionsShown ||
             this.state.activeLayer !== nextState.activeLayer;
     }
+    componentWillUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
+        if (nextProps.layers.length === 0) {
+            this.setState({
+                colorOptionsShown: false,
+                layerOptionsShown: false,
+                symbolOptionsShown: false,
+                activeLayer: null,
+            })
+        }
+    }
+
     handleSelection(item) {
 
         switch (item) {
             case 0:
                 this.setState({
-                    colorOptionsShown: !this.state.colorOptionsShown,
+                    colorOptionsShown: false,
                     symbolOptionsShown: false,
+                    layerOptionsShown: !this.state.layerOptionsShown,
                 });
                 break;
             case 1:
                 this.setState({
+                    colorOptionsShown: !this.state.colorOptionsShown,
+                    symbolOptionsShown: false,
+                    layerOptionsShown: false,
+                });
+                break;
+            case 2:
+                this.setState({
                     colorOptionsShown: false,
                     symbolOptionsShown: !this.state.symbolOptionsShown,
+                    layerOptionsShown: false,
                 });
                 break;
         }
@@ -52,9 +76,8 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         });
     }
 
-    deleteLayer(e: Event) {
-        e.preventDefault();
-        console.log(e);
+    deleteLayer(id: number) {
+        this.props.deleteLayer(id);
     }
     addNewLayer() {
         this.setState({
@@ -83,6 +106,9 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     }
     refreshMap() {
         this.props.refreshMap(this.state.activeLayer);
+    }
+    layerOrderChanged(order: number[]) {
+        this.props.changeLayerOrder(order);
     }
     showLayerNameOnMenu(option) {
 
@@ -113,9 +139,19 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     valueRenderer = {this.showLayerNameOnMenu}
                     clearable={false}
                     />
-                <button onClick={this.addNewLayer.bind(this) }>Add new layer</button>
                 <Menu.Item>
-                    <p className="fa fa-paint-brush" onClick = {this.handleSelection.bind(this, 0) }> Colors </p>
+                    <p className="fa fa-map" onClick = {this.handleSelection.bind(this, 0) }>Layers </p>
+                    <LayerMenu
+                        isVisible = {this.state.layerOptionsShown}
+                        layers={this.props.layers}
+                        saveOrder={this.layerOrderChanged.bind(this) }
+                        addNewLayer = {this.addNewLayer.bind(this) }
+                        deleteLayer = {this.deleteLayer.bind(this) }
+                        />
+
+                </Menu.Item>
+                <Menu.Item>
+                    <p className="fa fa-paint-brush" onClick = {this.handleSelection.bind(this, 1) }> Colors </p>
                     <ColorMenu
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
                         saveValues = {this.refreshColorOptions.bind(this) }
@@ -125,7 +161,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 </Menu.Item>
                 {this.state.activeLayer && this.state.activeLayer.layerType != LayerTypes.ChoroplethMap ?
                     <Menu.Item >
-                        <p className="fa fa-circle-o" onClick = {this.handleSelection.bind(this, 1) }> Symbols </p>
+                        <p className="fa fa-map-marker" onClick = {this.handleSelection.bind(this, 2) }> Symbols </p>
                         <SymbolMenu
                             headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
                             saveValues = {this.refreshSymbolOptions.bind(this) }
@@ -138,7 +174,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 }
 
 
-            </Menu.Menu>
+            </Menu.Menu >
         );
     }
 }

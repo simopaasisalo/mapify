@@ -13,7 +13,6 @@ h2,h3{
   text-align: center;
 }
 
-/*map type selection dialog styles */
 .maptypepreviewimage{
   width: 100%;
 }
@@ -28,10 +27,24 @@ h2,h3{
    height: 80%;
 }
 
+
+.layerListItem{
+width: 90%;
+background: white;
+color: black !important;
+border-color: white;
+border-width: 3px;
+border-style: double;
+border-radius: 15px;
+text-align: center;
+line-height: 20px;
+}
+
 .disabled{
   background: gray;
 }
 
+/* color options - chroma gradient */
 div.gradient div {
     display: inline-block;
 

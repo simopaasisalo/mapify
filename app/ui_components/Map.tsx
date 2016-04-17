@@ -9,8 +9,8 @@ let _mapInitModel = new MapInitModel();
 import 'leaflet';
 import 'leaflet-choropleth';
 let Modal = require('react-modal');
-
-var map: L.Map;
+let _currentLayerId: number = 0;
+let _map: L.Map;
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 
 export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
@@ -63,11 +63,11 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
      */
     initMap() {
         let baseLayers: any = _mapInitModel.InitBaseMaps();
-        map = L.map('map', {
+        _map = L.map('map', {
             layers: baseLayers,
 
         }).setView([0, 0], 2);
-        map.doubleClickZoom.disable();
+        _map.doubleClickZoom.disable();
         this.setState({
             importWizardShown: true,
             menuShown: false,
@@ -91,10 +91,12 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
     layerImportSubmit(layerData: ILayerData) {
         let layer: L.GeoJSON;
         layerData.visOptions = this.defaultVisOptions;
-
+        layerData.id = _currentLayerId;
+        _currentLayerId++;
         if (layerData.layerType == LayerTypes.ChoroplethMap) {
             layerData.visOptions.colorOptions.choroplethOptions = this.defaultChoroplethOptions;
             layer = this.createChoroplethLayer(layerData);
+            delete layerData.visOptions.colorOptions.choroplethOptions.style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
 
         }
         else {
@@ -104,8 +106,8 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
             });
         }
         layerData.layer = layer;
-        layer.addTo(map);
-        map.fitBounds(layer.getBounds());
+        layer.addTo(_map);
+        _map.fitBounds(layer.getBounds());
 
         var lyrs = this.state.layers ? this.state.layers : [];
         lyrs.push(layerData);
@@ -116,6 +118,30 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         });
     }
 
+
+    /**
+     * changeLayerOrder - Redraws the layers in the order given
+     *
+     * @param   order   the array of layer ids
+     */
+    changeLayerOrder(order: number[]) {
+        for (let i of order) {
+            let layer = this.getLayerInfoById(i);
+            if (layer.layer) {
+                layer.layer.bringToFront();
+
+            }
+        }
+    }
+
+
+    getLayerInfoById(id: number) {
+        for (let lyr of this.state.layers) {
+            if (lyr.id == id) {
+                return lyr;
+            }
+        }
+    }
     /**
      * refreshLayer - Update the layer on the map after the user has changed the visualization options
      * @param  layerData  The layer to update
@@ -123,11 +149,11 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
             if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethOptions) {
-                map.removeLayer(layerData.layer);
+                _map.removeLayer(layerData.layer);
                 let layer = this.createChoroplethLayer(layerData);
                 delete layerData.visOptions.colorOptions.choroplethOptions.style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
 
-                layer.addTo(map);
+                layer.addTo(_map);
                 layerData.layer = layer;
             }
             if (layerData.layerType === LayerTypes.SymbolMap) {
@@ -196,6 +222,20 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         });
     }
 
+    deleteLayer(id: number) {
+        let layerInfo = this.getLayerInfoById(id);
+        if (layerInfo) {
+            let currLayers = this.state.layers.filter((lyr) => { return lyr.id != id });
+            _map.removeLayer(layerInfo.layer);
+            this.setState({
+                layers: currLayers,
+                importWizardShown: false,
+                menuShown: true,
+            })
+        }
+
+    }
+
     render() {
         return (
             <div>
@@ -211,6 +251,8 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
                     layers = {this.state.layers}
                     refreshMap={this.refreshLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
+                    deleteLayer={this.deleteLayer.bind(this) }
+                    changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     visible={this.state.menuShown}
                     />
                 />
