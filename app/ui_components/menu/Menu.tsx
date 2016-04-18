@@ -16,6 +16,11 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             activeLayer: this.props.layers ? this.props.layers[0] : null,
         };
     }
+    componentWillReceiveProps(nextProps: IMenuProps) {
+        this.setState({
+            activeLayer: this.state.activeLayer ? this.state.activeLayer : nextProps.layers ? nextProps.layers[0] : null
+        });
+    }
     shouldComponentUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
 
         return this.props.layers !== nextProps.layers ||
@@ -25,11 +30,11 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             this.state.layerOptionsShown !== nextState.layerOptionsShown ||
             this.state.activeLayer !== nextState.activeLayer;
     }
+
     componentWillUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
         if (nextProps.layers.length === 0) {
             this.setState({
                 colorOptionsShown: false,
-                layerOptionsShown: false,
                 symbolOptionsShown: false,
                 activeLayer: null,
             })
@@ -61,20 +66,18 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 });
                 break;
         }
+
     }
     activeLayerChanged(val: { label: string, value: ILayerData }) {
         this.setState({
             colorOptionsShown: false,
             symbolOptionsShown: false,
+            layerOptionsShown: false,
             activeLayer: val.value,
         });
 
     }
-    componentWillReceiveProps(nextProps: IMenuProps) {
-        this.setState({
-            activeLayer: this.state.activeLayer ? this.state.activeLayer : nextProps.layers ? nextProps.layers[0] : null
-        });
-    }
+
 
     deleteLayer(id: number) {
         this.props.deleteLayer(id);

@@ -10,13 +10,32 @@ export class LayerMenu extends React.Component<ILayerControlProps, ILayerControl
             };
     }
     shouldComponentUpdate(nextProps: ILayerControlProps, nextState: ILayerControlStates) {
-        return this.props.isVisible != nextProps.isVisible ||
-            this.props.layers != nextProps.layers ||
-            this.state.order != nextState.order;
+        return this.props.isVisible !== nextProps.isVisible ||
+            this.props.layers !== nextProps.layers ||
+            this.areOrdersDifferent(this.state.order, nextState.order);
     }
-    getOriginalOrder() {
+
+    componentWillReceiveProps(nextProps: ILayerControlProps) {
+        this.setState({
+            order: this.getOriginalOrder(nextProps.layers)
+        })
+    }
+
+    areOrdersDifferent(first: { name: string, id: number }[], second: { name: string, id: number }[]) {
+        if (first.length !== second.length)
+            return true;
+        for (let i = 0; i < first.length; i++) {
+            if (first[i].id !== second[i].id) {
+                return true;
+            }
+        }
+        return false;
+    }
+    getOriginalOrder(layers?: ILayerData[]) {
+        if (!layers) layers = this.props.layers;
+
         let arr = [];
-        for (let lyr of this.props.layers) {
+        for (let lyr of layers) {
             arr.push({ name: lyr.layerName, id: lyr.id });
         }
         return arr;
