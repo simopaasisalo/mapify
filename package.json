@@ -22,7 +22,7 @@
     "react-select": "^1.0.0-beta12",
     "react-sortablejs": "^1.0.0",
     "reactify": "^1.1.1",
-    "sortablejs": "^1.4.2",
+    "sortablejs": "^1.4.2"
   },
   "devDependencies": {
     "typescript": "^1.8.10",
