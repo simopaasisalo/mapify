@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-     "prepublish": "typings install && tsc"
-   },
+    "prepublish": "typings install && tsc"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -16,7 +16,6 @@
     "papaparse": "^4.1.2",
     "proj4": "^2.3.14",
     "react": "^0.14.8",
-    "react-anything-sortable": "^1.4.2",
     "react-dom": "^0.14.8",
     "react-dropzone": "^3.4.0",
     "react-modal": "^0.6.1",
@@ -24,9 +23,11 @@
     "react-sortablejs": "^1.0.0",
     "reactify": "^1.1.1",
     "sortablejs": "^1.4.2",
-    "typescript": "^1.8.9",
-    "webpack": "^1.12.14"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "typescript": "^1.8.10",
+    "typings": "^0.7.12",
+    "webpack": "^1.13.0"
+  },
   "description": ""
 }
