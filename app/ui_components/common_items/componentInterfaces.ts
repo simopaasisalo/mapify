@@ -11,12 +11,17 @@ declare enum LayerTypes {
 
 //import {GeoJSON} from 'leaflet';
 
+interface ISelectData {
+    value: any,
+    label: string
+}
+
 interface ILayerData {
     id: number,
     layerName: string,
     geoJSON: Object,
     layerType: LayerTypes,
-    headers: { value: string, label: string }[],
+    headers: ISelectData[],
     layer?: any,
     visOptions?: IVisualizationOptions
 }
@@ -57,11 +62,17 @@ interface ILayerTypeSelectStates {
     selectedType: LayerTypes,
 }
 
+interface IFileUpload {
+    fileName: string,
+    content: string,
+    headers: ISelectData[]
+    delimiter: string
+}
 
 /** The property interface for the FileUpload-view (the second view of the import wizard) */
 interface IFileUploadProps {
     /** Saves the filename, string content, delimiter and the headers/column names to the import wizard */
-    saveValues: ({fileName, content, headers, delimiter}: { fileName: string, content: string, headers: { value: string, label: string }[], delimiter: string }) => void,
+    saveValues: (IFileUpload) => void,
     goBack: () => void
 }
 
@@ -69,12 +80,17 @@ interface IFileUploadStates {
     layerName: string,
 }
 
+interface IFileDetails {
+    latitudeField: string,
+    longitudeField: string,
+    coordinateSystem: string,
+}
 /** The property interface for the FileDetails-view (the last view of the import wizard) */
 interface IFileDetailsProps {
 
-    headers: { value: string, label: string }[],
+    headers: ISelectData[],
     /** Saves the lat- and lon- field names and the coordinate system name to the import */
-    saveValues: ({latitudeField, longitudeField, coordinateSystem}: { latitudeField: string, longitudeField: string, coordinateSystem: string }) => void,
+    saveValues: (IFileDetails) => void,
     goBack: () => void
 }
 

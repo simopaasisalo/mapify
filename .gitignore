@@ -7,4 +7,3 @@ release/
 *.log.*
 *.log
 *.tgz
-tsconfig.*

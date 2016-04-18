@@ -20,6 +20,12 @@
         "typings/browser",
         "typings/browser.d.ts"
     ],
+"files":[
+"typings/main.d.ts",
+"typings-custom/leaflet-choropleth/index.d.ts",
+"app/ui_components/common_items/componentInterfaces.ts",
+"app/ui_components/Map.tsx"
+],
     "compileOnSave": true,
     "buildOnSave": false,
     "atom": {
