@@ -5,12 +5,15 @@ import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
 import {LayerTypes} from './common_items/common';
-let _mapInitModel = new MapInitModel();
+import {Filter} from './Filter';
 import 'leaflet';
 import 'leaflet-choropleth';
 let Modal = require('react-modal');
+let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _map: L.Map;
+let _filters: { [title: string]: IFilter; } = {};
+
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 
 export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
@@ -34,6 +37,7 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         symbolOptions: {},
         onEachFeature: this.addPopupsToLayer,
         pointToLayer: this.pointsToCircleMarkers,
+        filter: (function(feature, layer) { return true }),
 
 
     }
@@ -102,11 +106,13 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         else {
             layer = L.geoJson(layerData.geoJSON, {
                 pointToLayer: layerData.visOptions.pointToLayer.bind(this),
-                onEachFeature: layerData.visOptions.onEachFeature.bind(this)
+                onEachFeature: layerData.visOptions.onEachFeature.bind(this),
+                filter: layerData.visOptions.filter.bind(this),
             });
         }
         layerData.layer = layer;
         layer.addTo(_map);
+
         _map.fitBounds(layer.getBounds());
 
         var lyrs = this.state.layers ? this.state.layers : [];
@@ -128,7 +134,7 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         for (let i of order) {
             let layer = this.getLayerInfoById(i);
             if (layer.layer) {
-                layer.layer.bringToFront();
+                (layer.layer as any).bringToFront();
 
             }
         }
@@ -158,7 +164,7 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
             }
             if (layerData.layerType === LayerTypes.SymbolMap) {
                 if (layerData.visOptions.symbolOptions.sizeVariable) {
-                    layerData.layer.eachLayer(function(layer) {
+                    (layerData.layer as any).eachLayer(function(layer) {
                         let val = layer.feature.properties[layerData.visOptions.symbolOptions.sizeVariable];
                         let radius = Math.sqrt(val * 8 / Math.PI) * 2;
                         layer.setRadius(radius);
@@ -236,6 +242,62 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
 
     }
 
+    createFilterToLayer(info: IFilter) {
+        let maxVal, minVal;
+        let lyrs: L.ILayer[] = [];
+        info.layerData.layer.eachLayer(function(layer) {
+            lyrs.push(layer);
+            let val = +(layer as any).feature.properties[info.fieldToFilter];
+            if (!minVal && !maxVal) { //initialize min and max values as the first value
+                minVal = val;
+                maxVal = val;
+            }
+            else {
+                if (val < minVal)
+                    minVal = val;
+                if (val > maxVal)
+                    maxVal = val;
+            }
+        })
+        // lyrs.sort(function(a, b) { //sort into ascending order based on value
+        //     //TODO: check for types besides number
+        //     return (a as any).feature.properties[info.fieldToFilter] - (b as any).feature.properties[info.fieldToFilter];
+        // })
+
+        _filters[info.title] = { title: info.title, layerData: info.layerData, removedFeatures: [], fieldToFilter: info.fieldToFilter, minValue: minVal, maxValue: maxVal };
+        this.forceUpdate();
+
+    }
+
+    filterLayer(title: string, lowerLimit: any, upperLimit: any) {
+
+        //TODO: optimize performance
+        let filter = _filters[title];
+        filter.layerData.layer.eachLayer(function(lyr) {
+            let val = (lyr as any).feature.properties[filter.fieldToFilter];
+            if (val < lowerLimit || val > upperLimit) {
+                filter.removedFeatures.push(lyr);
+                filter.layerData.layer.removeLayer(lyr);
+            }
+        });
+        for (let layer of filter.removedFeatures) { //re-add previous deleted layers
+            let val = (layer as any).feature.properties[filter.fieldToFilter];
+            if (val > lowerLimit && val < upperLimit) {
+                filter.layerData.layer.addLayer(layer);
+                filter.removedFeatures = filter.removedFeatures.filter((lyr) => { return lyr !== layer });
+            }
+
+        }
+    }
+
+    getFilters() {
+        let arr = [];
+        for (let key in _filters) {
+            arr.push(<Filter title={key} valueChanged={this.filterLayer.bind(this) } key={key} maxValue={_filters[key].maxValue} minValue={_filters[key].minValue}/>)
+        }
+        return arr;
+    }
+
     render() {
         return (
             <div>
@@ -246,16 +308,16 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
                         cancel={this.cancelLayerImport.bind(this) }
                         />
                 </Modal>
-
                 <MapifyMenu
                     layers = {this.state.layers}
                     refreshMap={this.refreshLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
+                    createFilter ={this.createFilterToLayer.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     visible={this.state.menuShown}
                     />
-                />
+                {this.getFilters() }
             </div>
         );
     }

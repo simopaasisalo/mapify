@@ -2,6 +2,7 @@ import * as React from 'react';
 import {LayerMenu} from './LayerMenu';
 import {ColorMenu} from './ColorMenu';
 import {SymbolMenu} from './SymbolMenu';
+import {FilterMenu} from './FilterMenu';
 import {LayerTypes} from '../common_items/common';
 
 let Select = require('react-select');
@@ -13,6 +14,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             colorOptionsShown: false,
             symbolOptionsShown: false,
             layerOptionsShown: false,
+            filterOptionsShown: false,
             activeLayer: this.props.layers ? this.props.layers[0] : null,
         };
     }
@@ -28,6 +30,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             this.state.colorOptionsShown !== nextState.colorOptionsShown ||
             this.state.symbolOptionsShown !== nextState.symbolOptionsShown ||
             this.state.layerOptionsShown !== nextState.layerOptionsShown ||
+            this.state.filterOptionsShown !== nextState.filterOptionsShown ||
             this.state.activeLayer !== nextState.activeLayer;
     }
 
@@ -49,6 +52,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     colorOptionsShown: false,
                     symbolOptionsShown: false,
                     layerOptionsShown: !this.state.layerOptionsShown,
+                    filterOptionsShown: false,
                 });
                 break;
             case 1:
@@ -56,6 +60,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     colorOptionsShown: !this.state.colorOptionsShown,
                     symbolOptionsShown: false,
                     layerOptionsShown: false,
+                    filterOptionsShown: false,
                 });
                 break;
             case 2:
@@ -63,6 +68,15 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     colorOptionsShown: false,
                     symbolOptionsShown: !this.state.symbolOptionsShown,
                     layerOptionsShown: false,
+                    filterOptionsShown: false,
+                });
+                break;
+            case 3:
+                this.setState({
+                    colorOptionsShown: false,
+                    symbolOptionsShown: false,
+                    layerOptionsShown: false,
+                    filterOptionsShown: !this.state.filterOptionsShown,
                 });
                 break;
         }
@@ -117,8 +131,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
 
         return option ? option.layerName : '';
     }
-    renderOption(option) {
-        return <span>{option ? option.layerName : ''}<button onClick={this.deleteLayer}>d </button></span>;
+
+    addFilterToMap(info: IFilter) {
+        info.layerData = this.state.activeLayer;
+        this.props.createFilter(info);
     }
 
     render() {
@@ -175,6 +191,14 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     </Menu.Item>
                     : <div/>
                 }
+                <Menu.Item>
+                    <p className="fa " onClick = {this.handleSelection.bind(this, 3) }> Filters </p>
+
+                    <FilterMenu
+                        headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
+                        addFilterToMap = {this.addFilterToMap.bind(this) }
+                        isVisible = {this.state.filterOptionsShown}/>
+                </Menu.Item>
 
 
             </Menu.Menu >

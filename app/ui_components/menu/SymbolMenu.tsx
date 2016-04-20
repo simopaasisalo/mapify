@@ -2,8 +2,8 @@ import * as React from 'react';
 let Select = require('react-select');
 
 
-export class SymbolMenu extends React.Component<ISymbolOptionsProps, ISymbolOptionsStates>{
-    constructor(props: ISymbolOptionsProps) {
+export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuStates>{
+    constructor(props: ISymbolMenuProps) {
         super(props);
         this.state =
             {
@@ -11,7 +11,7 @@ export class SymbolMenu extends React.Component<ISymbolOptionsProps, ISymbolOpti
                 sizeMultiplier: 1,
             };
     }
-    shouldComponentUpdate(nextProps: ISymbolOptionsProps, nextState: ISymbolOptionsStates) {
+    shouldComponentUpdate(nextProps: ISymbolMenuProps, nextState: ISymbolMenuStates) {
         return nextProps.isVisible !== this.props.isVisible ||
             nextProps.headers !== this.props.headers ||
             nextState.sizeVar !== this.state.sizeVar ||

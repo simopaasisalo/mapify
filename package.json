@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "prepublish": "typings install && tsc"
+    "prepublish": "typings install && tsc && webpack"
   },
   "author": "",
   "license": "ISC",
@@ -17,9 +17,11 @@
     "proj4": "^2.3.14",
     "react": "^0.14.8",
     "react-dom": "^0.14.8",
+    "react-draggable": "^2.0.0-beta3",
     "react-dropzone": "^3.4.0",
     "react-modal": "^0.6.1",
     "react-select": "^1.0.0-beta12",
+    "react-slider": "^0.6.1",
     "react-sortablejs": "^1.0.0",
     "reactify": "^1.1.1",
     "sortablejs": "^1.4.2"

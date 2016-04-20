@@ -22,7 +22,7 @@ interface ILayerData {
     geoJSON: Object,
     layerType: LayerTypes,
     headers: ISelectData[],
-    layer?: any,
+    layer?: L.GeoJSON,
     visOptions?: IVisualizationOptions
 }
 
@@ -109,8 +109,9 @@ interface IMapMainProps {
 interface IMapMainStates {
     importWizardShown: boolean,
     menuShown: boolean,
-    layers?: Array<ILayerData>
+    layers?: Array<ILayerData>,
 }
+
 
 interface IMenuProps {
     layers: Array<ILayerData>,
@@ -118,6 +119,7 @@ interface IMenuProps {
     changeLayerOrder: (order: number[]) => void,
     addLayer: () => void,
     deleteLayer: (id: number) => void,
+    createFilter: (IFilterInfo) => void,
     visible: boolean,
 }
 
@@ -125,34 +127,21 @@ interface IMenuStates {
     layerOptionsShown?: boolean,
     colorOptionsShown?: boolean,
     symbolOptionsShown?: boolean,
+    filterOptionsShown?: boolean,
     activeLayer?: ILayerData,
 
 }
 
-interface IColorOptionsProps {
+interface IColorMenuProps {
     headers: { value: string, label: string }[],
     prevOptions: IColorOptions,
     saveValues: (values: IColorOptions) => void,
     isVisible: boolean
 }
 
-interface IColorOptionsStates {
+interface IColorMenuStates {
     propertyVar?: string,
     choroplethGradientName?: string
-}
-
-interface ISymbolOptionsProps {
-    headers: { value: string, label: string }[],
-    prevOptions: ISymbolOptions,
-    saveValues: (values: ISymbolOptions) => void,
-    isVisible: boolean,
-}
-
-interface ISymbolOptionsStates {
-    sizeVar?: string,
-    sizeLowLimit?: number,
-    sizeUpLimit?: number,
-    sizeMultiplier?: number,
 }
 
 interface IColorSchemeProps {
@@ -167,8 +156,19 @@ interface IColorOptions {
     choroplethOptions?: L.ChoroplethOptions
 
 }
+interface ISymbolMenuProps {
+    headers: ISelectData[],
+    prevOptions: ISymbolOptions,
+    saveValues: (values: ISymbolOptions) => void,
+    isVisible: boolean,
+}
 
-
+interface ISymbolMenuStates {
+    sizeVar?: string,
+    sizeLowLimit?: number,
+    sizeUpLimit?: number,
+    sizeMultiplier?: number,
+}
 
 /** Symbol specific options - size, icon etc. */
 interface ISymbolOptions {
@@ -182,19 +182,7 @@ interface ISymbolOptions {
     sizeMultiplier?: number,
 }
 
-
-/** The complete object to be transferred between Menu<->Map */
-interface IVisualizationOptions {
-    layerName?: string
-    onEachFeature?: (feature: any, layer: L.GeoJSON) => void,
-    pointToLayer: (featureData: any, latlng: L.LatLng) => L.ILayer
-    colorOptions: IColorOptions,
-    symbolOptions: ISymbolOptions,
-
-
-}
-
-interface ILayerControlProps {
+interface ILayerMenuProps {
     layers: ILayerData[],
     addNewLayer: () => void,
     deleteLayer: (id: number) => void,
@@ -202,9 +190,82 @@ interface ILayerControlProps {
     isVisible: boolean,
 
 }
-interface ILayerControlStates {
+interface ILayerMenuStates {
     /**
-     * The new order of layer.id's
+     * The new order of layers
      */
     order: { name: string, id: number }[],
+}
+
+interface IFilterMenuProps {
+    headers: ISelectData[],
+    /**
+     * adds the filter control to the map
+     */
+    addFilterToMap: (IFilterInfo) => void,
+    /**
+     * Removes filter by specified title from the map
+     */
+    removeFilterFromMap?: (filterTitle: string) => void,
+
+    isVisible: boolean,
+}
+
+interface IFilterMenuStates {
+    selectedField?: string,
+    filterTitle?: string,
+
+}
+
+interface IOnScreenFilterProps {
+    title: string,
+    minValue: number,
+    maxValue: number,
+    valueChanged: (title: string, lowerLimit: number, upperLimit: number) => void
+}
+
+interface IOnScreenFilterStates {
+    lowerLimit?: number,
+    upperLimit?: number,
+    step?: number,
+    lockDistance?: boolean,
+}
+
+/**
+ * The filter information
+ */
+interface IFilter {
+    /**
+     * The name of the filter. Will be shown on the map
+     */
+    title: string,
+    /**
+     * Initialized as the unfiltered data. Filtering changes this layer
+     */
+    layerData: ILayerData,
+
+    /**
+     * The features that are filtered from the originalLayer
+     */
+    removedFeatures: L.ILayer[],
+    /**
+     * The name of the field to filter
+     */
+    fieldToFilter: string,
+
+    maxValue: number,
+    minValue: number,
+
+}
+
+/** The complete object to be transferred between Menu<->Map */
+interface IVisualizationOptions {
+    layerName?: string
+    onEachFeature?: (feature: any, layer: L.GeoJSON) => void,
+    pointToLayer: (featureData: any, latlng: L.LatLng) => L.ILayer
+    filter: (feature: any, layer: L.GeoJSON) => boolean,
+    colorOptions: IColorOptions,
+    symbolOptions: ISymbolOptions,
+
+
 }

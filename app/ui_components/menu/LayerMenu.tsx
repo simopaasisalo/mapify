@@ -1,7 +1,7 @@
 import * as React from 'react';
 let Sortable = require('react-sortablejs')
-export class LayerMenu extends React.Component<ILayerControlProps, ILayerControlStates>{
-    constructor(props: ILayerControlProps) {
+export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates>{
+    constructor(props: ILayerMenuProps) {
         super(props);
 
         this.state =
@@ -9,13 +9,13 @@ export class LayerMenu extends React.Component<ILayerControlProps, ILayerControl
                 order: this.getOriginalOrder()
             };
     }
-    shouldComponentUpdate(nextProps: ILayerControlProps, nextState: ILayerControlStates) {
+    shouldComponentUpdate(nextProps: ILayerMenuProps, nextState: ILayerMenuStates) {
         return this.props.isVisible !== nextProps.isVisible ||
             this.props.layers !== nextProps.layers ||
             this.areOrdersDifferent(this.state.order, nextState.order);
     }
 
-    componentWillReceiveProps(nextProps: ILayerControlProps) {
+    componentWillReceiveProps(nextProps: ILayerMenuProps) {
         this.setState({
             order: this.getOriginalOrder(nextProps.layers)
         })

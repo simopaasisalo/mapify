@@ -51,3 +51,13 @@ div.gradient div {
     height: 15px;
     color: rgba(0,0,0,0);
 }
+
+.filter{
+position: absolute;
+left: 0px;
+top: 400px;
+background: white;
+width: 300px ;
+border-radius: 15px;
+border: 2px solid gray;
+}

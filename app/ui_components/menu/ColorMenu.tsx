@@ -16,8 +16,8 @@ const _gradientOptions: { value: string, label: string }[] =
     ];
 
 
-export class ColorMenu extends React.Component<IColorOptionsProps, IColorOptionsStates>{
-    constructor(props: IColorOptionsProps) {
+export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates>{
+    constructor(props: IColorMenuProps) {
         super(props);
         let prev = this.props.prevOptions;
 
@@ -27,7 +27,7 @@ export class ColorMenu extends React.Component<IColorOptionsProps, IColorOptions
                 choroplethGradientName: prev && prev.choroplethOptions ? prev.choroplethOptions.scale : ''
             };
     }
-    shouldComponentUpdate(nextProps: IColorOptionsProps, nextState: IColorOptionsStates) {
+    shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
         return nextProps.isVisible !== this.props.isVisible ||
             nextProps.prevOptions !== this.props.prevOptions ||
             nextState.propertyVar !== this.state.propertyVar ||
