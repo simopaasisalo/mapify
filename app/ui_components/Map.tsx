@@ -172,7 +172,10 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
                 }
             }
         }
+        this.refreshFilterLayers(layerData);
     }
+
+
 
     /**
      * createChoroplethLayer - Create a new choropleth layer by leaflet-choropleth.js
@@ -244,9 +247,8 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
 
     createFilterToLayer(info: IFilter) {
         let maxVal, minVal;
-        let lyrs: L.ILayer[] = [];
+        let filterValues: { [index: number]: L.ILayer[] } = {};
         info.layerData.layer.eachLayer(function(layer) {
-            lyrs.push(layer);
             let val = +(layer as any).feature.properties[info.fieldToFilter];
             if (!minVal && !maxVal) { //initialize min and max values as the first value
                 minVal = val;
@@ -258,35 +260,73 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
                 if (val > maxVal)
                     maxVal = val;
             }
+            if (filterValues[val])
+                filterValues[val].push(layer);
+            else
+                filterValues[val] = [layer];
         })
         // lyrs.sort(function(a, b) { //sort into ascending order based on value
         //     //TODO: check for types besides number
         //     return (a as any).feature.properties[info.fieldToFilter] - (b as any).feature.properties[info.fieldToFilter];
         // })
-
-        _filters[info.title] = { title: info.title, layerData: info.layerData, removedFeatures: [], fieldToFilter: info.fieldToFilter, minValue: minVal, maxValue: maxVal };
+        _filters[info.title] = { title: info.title, layerData: info.layerData, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: minVal, maxValue: maxVal };
         this.forceUpdate();
 
     }
 
     filterLayer(title: string, lowerLimit: any, upperLimit: any) {
 
-        //TODO: optimize performance
         let filter = _filters[title];
-        filter.layerData.layer.eachLayer(function(lyr) {
-            let val = (lyr as any).feature.properties[filter.fieldToFilter];
+        for (let val in filter.filterValues) {
             if (val < lowerLimit || val > upperLimit) {
-                filter.removedFeatures.push(lyr);
-                filter.layerData.layer.removeLayer(lyr);
-            }
-        });
-        for (let layer of filter.removedFeatures) { //re-add previous deleted layers
-            let val = (layer as any).feature.properties[filter.fieldToFilter];
-            if (val > lowerLimit && val < upperLimit) {
-                filter.layerData.layer.addLayer(layer);
-                filter.removedFeatures = filter.removedFeatures.filter((lyr) => { return lyr !== layer });
-            }
+                filter.filterValues[val].map(function(lyr) {
+                    filter.layerData.layer.removeLayer(lyr);
 
+                });
+
+            }
+            else {
+                filter.filterValues[val].map(function(lyr) {
+                    filter.layerData.layer.addLayer(lyr);
+
+                });
+            }
+        }
+        // filter.layerData.layer.eachLayer(function(lyr) {
+        //     let val = (lyr as any).feature.properties[filter.fieldToFilter];
+        //
+        // });
+        // for (let layer of filter.removedFeatures) { //re-add previous deleted layers
+        //     let val = (layer as any).feature.properties[filter.fieldToFilter];
+        //     if (val > lowerLimit && val < upperLimit) {
+        //         filter.layerData.layer.addLayer(layer);
+        //         filter.removedFeatures = filter.removedFeatures.filter((lyr) => { return lyr !== layer });
+        //     }
+
+        // }
+    }
+
+    /**
+     * refreshFilterLayers - If the layers were updated, keep the filter up-to-date
+     *
+     * @param  data   The changed layer
+     */
+    refreshFilterLayers(data: ILayerData) {
+        let filter: IFilter = null;
+        for (let f in _filters) {
+            if (_filters[f].layerData.id === data.id) {
+                let foundFilter = _filters[f];
+                let info: IFilter = {
+                    title: foundFilter.title,
+                    layerData: data,
+                    fieldToFilter: foundFilter.fieldToFilter,
+                    filterValues: [],
+                    maxValue: foundFilter.maxValue,
+                    minValue: foundFilter.minValue
+                }
+                this.createFilterToLayer(info);
+                break;
+            }
         }
     }
 

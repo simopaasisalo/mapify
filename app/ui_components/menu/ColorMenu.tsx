@@ -75,8 +75,6 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                     onChange={this.schemeChanged.bind(this) }
                     value={this.state.choroplethGradientName}
                     />
-                <h4>Select the color steps</h4>
-                <input  type="range"/>
                 <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
             </div>
         );

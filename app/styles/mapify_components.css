@@ -29,19 +29,19 @@ h2,h3{
 
 
 .layerListItem{
-width: 90%;
-background: white;
-color: black !important;
-border-color: white;
-border-width: 3px;
-border-style: double;
-border-radius: 15px;
-text-align: center;
-line-height: 20px;
+    width: 90%;
+    background: white;
+    color: black !important;
+    border-color: white;
+    border-width: 3px;
+    border-style: double;
+    border-radius: 15px;
+    text-align: center;
+    line-height: 20px;
 }
 
 .disabled{
-  background: gray;
+    background: gray;
 }
 
 /* color options - chroma gradient */
@@ -53,11 +53,15 @@ div.gradient div {
 }
 
 .filter{
-position: absolute;
-left: 0px;
-top: 400px;
-background: white;
-width: 300px ;
-border-radius: 15px;
-border: 2px solid gray;
+    position: absolute;
+    left: 0px;
+    top: 400px;
+    background: white;
+    width: 300px ;
+    border-radius: 15px;
+    border: 2px solid gray;
+}
+
+.filteredLayer{
+    display: none;
 }

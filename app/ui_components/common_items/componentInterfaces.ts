@@ -249,13 +249,15 @@ interface IFilter {
     layerData: ILayerData,
 
     /**
-     * The features that are filtered from the originalLayer
-     */
-    removedFeatures: L.ILayer[],
-    /**
      * The name of the field to filter
      */
     fieldToFilter: string,
+
+
+    /**
+     * Dictionary containing lists of layers by the value being filtered
+     */
+    filterValues: { [index: number]: L.ILayer[] },
 
     maxValue: number,
     minValue: number,

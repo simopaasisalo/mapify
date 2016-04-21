@@ -13,29 +13,32 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
             };
 
     }
+    advanceSliderWhenLocked(lower, upper) {
+        let minValDiff = this.state.lowerLimit - lower;
+        let maxValDiff = this.state.upperLimit - upper;
+        if (minValDiff != 0) {
+            if (this.state.lowerLimit - minValDiff > this.props.minValue &&
+                this.state.upperLimit - minValDiff < this.props.maxValue) {
+                this.setState({
+                    lowerLimit: this.state.lowerLimit - minValDiff,
+                    upperLimit: this.state.upperLimit - minValDiff,
+                });
+            }
+        }
+        else if (maxValDiff != 0) {
+            if (this.state.lowerLimit - maxValDiff > this.props.minValue &&
+                this.state.upperLimit - maxValDiff < this.props.maxValue) {
+                this.setState({
+                    lowerLimit: this.state.lowerLimit - maxValDiff,
+                    upperLimit: this.state.upperLimit - maxValDiff,
+                });
+            }
+        }
+    }
     filterScaleChanged(values) {
 
         if (this.state.lockDistance) {
-            let minValDiff = this.state.lowerLimit - values[0];
-            let maxValDiff = this.state.upperLimit - values[1];
-            if (minValDiff != 0) {
-                if (this.state.lowerLimit - minValDiff > this.props.minValue &&
-                    this.state.upperLimit - minValDiff < this.props.maxValue) {
-                    this.setState({
-                        lowerLimit: this.state.lowerLimit - minValDiff,
-                        upperLimit: this.state.upperLimit - minValDiff,
-                    });
-                }
-            }
-            else if (maxValDiff != 0) {
-                if (this.state.lowerLimit - maxValDiff > this.props.minValue &&
-                    this.state.upperLimit - maxValDiff < this.props.maxValue) {
-                    this.setState({
-                        lowerLimit: this.state.lowerLimit - maxValDiff,
-                        upperLimit: this.state.upperLimit - maxValDiff,
-                    });
-                }
-            }
+            this.advanceSliderWhenLocked(values[0], values[1]);
         }
         else {
             this.setState({
@@ -45,14 +48,40 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
         }
         this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
     }
-    stepChanged(val) {
+    lowerLimitChanged(e) {
+        let val = e.currentTarget.valueAsNumber
+        if (val !== this.state.lowerLimit) {
+            this.setState({
+                lowerLimit: val
+            });
+            if (this.state.lockDistance) {
+                this.advanceSliderWhenLocked(val, this.state.upperLimit);
+            }
+            this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
+
+        }
+    }
+    upperLimitChanged(e) {
+        let val = e.currentTarget.valueAsNumber
+        if (val !== this.state.upperLimit) {
+            this.setState({
+                upperLimit: val
+            });
+            if (this.state.lockDistance) {
+                this.advanceSliderWhenLocked(this.state.lowerLimit, val);
+            }
+            this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
+
+        }
+    }
+    stepChanged(e) {
         this.setState({
-            step: val.currentTarget.valueAsNumber
+            step: e.currentTarget.valueAsNumber
         });
     }
-    lockDistanceChanged(val) {
+    lockDistanceChanged(e) {
         this.setState({
-            lockDistance: val.currentTarget.checked,
+            lockDistance: e.currentTarget.checked,
         });
     }
 
@@ -63,8 +92,12 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
 
             <div className='filter'>
                 <h2 className='filterTitle'>{this.props.title}</h2>
-                <i>{this.state.lowerLimit }</i>
-                <i style={{ float: 'right' }}>{this.state.upperLimit }</i>
+                <span>
+                    <input type='number' style={{ width: '60px' }} value={this.state.lowerLimit.toFixed(0) } onChange={this.lowerLimitChanged.bind(this) }/>
+                    <label>Lock distance</label>
+                    <input type='checkbox' checked={this.state.lockDistance} onChange={this.lockDistanceChanged.bind(this) }/>
+                    <input type='number' style={{ float: 'right', width: '60px' }} value={this.state.upperLimit.toFixed(0) } onChange={this.upperLimitChanged.bind(this) }/>
+                </span>
                 <Slider className='horizontal-slider'
                     onChange={this.filterScaleChanged.bind(this) }
                     value={[this.state.lowerLimit, this.state.upperLimit]}
@@ -77,14 +110,7 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
 
                 </Slider>
                 <div>
-                    <div>
-                        <h4>Slider step</h4>
-                        <input type="number" value={this.state.step} onChange={this.stepChanged.bind(this) }/>
-                    </div>
-                    <div>
-                        <h4>Lock distance</h4>
-                        <input type="checkbox" checked={this.state.lockDistance} onChange={this.lockDistanceChanged.bind(this) }/>
-                    </div>
+
                 </div>
 
             </div>
