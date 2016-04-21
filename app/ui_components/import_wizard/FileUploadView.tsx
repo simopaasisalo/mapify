@@ -8,7 +8,7 @@ let _fileInfo = {
     fileName: '',
     fileExtension: '',
     content: '',
-    headers: [{ value: '', label: '' }],
+    headers: [],
     delimiter: '',
 
 }
@@ -50,7 +50,7 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
             let head, delim;
             [head, delim] = _fileModel.ParseHeaders(_fileInfo.content, _fileInfo.fileExtension);
             for (let i of head) {
-                _fileInfo.headers.push({ value: i, label: i });
+                _fileInfo.headers.push({ value: i.name, label: i.name, type: i.type });
             }
             _fileInfo.delimiter = delim;
         }

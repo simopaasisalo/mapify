@@ -16,12 +16,16 @@ interface ISelectData {
     label: string
 }
 
+interface IHeader extends ISelectData {
+    type: string,
+}
+
 interface ILayerData {
     id: number,
     layerName: string,
     geoJSON: Object,
     layerType: LayerTypes,
-    headers: ISelectData[],
+    headers: IHeader[],
     layer?: L.GeoJSON,
     visOptions?: IVisualizationOptions
 }
@@ -65,7 +69,7 @@ interface ILayerTypeSelectStates {
 interface IFileUpload {
     fileName: string,
     content: string,
-    headers: ISelectData[]
+    headers: IHeader[]
     delimiter: string
 }
 
@@ -88,7 +92,7 @@ interface IFileDetails {
 /** The property interface for the FileDetails-view (the last view of the import wizard) */
 interface IFileDetailsProps {
 
-    headers: ISelectData[],
+    headers: IHeader[],
     /** Saves the lat- and lon- field names and the coordinate system name to the import */
     saveValues: (IFileDetails) => void,
     goBack: () => void
@@ -132,11 +136,15 @@ interface IMenuStates {
 
 }
 
-interface IColorMenuProps {
-    headers: { value: string, label: string }[],
+interface ISubMenuProps {
+    headers: IHeader[],
+    isVisible: boolean
+
+}
+
+interface IColorMenuProps extends ISubMenuProps {
     prevOptions: IColorOptions,
     saveValues: (values: IColorOptions) => void,
-    isVisible: boolean
 }
 
 interface IColorMenuStates {
@@ -156,11 +164,9 @@ interface IColorOptions {
     choroplethOptions?: L.ChoroplethOptions
 
 }
-interface ISymbolMenuProps {
-    headers: ISelectData[],
+interface ISymbolMenuProps extends ISubMenuProps {
     prevOptions: ISymbolOptions,
     saveValues: (values: ISymbolOptions) => void,
-    isVisible: boolean,
 }
 
 interface ISymbolMenuStates {
@@ -197,8 +203,7 @@ interface ILayerMenuStates {
     order: { name: string, id: number }[],
 }
 
-interface IFilterMenuProps {
-    headers: ISelectData[],
+interface IFilterMenuProps extends ISubMenuProps {
     /**
      * adds the filter control to the map
      */
@@ -208,7 +213,6 @@ interface IFilterMenuProps {
      */
     removeFilterFromMap?: (filterTitle: string) => void,
 
-    isVisible: boolean,
 }
 
 interface IFilterMenuStates {

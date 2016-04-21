@@ -11,14 +11,17 @@ export class FilePreProcessModel {
      *
      * @param  {string} input         the whole input as string
      * @param  {string} fileExtension the file format, ie. .csv, .xml
-     * @return {[string[], string]}   tuple containing headers in an array and the delimiter
+     * @return {[{string, string}[], string]}   tuple containing headers in an array and the delimiter
      */
     public ParseHeaders(input: string, fileExtension: string) {
-        let headers: Array<string> = [];
+        let headers: Array<{ name: string, type: string }> = [];
         let delim: string = '';
         if (fileExtension === 'csv') {
+
             let parse = Papa.parse(input, { preview: 1, header: true });
-            headers = parse.meta.fields;
+            for (let field of parse.meta.fields) {
+                headers.push({ name: field, type: this.guessType(parse.data, field) })
+            }
             delim = parse.meta.delimiter;
         }
         return [headers, delim];
@@ -26,7 +29,23 @@ export class FilePreProcessModel {
 
 
     /**
-     * public - Converts input data into Leaflet layer
+     * private - Preliminary type guessing based on the first row of data
+     *TODO: DateTime?
+     * @param   data        the first row of parsed data
+     * @param   fieldName   the field name to inspect
+     * @return              type as string
+     */
+    private guessType(data: any[], fieldName: string) {
+        if (!isNaN(parseFloat(data[0][fieldName]))) {
+            return 'number'
+        }
+        else
+            return 'string';
+    }
+
+
+    /**
+     * public - Converts input data into GeoJSON object
      * TODO: implement support for other formats besides CSV
      *
      * @param  input      the import file in text format
@@ -34,45 +53,96 @@ export class FilePreProcessModel {
      * @param  lonField  longitude field name
      * @param  fileFormat the file extension
      * @param  delim     delimiter
-     * @return           GeoJSON featurecollection
+     * @return           GeoJSON object
      */
-    public ParseToGeoJSON(input: string, latField: string, lonField: string, fileFormat: string, delim: string, coordSystem: string) {
+    public ParseToGeoJSON(input: string, latField: string, lonField: string, fileFormat: string, delim: string, coordSystem: string, headers: IHeader[]) {
         let geoJSON: L.GeoJSON = null;
         if (fileFormat === 'csv') {
-            geoJSON = parseCSV();
+
+            geoJSON = this.parseCSV(input, latField, lonField, delim);
         }
 
-        function parseCSV() {
-            csv2geojson.csv2geojson(input, {
-                latfield: latField,
-                lonfield: lonField,
-                delimiter: delim
-            },
-                function(err, data) {
-                    if (!err) {
-                        geoJSON = projectCoords(data, coordSystem);
-                    }
-                    else {
-                        //TODO
-                        console.log(err);
-                    }
-                });
-            return geoJSON;
-        }
+        geoJSON = this.projectCoords(geoJSON, coordSystem)
+        geoJSON = this.setGeoJSONTypes(geoJSON, headers);
 
-        function projectCoords(geoJSON, fromProj: string) {
-            geoJSON.features.forEach(feature => {
-                let x = feature.geometry.coordinates[0];
-                let y = feature.geometry.coordinates[1];
-                let convert = proj4(fromProj, 'WGS84', [x, y]);
-                feature.geometry.coordinates[1] = convert[1];
-                feature.geometry.coordinates[0] = convert[0];
-            });
-            return geoJSON;
-
-        }
         return geoJSON;
 
+    }
+
+
+    /**
+     * private - Parses CSV-data into a GeoJSON object
+     *
+     * @param  input    The CSV string
+     * @param  latField Latitude column name
+     * @param  lonField Longitude column name
+     * @param  delim    Separator char
+     * @return          GeoJSON object
+     */
+    private parseCSV(input: string, latField: string, lonField: string, delim: string) {
+        let geoJSON: any;
+        csv2geojson.csv2geojson(input, {
+            latfield: latField,
+            lonfield: lonField,
+            delimiter: delim
+        },
+            function(err, data) {
+                if (!err) {
+                    geoJSON = data;
+
+                }
+                else {
+                    //TODO
+                    console.log(err);
+                }
+            });
+
+        return geoJSON;
+    }
+
+
+    /**
+     * private - Projects the coordinates from original projection to WGS84
+     *
+     * @param  geoJSON    The GeoJSON object
+     * @param  fromProj   Original projection name
+     * @return            The projected L.GeoJSON
+     */
+    private projectCoords(geoJSON, fromProj: string) {
+        geoJSON.features.forEach(feature => {
+            let x = feature.geometry.coordinates[0];
+            let y = feature.geometry.coordinates[1];
+            let convert = proj4(fromProj, 'WGS84', [x, y]);
+            feature.geometry.coordinates[1] = convert[1];
+            feature.geometry.coordinates[0] = convert[0];
+        });
+        return geoJSON;
+
+    }
+
+
+    /**
+     * private - Sets GeoJSON feature data types based on the the header information for later calculations (symbol sizing, etc.)
+     *
+     * @param   geoJSON   The GeoJSON object
+     * @param  headers    Header information. Contains type descriptions
+     * @return            The changed GeoJSON object
+     */
+    private setGeoJSONTypes(geoJSON, headers: IHeader[]) {
+        let numbers: string[] = [];
+        headers.map(function(head) {
+            if (head.type === 'number') {
+                numbers.push(head.label);
+            }
+        })
+        geoJSON.features.forEach(feature => {
+            for (let prop in feature.properties) {
+                if (numbers.indexOf(prop) > -1) {
+                    feature.properties[prop] = +feature.properties[prop]; //convert to number
+                }
+            }
+        });
+        return geoJSON
     }
 
 
