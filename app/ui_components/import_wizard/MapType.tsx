@@ -6,11 +6,20 @@ import {LayerTypes} from "../common_items/common";
  */
 export class MapType extends React.Component<IMapTypeProps, {}>{
     public render() {
+        let style = {
+            float: 'left',
+            borderRadius: '25px',
+            border: '2px solid gray',
+            padding: '20px',
+            margin: '15px',
+            width: '250px',
+            height: '80%',
+        };
         return (
-            <div className={this.props.enabled ? 'maptypeselect' : 'maptypeselect disabled' }
+            <div style = {style}
                 onClick={this.props.onClick.bind(this, this.props.type) }>
                 <h3>{this.props.name}</h3>
-                <img src={this.props.imageLocation} alt={this.props.name} className='maptypepreviewimage'/>
+                <img src={this.props.imageLocation} alt={this.props.name} style={{ width: '100%' }}/>
                 <p>{this.props.description}</p>
             </div>
         )

@@ -71,12 +71,23 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
         this.props.saveOrder(arr);
     }
     render() {
+        let style = {
+            width: '90%',
+            background: 'white',
+            color: 'black',
+            borderColor: 'white',
+            borderWidth: '3px',
+            borderStyle: 'double',
+            borderRadius: '15px',
+            textAlign: 'center',
+            lineHeight: '20px',
+        }
         return (!this.props.isVisible ? null :
             <div>
                 <h4>Drag and drop to reorder layers on map</h4>
                 <Sortable className='layerList' onChange={this.handleSort.bind(this) }>
                     {this.state.order.map(function(layer) {
-                        return <div className='layerListItem' key={layer.id} data-id={layer.id} >
+                        return <div style={style} key={layer.id} data-id={layer.id} >
                             {layer.name}
                             <i className="fa fa-times" onClick = {this.deleteLayer.bind(this, layer.id) }/>
                         </div>;

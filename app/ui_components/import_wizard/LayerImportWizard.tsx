@@ -48,8 +48,9 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         if (fileInfo.fileExtension === 'geojson') {
 
             values.geoJSON = JSON.parse(fileInfo.content);
-            for (let h of Object.keys(values.geoJSON.features[0].properties)) {
-                values.headers.push({ value: h, label: h });
+            let props = values.geoJSON.features[0].properties;
+            for (let h of Object.keys(props)) {
+                values.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
             }
             this.submit(); //skip extra info if already in geojson
         }

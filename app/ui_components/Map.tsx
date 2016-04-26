@@ -5,7 +5,8 @@ import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
 import {LayerTypes} from './common_items/common';
-import {Filter} from './Filter';
+import {Filter} from './misc/Filter';
+import {Legend} from './misc/Legend';
 import 'leaflet';
 import 'leaflet-choropleth';
 let Modal = require('react-modal');
@@ -17,15 +18,13 @@ let _filters: { [title: string]: IFilter; } = {};
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 
 export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
-    private defaultCircleMarkerOptions = {
-        radius: 8,
+
+
+    private defaultColorOptions: IColorOptions = {
         color: "#000",
         weight: 1,
         opacity: 1,
         fillOpacity: 0.8,
-    }
-
-    private defaultChoroplethOptions: L.ChoroplethOptions = {
         valueProperty: '',
         scale: 'Greys',
         steps: 7,
@@ -33,11 +32,12 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
     }
 
     private defaultVisOptions: IVisualizationOptions = {
-        colorOptions: {},
+        colorOptions: this.defaultColorOptions,
         symbolOptions: {},
         onEachFeature: this.addPopupsToLayer,
-        pointToLayer: this.pointsToCircleMarkers,
-        filter: (function(feature, layer) { return true }),
+        pointToLayer: (function(feature, latlng: L.LatLng) {
+            return L.circleMarker(latlng, this.defaultColorOptions)
+        }),
 
 
     }
@@ -98,21 +98,20 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         layerData.id = _currentLayerId;
         _currentLayerId++;
         if (layerData.layerType == LayerTypes.ChoroplethMap) {
-            layerData.visOptions.colorOptions.choroplethOptions = this.defaultChoroplethOptions;
             layer = this.createChoroplethLayer(layerData);
-            delete layerData.visOptions.colorOptions.choroplethOptions.style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
-
+            delete (layerData.visOptions.colorOptions as any).style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
+            delete (layerData.visOptions.colorOptions as any).onEachFeature;
+            delete (layerData.visOptions.colorOptions as any).pointToLayer;
         }
         else {
             layer = L.geoJson(layerData.geoJSON, {
                 pointToLayer: layerData.visOptions.pointToLayer.bind(this),
                 onEachFeature: layerData.visOptions.onEachFeature.bind(this),
-                filter: layerData.visOptions.filter.bind(this),
             });
         }
         layerData.layer = layer;
         layer.addTo(_map);
-
+        console.log(layer);
         _map.fitBounds(layer.getBounds());
 
         var lyrs = this.state.layers ? this.state.layers : [];
@@ -154,25 +153,52 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
      */
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
-            if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethOptions) {
-                _map.removeLayer(layerData.layer);
-                let layer = this.createChoroplethLayer(layerData);
-                delete layerData.visOptions.colorOptions.choroplethOptions.style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
+            if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.valueProperty !== '') {
 
+                _map.removeLayer(layerData.layer);
+
+                let layer = this.createChoroplethLayer(layerData);
+                delete (layerData.visOptions.colorOptions as any).style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
+                delete (layerData.visOptions.colorOptions as any).onEachFeature;
+                delete (layerData.visOptions.colorOptions as any).pointToLayer;
                 layer.addTo(_map);
                 layerData.layer = layer;
             }
             if (layerData.layerType === LayerTypes.SymbolMap) {
-                if (layerData.visOptions.symbolOptions.sizeVariable) {
+                let opt = layerData.visOptions.symbolOptions;
+                if (opt.sizeVariable) {
                     (layerData.layer as any).eachLayer(function(layer) {
-                        let val = layer.feature.properties[layerData.visOptions.symbolOptions.sizeVariable];
-                        let radius = Math.sqrt(val * 8 / Math.PI) * 2;
+                        let val = layer.feature.properties[opt.sizeVariable];
+                        let radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
+                        if (radius < opt.sizeLowerLimit)
+                            radius = opt.sizeLowerLimit;
+                        else if (radius > opt.sizeUpperLimit)
+                            radius = opt.sizeUpperLimit;
                         layer.setRadius(radius);
+                        if (!opt.actualMaxValue && !opt.actualMinValue) {
+                            opt.actualMinValue = val;
+                            opt.actualMaxValue = val;
+                            opt.actualMaxRadius = radius;
+                            opt.actualMinRadius = radius;
+                        }
+                        else {
+                            if (val > opt.actualMaxValue) {
+                                opt.actualMaxRadius = radius;
+                                opt.actualMaxValue = val;
+                            }
+                            if (radius < opt.actualMinRadius) {
+                                opt.actualMinRadius = radius;
+                                opt.actualMinValue = val;
+                            }
+
+                        }
                     });
                 }
             }
         }
         this.refreshFilterLayers(layerData);
+        this.forceUpdate();
+
     }
 
 
@@ -184,16 +210,20 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
      * @return {L.GeoJSON}  the GeoJSON layer coloured according to the visOptions
      */
     createChoroplethLayer(layerData: ILayerData) {
-        let options = layerData.visOptions.colorOptions.choroplethOptions;
+
+        let options = layerData.visOptions.colorOptions;
         if (options.valueProperty === '') {
-            options.valueProperty = layerData.headers[0].label;
+            layerData.headers.map(function(h) {
+                if (h.type == 'number') {
+                    options.valueProperty = h.label;
+                }
+            })
+            if (options.valueProperty === '')
+                options.valueProperty = layerData.headers[0].label;
         }
-        if (!options.pointToLayer) {
-            options.pointToLayer = this.defaultVisOptions.pointToLayer.bind(this);
-        }
-        if (!options.onEachFeature) {
-            options.onEachFeature = this.defaultVisOptions.onEachFeature.bind(this);
-        }
+        options['pointToLayer'] = layerData.visOptions.pointToLayer.bind(this);
+        options['onEachFeature'] = this.defaultVisOptions.onEachFeature;
+
         return L.choropleth(layerData.geoJSON, options);
     }
 
@@ -214,15 +244,12 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
             layer.bindPopup(popupContent);
     }
 
-    pointsToCircleMarkers(feature, latlng: L.LatLng) {
-        return L.circleMarker(latlng, this.defaultCircleMarkerOptions);
-    }
+
 
 
     /**
      * addNewLayer - Opens the import wizard for  a new layer
      *
-     * @return {void}
      */
     addNewLayer() {
         this.setState({
@@ -231,6 +258,12 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         });
     }
 
+
+    /**
+     * deleteLayer - Removes a layer from the map and layer list
+     *
+     * @param  id   The unique id of the LayerInfo to remove
+     */
     deleteLayer(id: number) {
         let layerInfo = this.getLayerInfoById(id);
         if (layerInfo) {
@@ -245,11 +278,17 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
 
     }
 
+
+    /**
+     * createFilterToLayer - Creates a new filter and calculates its values
+     *
+     * @param  info   The IFilter description of the new filter
+     */
     createFilterToLayer(info: IFilter) {
         let maxVal, minVal;
         let filterValues: { [index: number]: L.ILayer[] } = {};
         info.layerData.layer.eachLayer(function(layer) {
-            let val = +(layer as any).feature.properties[info.fieldToFilter];
+            let val = (layer as any).feature.properties[info.fieldToFilter];
             if (!minVal && !maxVal) { //initialize min and max values as the first value
                 minVal = val;
                 maxVal = val;
@@ -265,51 +304,40 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
             else
                 filterValues[val] = [layer];
         })
-        // lyrs.sort(function(a, b) { //sort into ascending order based on value
-        //     //TODO: check for types besides number
-        //     return (a as any).feature.properties[info.fieldToFilter] - (b as any).feature.properties[info.fieldToFilter];
-        // })
         _filters[info.title] = { title: info.title, layerData: info.layerData, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: minVal, maxValue: maxVal };
         this.forceUpdate();
 
     }
 
-    filterLayer(title: string, lowerLimit: any, upperLimit: any) {
 
+    /**
+     * filterLayer - Remove or show items based on changes on a filter
+     *
+     * @param  title   The filter to change
+     * @param  lowerLimit Current minimum value. Hide every value below this
+     * @param  upperLimit Current max value. Hide every value above this
+     */
+    filterLayer(title: string, lowerLimit: any, upperLimit: any) {
         let filter = _filters[title];
         for (let val in filter.filterValues) {
             if (val < lowerLimit || val > upperLimit) {
                 filter.filterValues[val].map(function(lyr) {
                     filter.layerData.layer.removeLayer(lyr);
-
                 });
 
             }
             else {
                 filter.filterValues[val].map(function(lyr) {
                     filter.layerData.layer.addLayer(lyr);
-
                 });
             }
         }
-        // filter.layerData.layer.eachLayer(function(lyr) {
-        //     let val = (lyr as any).feature.properties[filter.fieldToFilter];
-        //
-        // });
-        // for (let layer of filter.removedFeatures) { //re-add previous deleted layers
-        //     let val = (layer as any).feature.properties[filter.fieldToFilter];
-        //     if (val > lowerLimit && val < upperLimit) {
-        //         filter.layerData.layer.addLayer(layer);
-        //         filter.removedFeatures = filter.removedFeatures.filter((lyr) => { return lyr !== layer });
-        //     }
-
-        // }
     }
 
     /**
-     * refreshFilterLayers - If the layers were updated, keep the filter up-to-date
-     *
-     * @param  data   The changed layer
+     * refreshFilterLayers - Keep the filter up-to-date when layers change
+     * Replaces an existing filter by a new one with the updated settings
+     * @param  data   The changed ILayerData
      */
     refreshFilterLayers(data: ILayerData) {
         let filter: IFilter = null;
@@ -330,15 +358,34 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         }
     }
 
+
+    /**
+     * getFilters - Gets the currently active filters for rendering
+     *
+     * @return  Filters in an array
+     */
     getFilters() {
-        let arr = [];
+        let arr: JSX.Element[] = [];
         for (let key in _filters) {
             arr.push(<Filter title={key} valueChanged={this.filterLayer.bind(this) } key={key} maxValue={_filters[key].maxValue} minValue={_filters[key].minValue}/>)
         }
         return arr;
     }
 
+    /**
+     * createLegend - Initializes the map legend based on this.state.layers
+     *
+     * @return  Legend element
+     */
+    createLegend() {
+        if (this.state.layers) {
+
+            return <Legend mapLayers={this.state.layers} horizontal={true}/>
+        }
+    }
+
     render() {
+
         return (
             <div>
                 <div id='map'/>
@@ -358,6 +405,7 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
                     visible={this.state.menuShown}
                     />
                 {this.getFilters() }
+                {this.createLegend() }
             </div>
         );
     }

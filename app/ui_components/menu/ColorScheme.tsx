@@ -4,7 +4,12 @@ let chroma = require('chroma-js');
 export class ColorScheme extends React.Component<IColorSchemeProps, {}>{
 
     render() {
-        return <div className='gradient' key={name}>{this.getChromaScale(this.props.gradientName, this.props.steps) }</div>;
+        let style = {
+            display: 'inline-block',
+            height: '15px',
+            color: 'rgba(0,0,0,0)',
+        }
+        return <div style={style} key={name}>{this.getChromaScale(this.props.gradientName, this.props.steps) }</div>;
     }
     shouldComponentUpdate(nextProps: IColorSchemeProps, nextState) {
         return nextProps.gradientName != this.props.gradientName ||

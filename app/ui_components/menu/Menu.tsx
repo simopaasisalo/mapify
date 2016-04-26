@@ -106,7 +106,9 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     refreshColorOptions(options: IColorOptions) {
         let lyr: ILayerData = this.state.activeLayer;
         lyr.visOptions.colorOptions = options;
-
+        lyr.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
+            return L.circleMarker(latlng, options)
+        });
         this.setState({
             activeLayer: lyr
         })
@@ -172,7 +174,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 <Menu.Item>
                     <p className="fa fa-paint-brush" onClick = {this.handleSelection.bind(this, 1) }> Colors </p>
                     <ColorMenu
-                        headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
+                        headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                         saveValues = {this.refreshColorOptions.bind(this) }
                         isVisible = {this.state.colorOptionsShown}
                         prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
@@ -182,7 +184,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     <Menu.Item >
                         <p className="fa fa-map-marker" onClick = {this.handleSelection.bind(this, 2) }> Symbols </p>
                         <SymbolMenu
-                            headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
+                            headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                             saveValues = {this.refreshSymbolOptions.bind(this) }
                             isVisible = {this.state.symbolOptionsShown}
                             prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.symbolOptions : null}
@@ -195,7 +197,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     <p className="fa " onClick = {this.handleSelection.bind(this, 3) }> Filters </p>
 
                     <FilterMenu
-                        headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
+                        headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                         addFilterToMap = {this.addFilterToMap.bind(this) }
                         isVisible = {this.state.filterOptionsShown}/>
                 </Menu.Item>

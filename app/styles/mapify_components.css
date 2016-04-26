@@ -13,55 +13,13 @@ h2,h3{
   text-align: center;
 }
 
-.maptypepreviewimage{
-  width: 100%;
-}
-
-.maptypeselect{
-   float: left;
-   border-radius: 25px;
-   border: 2px solid gray;
-   padding: 20px;
-   margin: 15px;
-   width: 250px;
-   height: 80%;
-}
-
-
-.layerListItem{
-    width: 90%;
-    background: white;
-    color: black !important;
-    border-color: white;
-    border-width: 3px;
-    border-style: double;
-    border-radius: 15px;
-    text-align: center;
-    line-height: 20px;
-}
-
-.disabled{
-    background: gray;
-}
-
-/* color options - chroma gradient */
-div.gradient div {
-    display: inline-block;
-
-    height: 15px;
-    color: rgba(0,0,0,0);
-}
-
-.filter{
-    position: absolute;
-    left: 0px;
-    top: 400px;
-    background: white;
-    width: 300px ;
-    border-radius: 15px;
-    border: 2px solid gray;
-}
-
-.filteredLayer{
-    display: none;
+.draggable{
+  position: absolute;
+  left: 0px;
+  top: 400px;
+  background: white;
+  max-width: 500px ;
+  border-radius: 15px;
+  border: 2px solid gray;
+  float: left;
 }

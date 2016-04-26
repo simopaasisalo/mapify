@@ -1,18 +1,18 @@
 import * as React from 'react';
 let Select = require('react-select');
 import {ColorScheme} from './ColorScheme';
-const _gradientOptions: { value: string, label: string }[] =
+const _gradientOptions: { value: string }[] =
     [
-        { value: 'Greys', label: 'Greys' },
-        { value: 'Reds', label: 'Reds' },
-        { value: 'Blues', label: 'Blues' },
-        { value: 'Greens', label: 'Greens' },
-        { value: 'OrRd', label: 'OrRd' },
-        { value: 'YlOrRd', label: 'YlOrRd' },
-        { value: 'RdPu', label: 'RdPu' },
-        { value: 'PuRd', label: 'PuRd' },
-        { value: 'PuBu', label: 'PuBu' },
-        { value: 'YlGnBu', label: 'YlGnBu' },
+        { value: 'Greys' },
+        { value: 'Reds' },
+        { value: 'Blues' },
+        { value: 'Greens' },
+        { value: 'OrRd' },
+        { value: 'YlOrRd' },
+        { value: 'RdPu' },
+        { value: 'PuRd' },
+        { value: 'PuBu' },
+        { value: 'YlGnBu' },
     ];
 
 
@@ -20,42 +20,53 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     constructor(props: IColorMenuProps) {
         super(props);
         let prev = this.props.prevOptions;
-
         this.state =
             {
-                propertyVar: prev && prev.choroplethOptions ? prev.choroplethOptions.valueProperty : '',
-                choroplethGradientName: prev && prev.choroplethOptions ? prev.choroplethOptions.scale : ''
+                fillOpacity: 1,
+                choroField: prev.valueProperty ? prev.valueProperty : this.props.headers[0].label,
+                choroplethGradientName: prev.scale ? prev.scale : 'Greys'
             };
     }
     shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
         return nextProps.isVisible !== this.props.isVisible ||
             nextProps.prevOptions !== this.props.prevOptions ||
-            nextState.propertyVar !== this.state.propertyVar ||
-            nextState.choroplethGradientName !== this.state.choroplethGradientName;
+            nextState.choroField !== this.state.choroField ||
+            nextState.choroplethGradientName !== this.state.choroplethGradientName ||
+            nextState.fillOpacity !== this.state.fillOpacity;
     }
-    variableChanged(val) {
+    variableChanged(e) {
         this.setState({
-            propertyVar: val.value
+            choroField: e.value,
+            opacityField: e.value
         });
     }
-    schemeChanged(val) {
+    schemeChanged(e) {
         this.setState({
-            choroplethGradientName: val.label
+            choroplethGradientName: e.value
+        });
+    }
+    opacityChanged(e) {
+        this.setState({
+            fillOpacity: e.target.valueAsNumber,
         });
     }
     renderOption(option) {
-        return <ColorScheme gradientName={option.label} steps = {100} />;
+        return <ColorScheme gradientName={option.value} steps = {100} />;
     }
     saveOptions() {
 
         this.props.saveValues({
-            choroplethOptions: {
-                valueProperty: this.state.propertyVar,
-                steps: 7,
-                scale: this.state.choroplethGradientName,
-                mode: 'q'
+            valueProperty: this.state.choroField,
+            steps: 7,
+            scale: this.state.choroplethGradientName,
+            mode: 'q',
+            fillOpacity: this.state.fillOpacity,
+            weight: 1,
 
-            },
+            opacity: this.state.fillOpacity,
+            limits: null,
+            colors: null,
+
         });
     }
     render() {
@@ -65,7 +76,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 <Select
                     options={this.props.headers}
                     onChange={this.variableChanged.bind(this) }
-                    value={this.state.propertyVar}
+                    value={this.state.choroField}
                     />
                 <h4>Select the color scale</h4>
                 <Select
@@ -75,6 +86,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                     onChange={this.schemeChanged.bind(this) }
                     value={this.state.choroplethGradientName}
                     />
+                <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.fillOpacity}/>
                 <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
             </div>
         );

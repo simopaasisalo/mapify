@@ -6,11 +6,15 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
         super(props);
         this.state =
             {
-                lowerLimit: this.props.minValue,
-                upperLimit: this.props.maxValue,
+                lowerLimit: this.props.minValue - 1,
+                upperLimit: this.props.maxValue + 1,
                 step: 1,
                 lockDistance: false,
             };
+
+    }
+    componentDidUpdate() {
+        this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
 
     }
     advanceSliderWhenLocked(lower, upper) {
@@ -46,31 +50,32 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
                 upperLimit: values[1],
             })
         }
-        this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
     }
     lowerLimitChanged(e) {
         let val = e.currentTarget.valueAsNumber
         if (val !== this.state.lowerLimit) {
-            this.setState({
-                lowerLimit: val
-            });
             if (this.state.lockDistance) {
                 this.advanceSliderWhenLocked(val, this.state.upperLimit);
             }
-            this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
+            else {
+                this.setState({
+                    lowerLimit: val
+                });
+            }
 
         }
     }
     upperLimitChanged(e) {
         let val = e.currentTarget.valueAsNumber
         if (val !== this.state.upperLimit) {
-            this.setState({
-                upperLimit: val
-            });
             if (this.state.lockDistance) {
                 this.advanceSliderWhenLocked(this.state.lowerLimit, val);
             }
-            this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
+            else {
+                this.setState({
+                    upperLimit: val
+                });
+            }
 
         }
     }
@@ -90,7 +95,7 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
             handle={'.filterTitle'}
             >
 
-            <div className='filter'>
+            <div className='draggable'>
                 <h2 className='filterTitle'>{this.props.title}</h2>
                 <span>
                     <input type='number' style={{ width: '60px' }} value={this.state.lowerLimit.toFixed(0) } onChange={this.lowerLimitChanged.bind(this) }/>
@@ -101,8 +106,8 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
                 <Slider className='horizontal-slider'
                     onChange={this.filterScaleChanged.bind(this) }
                     value={[this.state.lowerLimit, this.state.upperLimit]}
-                    min={this.props.minValue}
-                    max={this.props.maxValue}
+                    min={this.props.minValue - 1}
+                    max={this.props.maxValue + 1}
                     step={this.state.step}
                     withBars>
                     <div className='minHandle'></div>

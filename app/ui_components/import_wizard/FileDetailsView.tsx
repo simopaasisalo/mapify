@@ -15,8 +15,8 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
             coords[i] = { value: val, label: val };
         }
         this.setState({
-            latField: this.props.headers[0].label,
-            lonField: '',
+            latField: this.props.headers.filter(function(val) { return val.type === 'number' })[0].label,
+            lonField: this.props.headers.filter(function(val) { return val.type === 'number' })[1].label,
             coordinateSystem: 'WGS84',
         });
 

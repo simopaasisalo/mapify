@@ -148,8 +148,10 @@ interface IColorMenuProps extends ISubMenuProps {
 }
 
 interface IColorMenuStates {
-    propertyVar?: string,
-    choroplethGradientName?: string
+    choroField?: string,
+    choroplethGradientName?: string,
+    opacityField?: string,
+    fillOpacity?: number,
 }
 
 interface IColorSchemeProps {
@@ -158,10 +160,20 @@ interface IColorSchemeProps {
 }
 
 /** The color options to transfer between the menu and the main app */
-interface IColorOptions {
+interface IColorOptions extends L.PathOptions {
 
-    /** The options to use for regular choropleth maps */
-    choroplethOptions?: L.ChoroplethOptions
+    /** If not empty, use choropleth coloring */
+    valueProperty: string,
+
+    colors?: string[],
+
+    limits?: number[],
+
+    scale: string,
+
+    steps: number,
+
+    mode: string,
 
 }
 interface ISymbolMenuProps extends ISubMenuProps {
@@ -182,10 +194,14 @@ interface ISymbolOptions {
     iconURL?: string,
     /** the variable by which to scale the symbol size */
     sizeVariable?: string,
-
     sizeLowerLimit?: number,
     sizeUpperLimit?: number,
     sizeMultiplier?: number,
+
+    actualMinValue?: number,
+    actualMinRadius?: number,
+    actualMaxValue?: number,
+    actualMaxRadius?: number,
 }
 
 interface ILayerMenuProps {
@@ -269,9 +285,18 @@ interface IVisualizationOptions {
     layerName?: string
     onEachFeature?: (feature: any, layer: L.GeoJSON) => void,
     pointToLayer: (featureData: any, latlng: L.LatLng) => L.ILayer
-    filter: (feature: any, layer: L.GeoJSON) => boolean,
     colorOptions: IColorOptions,
     symbolOptions: ISymbolOptions,
 
+
+}
+
+interface ILegendProps {
+    mapLayers: ILayerData[],
+    horizontal: boolean,
+
+}
+
+interface ILegendStates {
 
 }
