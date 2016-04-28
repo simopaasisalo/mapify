@@ -1,34 +1,33 @@
 import * as React from 'react';
 let Draggable = require('react-draggable');
-export class Legend extends React.Component<ILegendProps, {}>{
+export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
     createChoroplethLegend(options: IVisualizationOptions) {
         let divs = [];
         let limits = options.colorOptions.limits;
         let colors = options.colorOptions.colors;
         for (let i = 0; i < limits.length; i++) {
-            let style = {
+            let colorStyle = {
                 background: colors[i],
                 opacity: options.colorOptions.fillOpacity,
-                minWidth: '15px',
-                minHeight: '15px',
-                float: this.props.horizontal ? '' : 'left',
+                minWidth: '20px',
+                minHeight: '20px',
             }
-            divs.push(<div key={i} style={{ float: this.props.horizontal ? 'left' : '' }}>
-                <div style={style} />
+            divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
+                <div style={colorStyle} />
                 <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-                    { i > 0 ?
-                        limits[i - 1].toFixed(0) + '-' + limits[i].toFixed(0) :
-                        limits[i].toFixed(0) }
+                    {  i == limits.length - 1 ?
+                        null :
+                        limits[i].toFixed(0) + '-' + limits[i + 1].toFixed(0) }
                 </span>
             </div >);
         }
-        return <div style= {{ float: 'left', textAlign: 'center', }}>
-            {options.colorOptions.valueProperty}
-            <div style={{ border: '1px solid gray', }}>
-                {divs.map(function(d) { return d }) }
-            </div>
-        </div>;
+        return <div style={{ margin: '5px', float: 'left' }}>
+            { options.colorOptions.choroplethFieldName }
+            < div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+                { divs.map(function(d) { return d }) }
+            </div >
+        </div >;
     }
 
     createScaledSizeLegend(options: IVisualizationOptions) {
@@ -69,7 +68,7 @@ export class Legend extends React.Component<ILegendProps, {}>{
                 </div>);
         }
 
-        return <div style= {{ float: 'left', textAlign: 'center' }}>
+        return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
             {options.symbolOptions.sizeVariable}
             <div>
                 {divs.map(function(d) { return d }) }
@@ -83,7 +82,6 @@ export class Legend extends React.Component<ILegendProps, {}>{
         if (options.colorOptions.colors) {
             choroLegend = this.createChoroplethLegend(options);
         }
-        console.log(options.symbolOptions)
         if (options.symbolOptions.sizeVariable) {
             scaledLegend = this.createScaledSizeLegend(options);
         }

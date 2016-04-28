@@ -5,9 +5,10 @@ export class ColorScheme extends React.Component<IColorSchemeProps, {}>{
 
     render() {
         let style = {
-            display: 'inline-block',
-            height: '15px',
+            display: 'flex',
+            flexDirection: 'row',
             color: 'rgba(0,0,0,0)',
+            margin: 0
         }
         return <div style={style} key={name}>{this.getChromaScale(this.props.gradientName, this.props.steps) }</div>;
     }
@@ -23,7 +24,7 @@ export class ColorScheme extends React.Component<IColorSchemeProps, {}>{
             let style = {
                 background: cs(i).hex(),
                 height: 40,
-                width: 180 / steps, //total width of item / steps
+                width: '100%', //total width of item / steps
                 display: 'inline-block'
             }
             inDivs.push(<div key={cs(i) + i} style={style}/>);

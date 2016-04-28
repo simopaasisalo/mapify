@@ -60,12 +60,16 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                         onChange={this.sizeVariableChanged.bind(this) }
                         value={this.state.sizeVar}
                         />
-                    <h4>Select the size multiplier</h4>
+                    <br/>
+                    <label>Select the size multiplier</label>
                     <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={0.1} max={10} step={0.1}/>
-                    <h4>Select the size lower limit</h4>
+                    <br/>
+                    <label>Select the size lower limit</label>
                     <input type="number" value={this.state.sizeLowLimit} onChange={this.sizeLowLimitChanged.bind(this) } min={0}/>
-                    <h4>Select the size upper limit</h4>
+                    <br/>
+                    <label>Select the size upper limit</label>
                     <input type="number" value={this.state.sizeUpLimit} onChange={this.sizeUpLimitChanged.bind(this) } min={1}/>
+                    <br/>
                     <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
                 </div>
         );

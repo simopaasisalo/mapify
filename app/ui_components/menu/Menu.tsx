@@ -3,6 +3,7 @@ import {LayerMenu} from './LayerMenu';
 import {ColorMenu} from './ColorMenu';
 import {SymbolMenu} from './SymbolMenu';
 import {FilterMenu} from './FilterMenu';
+import {LegendMenu} from './LegendMenu';
 import {LayerTypes} from '../common_items/common';
 
 let Select = require('react-select');
@@ -15,6 +16,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             symbolOptionsShown: false,
             layerOptionsShown: false,
             filterOptionsShown: false,
+            legendOptionsShown: false,
             activeLayer: this.props.layers ? this.props.layers[0] : null,
         };
     }
@@ -31,6 +33,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
             this.state.symbolOptionsShown !== nextState.symbolOptionsShown ||
             this.state.layerOptionsShown !== nextState.layerOptionsShown ||
             this.state.filterOptionsShown !== nextState.filterOptionsShown ||
+            this.state.legendOptionsShown !== nextState.legendOptionsShown ||
             this.state.activeLayer !== nextState.activeLayer;
     }
 
@@ -49,34 +52,47 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         switch (item) {
             case 0:
                 this.setState({
+                    layerOptionsShown: !this.state.layerOptionsShown,
                     colorOptionsShown: false,
                     symbolOptionsShown: false,
-                    layerOptionsShown: !this.state.layerOptionsShown,
                     filterOptionsShown: false,
+                    legendOptionsShown: false,
                 });
                 break;
             case 1:
                 this.setState({
+                    layerOptionsShown: false,
                     colorOptionsShown: !this.state.colorOptionsShown,
                     symbolOptionsShown: false,
-                    layerOptionsShown: false,
                     filterOptionsShown: false,
+                    legendOptionsShown: false,
                 });
                 break;
             case 2:
                 this.setState({
+                    layerOptionsShown: false,
                     colorOptionsShown: false,
                     symbolOptionsShown: !this.state.symbolOptionsShown,
-                    layerOptionsShown: false,
                     filterOptionsShown: false,
+                    legendOptionsShown: false,
                 });
                 break;
             case 3:
                 this.setState({
+                    layerOptionsShown: false,
                     colorOptionsShown: false,
                     symbolOptionsShown: false,
-                    layerOptionsShown: false,
                     filterOptionsShown: !this.state.filterOptionsShown,
+                    legendOptionsShown: false,
+                });
+                break;
+            case 4:
+                this.setState({
+                    layerOptionsShown: false,
+                    colorOptionsShown: false,
+                    symbolOptionsShown: false,
+                    filterOptionsShown: false,
+                    legendOptionsShown: !this.state.legendOptionsShown
                 });
                 break;
         }
@@ -139,6 +155,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         this.props.createFilter(info);
     }
 
+    legendStatusChanged(info: ILegend) {
+        this.props.legendStatusChanged(info);
+    }
+
     render() {
         let layers = [];
         if (this.props.layers) {
@@ -188,7 +208,6 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                             saveValues = {this.refreshSymbolOptions.bind(this) }
                             isVisible = {this.state.symbolOptionsShown}
                             prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.symbolOptions : null}
-
                             />
                     </Menu.Item>
                     : <div/>
@@ -201,6 +220,14 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         addFilterToMap = {this.addFilterToMap.bind(this) }
                         isVisible = {this.state.filterOptionsShown}/>
                 </Menu.Item>
+                <Menu.Item>
+                    <p className="fa " onClick = {this.handleSelection.bind(this, 4) }> Legend </p>
+                    <LegendMenu
+                        valuesChanged={this.legendStatusChanged.bind(this) }
+                        isVisible = {this.state.legendOptionsShown}/>
+
+
+                </Menu.Item >
 
 
             </Menu.Menu >

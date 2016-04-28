@@ -111,9 +111,11 @@ interface IMapMainProps {
 }
 
 interface IMapMainStates {
-    importWizardShown: boolean,
-    menuShown: boolean,
-    layers?: Array<ILayerData>,
+    importWizardShown?: boolean,
+    menuShown?: boolean,
+    layers?: ILayerData[],
+    filters?: { [title: string]: IFilter; },
+    legend?: ILegend
 }
 
 
@@ -123,7 +125,8 @@ interface IMenuProps {
     changeLayerOrder: (order: number[]) => void,
     addLayer: () => void,
     deleteLayer: (id: number) => void,
-    createFilter: (IFilterInfo) => void,
+    createFilter: (info: IFilter) => void,
+    legendStatusChanged: (info: ILegend) => void,
     visible: boolean,
 }
 
@@ -132,12 +135,13 @@ interface IMenuStates {
     colorOptionsShown?: boolean,
     symbolOptionsShown?: boolean,
     filterOptionsShown?: boolean,
+    legendOptionsShown?: boolean,
     activeLayer?: ILayerData,
 
 }
 
 interface ISubMenuProps {
-    headers: IHeader[],
+    headers?: IHeader[],
     isVisible: boolean
 
 }
@@ -148,10 +152,24 @@ interface IColorMenuProps extends ISubMenuProps {
 }
 
 interface IColorMenuStates {
-    choroField?: string,
-    choroplethGradientName?: string,
+    choroFieldName?: string,
+    colorScheme?: string,
     opacityField?: string,
     fillOpacity?: number,
+    useMultipleColors?: boolean,
+    baseColor?: string,
+    borderColor?: string,
+    colorSelectOpen?: boolean,
+    /**
+     * The name of the property being edited
+     */
+    editing?: string,
+
+    /**
+     * Helper for showing the clicked item's color on the picker 
+     */
+    startColor?: string,
+
 }
 
 interface IColorSchemeProps {
@@ -163,16 +181,26 @@ interface IColorSchemeProps {
 interface IColorOptions extends L.PathOptions {
 
     /** If not empty, use choropleth coloring */
-    valueProperty: string,
-
+    choroplethFieldName: string,
+    /**
+     * Color name array to use in choropleth
+     */
     colors?: string[],
-
+    /**
+     * Value array to use in choropleth
+     */
     limits?: number[],
-
-    scale: string,
-
+    /**
+     * The color scheme name to use in choropleth
+     */
+    colorScheme?: string,
+    /**
+     * The amount of colors to use in choropleth
+     */
     steps: number,
-
+    /**
+     * The Chroma-js method to calculate colors. Default q->quantiles
+     */
     mode: string,
 
 }
@@ -223,7 +251,7 @@ interface IFilterMenuProps extends ISubMenuProps {
     /**
      * adds the filter control to the map
      */
-    addFilterToMap: (IFilterInfo) => void,
+    addFilterToMap: (info: IFilter) => void,
     /**
      * Removes filter by specified title from the map
      */
@@ -255,6 +283,7 @@ interface IOnScreenFilterStates {
  * The filter information
  */
 interface IFilter {
+    id: number,
     /**
      * The name of the filter. Will be shown on the map
      */
@@ -262,7 +291,7 @@ interface IFilter {
     /**
      * Initialized as the unfiltered data. Filtering changes this layer
      */
-    layerData: ILayerData,
+    layerData?: ILayerData,
 
     /**
      * The name of the field to filter
@@ -273,10 +302,10 @@ interface IFilter {
     /**
      * Dictionary containing lists of layers by the value being filtered
      */
-    filterValues: { [index: number]: L.ILayer[] },
+    filterValues?: { [index: number]: L.ILayer[] },
 
-    maxValue: number,
-    minValue: number,
+    maxValue?: number,
+    minValue?: number,
 
 }
 
@@ -291,12 +320,25 @@ interface IVisualizationOptions {
 
 }
 
-interface ILegendProps {
-    mapLayers: ILayerData[],
-    horizontal: boolean,
-
+interface ILegendMenuProps extends ISubMenuProps {
+    valuesChanged: (values: ILegend) => void,
 }
 
-interface ILegendStates {
+interface ILegendMenuStates {
+    showLegend?: boolean,
+    horizontal?: boolean,
+    title?: string,
+}
 
+
+interface IOnScreenLegendProps {
+    mapLayers: ILayerData[],
+    horizontal: boolean,
+}
+
+interface ILegend {
+    horizontal: boolean,
+    title: string,
+    meta: string,
+    visible: boolean
 }

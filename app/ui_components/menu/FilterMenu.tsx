@@ -27,7 +27,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
         this.setState({ filterTitle: e.target.value })
     }
     createFilter() {
-        this.props.addFilterToMap({ title: this.state.filterTitle, layer: null, fieldToFilter: this.state.selectedField });
+        this.props.addFilterToMap({ id: 0, title: this.state.filterTitle, fieldToFilter: this.state.selectedField });
     }
     render() {
         return !this.props.isVisible ? null :
