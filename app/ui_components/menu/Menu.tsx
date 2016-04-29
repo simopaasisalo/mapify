@@ -172,16 +172,8 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 <Menu.Brand>
                     Options
                 </Menu.Brand>
-
-                <Select
-                    options={layers}
-                    onChange = {this.activeLayerChanged.bind(this) }
-                    value = {this.state.activeLayer}
-                    valueRenderer = {this.showLayerNameOnMenu}
-                    clearable={false}
-                    />
                 <Menu.Item>
-                    <p className="fa fa-map" onClick = {this.handleSelection.bind(this, 0) }>Layers </p>
+                    <p className="fa fa-bars" onClick = {this.handleSelection.bind(this, 0) }> Layers </p>
                     <LayerMenu
                         isVisible = {this.state.layerOptionsShown}
                         layers={this.props.layers}
@@ -191,6 +183,14 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         />
 
                 </Menu.Item>
+                <Select
+                    options={layers}
+                    onChange = {this.activeLayerChanged.bind(this) }
+                    value = {this.state.activeLayer}
+                    valueRenderer = {this.showLayerNameOnMenu}
+                    clearable={false}
+                    />
+
                 <Menu.Item>
                     <p className="fa fa-paint-brush" onClick = {this.handleSelection.bind(this, 1) }> Colors </p>
                     <ColorMenu
@@ -214,7 +214,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     : <div/>
                 }
                 <Menu.Item>
-                    <p className="fa " onClick = {this.handleSelection.bind(this, 3) }> Filters </p>
+                    <p className="fa fa-sliders" onClick = {this.handleSelection.bind(this, 3) }> Filters </p>
 
                     <FilterMenu
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
@@ -222,7 +222,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         isVisible = {this.state.filterOptionsShown}/>
                 </Menu.Item>
                 <Menu.Item>
-                    <p className="fa " onClick = {this.handleSelection.bind(this, 4) }> Legend </p>
+                    <p className="fa fa-map-o" onClick = {this.handleSelection.bind(this, 4) }> Legend </p>
                     <LegendMenu
                         valuesChanged={this.legendStatusChanged.bind(this) }
                         isVisible = {this.state.legendOptionsShown}/>
