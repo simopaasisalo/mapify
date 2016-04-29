@@ -4,41 +4,40 @@ import {FilePreProcessModel} from '../../models/FilePreProcessModel';
 
 let _fileModel = new FilePreProcessModel();
 
-let _fileInfo = {
-    fileName: '',
-    fileExtension: '',
-    content: '',
-    headers: [],
-    delimiter: '',
-
-}
 export class FileUploadView extends React.Component<IFileUploadProps, IFileUploadStates>{
     constructor() {
         super();
         this.state =
             {
-                layerName: ''
+                layerName: '',
+                content: '',
+                headers: [],
+                delimiter: '',
+                fileExtension: '',
             };
     }
     shouldComponentUpdate(nextProps: IFileUploadProps, nextState: IFileUploadStates) {
         return this.state.layerName !== nextState.layerName;
     }
     onDrop(files) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            // get file content
-            let contents: any = e.target;
-            _fileInfo.content = contents.result;
-
-        }
+        let reader = new FileReader();
+        let fileName, content;
+        reader.onload = contentUploaded.bind(this);
         files.forEach((file) => {
-            _fileInfo.fileName = file.name;
-            this.setState({ layerName: file.name })
-
-            _fileInfo.fileExtension = file.name.split('.').pop();
+            fileName = file.name;
             reader.readAsText(file);
         });
+        function contentUploaded(e) {
+            let contents: any = e.target;
+            this.setState({
+                content: contents.result,
+                layerName: fileName,
+                fileExtension: fileName.split('.').pop()
+            });
+
+        }
     }
+
     layerNameChanged(e) {
         this.setState({ layerName: e.target.value })
     }
@@ -46,17 +45,22 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
         this.props.goBack();
     }
     proceed() {
-        if (_fileInfo.fileExtension !== 'geojson') {
+        if (this.state.fileExtension !== 'geojson') {
             let head, delim;
-            [head, delim] = _fileModel.ParseHeaders(_fileInfo.content, _fileInfo.fileExtension);
+            let headers = [];
+            [head, delim] = _fileModel.ParseHeaders(this.state.content, this.state.fileExtension);
             for (let i of head) {
-                _fileInfo.headers.push({ value: i.name, label: i.name, type: i.type });
+                headers.push({ value: i.name, label: i.name, type: i.type });
             }
-            _fileInfo.delimiter = delim;
+            console.log(headers)
+            this.setState({
+                delimiter: delim,
+                headers: headers,
+            })
         }
-        _fileInfo.fileName = this.state.layerName;
-        if (_fileInfo.content) {
-            this.props.saveValues(_fileInfo);
+        if (this.state.content) {
+            this.props.saveValues(this.state);
+
         }
         else {
             alert("Upload a file!");

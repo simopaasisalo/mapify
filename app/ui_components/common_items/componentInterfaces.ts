@@ -66,22 +66,20 @@ interface ILayerTypeSelectStates {
     selectedType: LayerTypes,
 }
 
-interface IFileUpload {
-    fileName: string,
-    content: string,
-    headers: IHeader[]
-    delimiter: string
-}
 
 /** The property interface for the FileUpload-view (the second view of the import wizard) */
 interface IFileUploadProps {
     /** Saves the filename, string content, delimiter and the headers/column names to the import wizard */
-    saveValues: (IFileUpload) => void,
+    saveValues: (args: IFileUploadStates) => void,
     goBack: () => void
 }
 
 interface IFileUploadStates {
-    layerName: string,
+    layerName?: string,
+    fileExtension?: string,
+    content?: string,
+    headers?: IHeader[],
+    delimiter?: string,
 }
 
 interface IFileDetails {
@@ -148,6 +146,7 @@ interface ISubMenuProps {
 
 interface IColorMenuProps extends ISubMenuProps {
     prevOptions: IColorOptions,
+    isChoropleth: boolean,
     saveValues: (values: IColorOptions) => void,
 }
 
@@ -155,7 +154,7 @@ interface IColorMenuStates {
     choroFieldName?: string,
     colorScheme?: string,
     opacityField?: string,
-    fillOpacity?: number,
+    opacity?: number,
     useMultipleColors?: boolean,
     baseColor?: string,
     borderColor?: string,
@@ -166,7 +165,7 @@ interface IColorMenuStates {
     editing?: string,
 
     /**
-     * Helper for showing the clicked item's color on the picker 
+     * Helper for showing the clicked item's color on the picker
      */
     startColor?: string,
 

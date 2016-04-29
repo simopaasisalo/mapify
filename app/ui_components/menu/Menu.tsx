@@ -198,6 +198,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         saveValues = {this.refreshColorOptions.bind(this) }
                         isVisible = {this.state.colorOptionsShown}
                         prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
+                        isChoropleth = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.ChoroplethMap : false}
                         />
                 </Menu.Item>
                 {this.state.activeLayer && this.state.activeLayer.layerType != LayerTypes.ChoroplethMap ?

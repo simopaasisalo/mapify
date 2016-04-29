@@ -42,9 +42,9 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         this.nextStep();
     }
 
-    setFileInfo(fileInfo) {
-        this.setLayerName(fileInfo.fileName);
-
+    setFileInfo(fileInfo: IFileUploadStates) {
+        this.setLayerName(fileInfo.layerName);
+        values.headers = [];
         if (fileInfo.fileExtension === 'geojson') {
 
             values.geoJSON = JSON.parse(fileInfo.content);
@@ -59,6 +59,7 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
             values.headers = fileInfo.headers;
             values.delimiter = fileInfo.delimiter;
             values.fileExtension = fileInfo.fileExtension;
+            console.log(values)
             this.nextStep();
         }
     }

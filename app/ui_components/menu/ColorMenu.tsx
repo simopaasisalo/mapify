@@ -27,9 +27,10 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 colorSelectOpen: false,
                 baseColor: '#E0E62D',
                 borderColor: '#000',
-                fillOpacity: 1,
+                opacity: 1,
                 choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : this.props.headers[0].label,
-                colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys'
+                colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
+                useMultipleColors: this.props.isChoropleth,
             };
     }
     shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
@@ -37,7 +38,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             nextProps.prevOptions !== this.props.prevOptions ||
             nextState.choroFieldName !== this.state.choroFieldName ||
             nextState.colorScheme !== this.state.colorScheme ||
-            nextState.fillOpacity !== this.state.fillOpacity ||
+            nextState.opacity !== this.state.opacity ||
             nextState.baseColor !== this.state.baseColor ||
             nextState.borderColor !== this.state.borderColor ||
             nextState.colorSelectOpen !== this.state.colorSelectOpen ||
@@ -63,7 +64,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     opacityChanged(e) {
         this.setState({
-            fillOpacity: e.target.valueAsNumber,
+            opacity: e.target.valueAsNumber,
         });
     }
     multipleColorsChanged(e) {
@@ -96,7 +97,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             steps: 7,
             colorScheme: this.state.colorScheme,
             mode: 'q',
-            fillOpacity: this.state.fillOpacity,
+            fillOpacity: this.state.opacity,
+            opacity: this.state.opacity,
             fillColor: this.state.useMultipleColors ? '' : this.state.baseColor,
             color: this.state.borderColor,
         });
@@ -126,8 +128,12 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         }
         return (!this.props.isVisible ? null :
             <div className="mapify-options">
-                <label>Use multiple colors</label>
-                <input type='checkbox' onChange={this.multipleColorsChanged.bind(this) } checked={this.state.useMultipleColors}/>
+                {this.props.isChoropleth ? null :
+                    <div>
+                        <label htmlFor='multipleSelect'>Use multiple colors</label>
+                        <input id='multipleSelect' type='checkbox' onChange={this.multipleColorsChanged.bind(this) } checked={this.state.useMultipleColors}/>
+                    </div>
+                }
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
                     {this.state.useMultipleColors ?
                         null :
@@ -167,7 +173,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 }
                 <label>Opacity</label>
 
-                <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.fillOpacity}/>
+                <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.opacity}/>
                 <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
             </div >
         );
