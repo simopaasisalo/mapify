@@ -13,14 +13,6 @@ h2,h3{
   text-align: center;
 }
 
-label{
-  display: inline !important;
-}
-
-input{
-  display: inline !important;
-}
-
 .draggable{
   position: absolute;
   left: 0px;

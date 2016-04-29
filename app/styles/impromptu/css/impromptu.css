@@ -2235,7 +2235,6 @@
   line-height: 40px;
   cursor: pointer; }
 .impromptu-menu-wrapper .sidebar-nav li * {
-  display: block;
   text-decoration: none;
   color: #999999; }
 .impromptu-menu-wrapper .sidebar-nav li *:hover {

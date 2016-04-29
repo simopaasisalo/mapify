@@ -156,8 +156,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
                 let layer = this.createChoroplethLayer(layerData);
                 delete (layerData.visOptions.colorOptions as any).style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
-                delete (layerData.visOptions.colorOptions as any).onEachFeature;
-                delete (layerData.visOptions.colorOptions as any).pointToLayer;
                 layer.addTo(_map);
                 layerData.layer = layer;
 
@@ -176,7 +174,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         else if (radius > opt.sizeUpperLimit)
                             radius = opt.sizeUpperLimit;
                         layer.setRadius(radius);
-                        //calculate min and max values and radii
+                        //calculate min and max values and -radii
                         if (!opt.actualMaxValue && !opt.actualMinValue) {
                             opt.actualMinValue = val;
                             opt.actualMaxValue = val;
@@ -255,7 +253,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
         let options: L.GeoJSONOptions = {
             pointToLayer: layerData.visOptions.pointToLayer.bind(this),
-            onEachFeature: this.defaultVisOptions.onEachFeature,
+            onEachFeature: layerData.visOptions.onEachFeature ? layerData.visOptions.onEachFeature : this.defaultVisOptions.onEachFeature,
             style: style,
         }
 

@@ -16,6 +16,7 @@ interface IMenuStates {
     symbolOptionsShown?: boolean,
     filterOptionsShown?: boolean,
     legendOptionsShown?: boolean,
+    popupOptionsShown?: boolean,
     activeLayer?: ILayerData,
 
 }
@@ -113,4 +114,12 @@ interface ILegendMenuStates {
     showLegend?: boolean,
     horizontal?: boolean,
     title?: string,
+}
+
+interface IPopUpMenuProps extends ISubMenuProps {
+    saveSelection: (headers: IHeader[]) => void,
+}
+
+interface IPopUpMenuStates {
+    shownHeaders: IHeader[],
 }

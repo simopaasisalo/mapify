@@ -53,7 +53,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
 
         });
     }
-    variableChanged(e) {
+    choroVariableChanged(e) {
         this.setState({
             choroFieldName: e.value,
             opacityField: e.value
@@ -173,8 +173,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                             <h4>Select the variable to color by</h4>
                             <Select
                                 options={this.props.headers}
-                                onChange={this.variableChanged.bind(this) }
+                                onChange={this.choroVariableChanged.bind(this) }
                                 value={this.state.choroFieldName}
+                                clearable={false}
                                 />
                             <h4>Select the color scale</h4>
                             <Select
