@@ -52,11 +52,8 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
             for (let i of head) {
                 headers.push({ value: i.name, label: i.name, type: i.type });
             }
-            console.log(headers)
-            this.setState({
-                delimiter: delim,
-                headers: headers,
-            })
+            this.state.headers = headers; //direct manipulate state because the values are passed instantly to the saveValues-method
+            this.state.delimiter = delim;
         }
         if (this.state.content) {
             this.props.saveValues(this.state);

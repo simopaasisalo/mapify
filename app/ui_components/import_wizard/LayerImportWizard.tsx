@@ -59,7 +59,6 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
             values.headers = fileInfo.headers;
             values.delimiter = fileInfo.delimiter;
             values.fileExtension = fileInfo.fileExtension;
-            console.log(values)
             this.nextStep();
         }
     }

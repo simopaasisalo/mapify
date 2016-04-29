@@ -108,7 +108,6 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
 
     }
 
-
     deleteLayer(id: number) {
         this.props.deleteLayer(id);
     }
