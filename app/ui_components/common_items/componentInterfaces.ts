@@ -159,6 +159,7 @@ interface IColorMenuStates {
     baseColor?: string,
     borderColor?: string,
     colorSelectOpen?: boolean,
+    revertChoroplethScheme?: boolean,
     /**
      * The name of the property being edited
      */
@@ -173,7 +174,8 @@ interface IColorMenuStates {
 
 interface IColorSchemeProps {
     gradientName: string,
-    steps: number
+    steps: number,
+    revert: boolean,
 }
 
 /** The color options to transfer between the menu and the main app */
@@ -201,6 +203,10 @@ interface IColorOptions extends L.PathOptions {
      * The Chroma-js method to calculate colors. Default q->quantiles
      */
     mode: string,
+    /**
+     * Revert the color scheme
+     */
+    revert: boolean,
 
 }
 interface ISymbolMenuProps extends ISubMenuProps {

@@ -31,6 +31,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : this.props.headers[0].label,
                 colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
                 useMultipleColors: this.props.isChoropleth,
+                revertChoroplethScheme: false,
             };
     }
     shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
@@ -42,7 +43,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             nextState.baseColor !== this.state.baseColor ||
             nextState.borderColor !== this.state.borderColor ||
             nextState.colorSelectOpen !== this.state.colorSelectOpen ||
-            nextState.useMultipleColors !== this.state.useMultipleColors;
+            nextState.useMultipleColors !== this.state.useMultipleColors ||
+            nextState.revertChoroplethScheme !== this.state.revertChoroplethScheme;
     }
     baseColorChanged(color) {
         this.setState({
@@ -70,7 +72,21 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     multipleColorsChanged(e) {
         this.setState({
             useMultipleColors: e.target.checked
-        })
+        });
+    }
+    revertChanged(e) {
+        let scheme = this.state.colorScheme;
+        this.setState({
+            revertChoroplethScheme: e.target.checked,
+            colorScheme: '',
+        });
+        window.setTimeout(dirtyHack.bind(this), 5);
+
+        function dirtyHack() {
+            this.setState({
+                colorScheme: scheme
+            });
+        }
     }
     toggleColorPick(property: string) {
         let startColor;
@@ -88,8 +104,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             startColor: startColor,
         });
     }
-    renderOption(option) {
-        return <ColorScheme gradientName={option.value} steps = {100} />;
+    renderScheme(option) {
+        return <ColorScheme gradientName={option.value} steps = {100} revert={this.state.revertChoroplethScheme}/>;
     }
     saveOptions() {
         this.props.saveValues({
@@ -101,6 +117,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             opacity: this.state.opacity,
             fillColor: this.state.useMultipleColors ? '' : this.state.baseColor,
             color: this.state.borderColor,
+            revert: this.state.revertChoroplethScheme,
         });
     }
     render() {
@@ -147,7 +164,6 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                         <ColorPicker.SketchPicker
                             color={ this.state.startColor}
                             onChange={this.baseColorChanged.bind(this) }
-                            display={false}
                             />
                     </div>
                 }
@@ -162,12 +178,16 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                 />
                             <h4>Select the color scale</h4>
                             <Select
+                                clearable = {false}
+                                searchable = {false}
                                 options = {_gradientOptions}
-                                optionRenderer={this.renderOption}
-                                valueRenderer = {this.renderOption}
+                                optionRenderer={this.renderScheme.bind(this) }
+                                valueRenderer = {this.renderScheme.bind(this) }
                                 onChange={this.schemeChanged.bind(this) }
                                 value={this.state.colorScheme}
                                 />
+                            <label htmlFor='revertSelect'>Revert</label>
+                            <input id='revertSelect' type='checkbox' onChange={this.revertChanged.bind(this) } checked={this.state.revertChoroplethScheme}/>
                         </div>
                         : null
                 }

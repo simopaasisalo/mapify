@@ -30,6 +30,7 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
         colorScheme: 'Greys',
         steps: 7,
         mode: 'q',
+        revert: false,
     }
 
     private defaultVisOptions: IVisualizationOptions = {
@@ -229,7 +230,9 @@ export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
 
         opts.limits = chroma.limits(values, opts.mode, opts.steps);
         opts.colors = chroma.scale(opts.colorScheme).colors(opts.steps);
-
+        if (opts.revert) {
+            opts.colors.reverse();
+        }
         let style = function(feature) {
             function getColor(value: number) {
                 if (!isNaN(value)) {
