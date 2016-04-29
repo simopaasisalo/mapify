@@ -19,7 +19,7 @@ let _map: L.Map;
 
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 
-export class MapMain extends React.Component<IMapMainProps, IMapMainStates>{
+export class MapMain extends React.Component<{}, IMapMainStates>{
 
 
     private defaultColorOptions: IColorOptions = {
