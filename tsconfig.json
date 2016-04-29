@@ -22,7 +22,6 @@
     ],
 "files":[
 "typings/main.d.ts",
-"typings-custom/leaflet-choropleth/index.d.ts",
 "app/ui_components/common_items/commonInterfaces.ts",
 "app/ui_components/menu/menuInterfaces.ts",
 "app/ui_components/import_wizard/importInterfaces.ts",
