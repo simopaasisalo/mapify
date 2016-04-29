@@ -8,7 +8,6 @@ import {LayerTypes} from './common_items/common';
 import {Filter} from './misc/Filter';
 import {Legend} from './misc/Legend';
 import 'leaflet';
-import 'leaflet-choropleth';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
 let _mapInitModel = new MapInitModel();
