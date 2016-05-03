@@ -22,7 +22,7 @@ export class PopUpMenu extends React.Component<IPopUpMenuProps, IPopUpMenuStates
     render() {
         return (!this.props.isVisible ? null :
             <div className="mapify-options">
-                <h4>Select the variables to show</h4>
+                <label>Select the variables to show</label>
                 <Select
                     options={this.props.headers}
                     multi

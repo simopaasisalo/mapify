@@ -64,15 +64,33 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
         }
     }
     render() {
+        let dropStyle = {
+            height: 100,
+            border: '1px dotted #549341',
+            borderRadius: 15,
+            margin: 5,
+            textAlign: 'center',
+            lineHeight: '100px',
+            color: 'grey',
+            fontWeight: 'bold'
+        }
         return (
             <div>
-                <h2> Upload the file containing the data </h2>
-                <Dropzone onDrop={this.onDrop.bind(this) }>
-                    <div>Drop file or click to open upload menu</div>
-                </Dropzone>
-                <input type="text" onChange={this.layerNameChanged.bind(this) } value={this.state.layerName}/>
-                <button onClick={this.goBack.bind(this) }>Previous</button>
-                <button onClick={this.proceed.bind(this) }>Continue</button>
+                <div>
+                    <div className = 'dialogHeader'>
+                        <h2> Upload the file containing the data </h2>
+                    </div>
+                    <Dropzone
+                        style={dropStyle}
+                        onDrop={this.onDrop.bind(this) }>
+                        Drop file or click to open upload menu
+                    </Dropzone>
+                    <label>Give a name to the layer</label>
+                    <input type="text" onChange={this.layerNameChanged.bind(this) } value={this.state.layerName}/>
+
+                </div>
+                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this) }>Previous</button>
+                <button className='primaryButton' style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Continue</button>
             </div>
         );
     }

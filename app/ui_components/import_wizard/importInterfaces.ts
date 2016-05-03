@@ -8,7 +8,7 @@ interface ILayerImportStates {
 }
 
 /** The property interface for MapType-components (shown when the user selects the type of a new layer) */
-interface IMapTypeProps {
+interface ILayerTypeProps {
     /** The name of the map type; i.e. Choropleth Map*/
     name: string,
     /** The layer type as defined in Common.LayerTypes  */
@@ -17,10 +17,9 @@ interface IMapTypeProps {
     description: string,
     /** The url of an example image*/
     imageLocation: string,
-    /** Is the map type available (==implemented)? */
-    enabled: boolean,
     /** The selection event */
     onClick: (type: LayerTypes) => void,
+    selected: boolean,
 }
 
 /** The property interface for the LayerTypeSelect-view (the first view of the import wizard) */

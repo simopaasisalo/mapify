@@ -170,14 +170,14 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 {
                     this.state.useMultipleColors ?
                         <div>
-                            <h4>Select the variable to color by</h4>
+                            <label>Select the variable to color by</label>
                             <Select
                                 options={this.props.headers}
                                 onChange={this.choroVariableChanged.bind(this) }
                                 value={this.state.choroFieldName}
                                 clearable={false}
                                 />
-                            <h4>Select the color scale</h4>
+                            <label>Select the color scale</label>
                             <Select
                                 clearable = {false}
                                 searchable = {false}

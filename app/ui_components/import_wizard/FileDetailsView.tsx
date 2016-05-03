@@ -58,25 +58,29 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
     }
     render() {
         return <div>
-            <h2>Just a few more details</h2>
-            <h4>Select the latitude/Y field name</h4>
-            <Select
-                options={this.props.headers}
-                onChange={this.latitudeSelectionChanged.bind(this) }
-                value={this.state.latField}
-                placeholder='Latitude field...'/>
-            <h4>Select the longitude/X field name</h4>
-            <Select
-                options={this.props.headers}
-                onChange={this.longitudeSelectionChanged.bind(this) }
-                value={this.state.lonField}/>
-            <h4>Select the coordinate system</h4>
-            <Select
-                options={coords}
-                onChange={this.coordinateSystemChanged.bind(this) }
-                value={this.state.coordinateSystem}/>
-            <button onClick={this.goBack.bind(this) }>Go back</button>
-            <button onClick={this.proceed.bind(this) }>Mapify!</button>
+            <div>
+                <div className = 'dialogHeader'>
+                    <h2>Just a few more details</h2>
+                </div>
+                <label>Select the latitude/Y field name</label>
+                <Select
+                    options={this.props.headers}
+                    onChange={this.latitudeSelectionChanged.bind(this) }
+                    value={this.state.latField}
+                    placeholder='Latitude field...'/>
+                <label>Select the longitude/X field name</label>
+                <Select
+                    options={this.props.headers}
+                    onChange={this.longitudeSelectionChanged.bind(this) }
+                    value={this.state.lonField}/>
+                <label>Select the coordinate system</label>
+                <Select
+                    options={coords}
+                    onChange={this.coordinateSystemChanged.bind(this) }
+                    value={this.state.coordinateSystem}/>
+            </div>
+            <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this) }>Go back</button>
+            <button className='primaryButton' style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Mapify!</button>
         </div>
     }
 

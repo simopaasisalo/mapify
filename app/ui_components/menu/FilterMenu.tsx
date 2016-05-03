@@ -32,13 +32,13 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
     render() {
         return !this.props.isVisible ? null :
             <div>
-                <h4>Select the variable by which to filter</h4>
+                <label>Select the variable by which to filter</label>
                 <Select
                     options={this.props.headers}
                     onChange={this.filterVariableChanged.bind(this) }
                     value={this.state.selectedField}
                     />
-                <h4>Give a name to the filter</h4>
+                <label>Give a name to the filter</label>
                 <input type="text" onChange={this.filterTitleChanged.bind(this) } value={this.state.filterTitle}/>
                 <button onClick={this.createFilter.bind(this) }>Create filter</button>
             </div>

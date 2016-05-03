@@ -1,7 +1,5 @@
-/// <reference path="./MapType.tsx"/>
-
 import * as React from 'react';
-import {MapType} from "./MapType";
+import {LayerType} from "./LayerType";
 import {LayerTypes} from "../common_items/common";
 
 export class LayerTypeSelectView extends React.Component<ILayerTypeSelectProps, ILayerTypeSelectStates>{
@@ -28,43 +26,34 @@ export class LayerTypeSelectView extends React.Component<ILayerTypeSelectProps, 
 
     public render() {
         return (
-            <div className = 'dialog maptypeselection'>
-                <div className = 'maptypelist'>
-                    <h2>Select a map type to create</h2>
-                    <MapType
+            <div>
+                <div style={{ height: '80%' }}>
+                    <div className = 'dialogHeader'>
+                        <h2>Select a map type to create</h2>
+                    </div>
+                    <LayerType
                         name = 'Choropleth'
                         type = {LayerTypes.ChoroplethMap}
                         imageLocation = 'app/images/choropreview.png'
                         description = 'Map type description TODO'
-                        enabled = {true}
                         onClick = {this.selectMapType.bind(this) }
+                        selected = {this.state.selectedType == LayerTypes.ChoroplethMap}
                         />
-                    <MapType
+                    <LayerType
                         name = 'Symbol map'
                         type = {LayerTypes.SymbolMap}
                         imageLocation = 'app/images/symbolpreview.png'
                         description = 'All images are placeholders'
-                        enabled = {true}
                         onClick = {this.selectMapType.bind(this) }
-
+                        selected = {this.state.selectedType == LayerTypes.SymbolMap}
                         />
 
 
                 </div>
-                <button onClick={this.cancel.bind(this) }>Cancel</button>
-                <button onClick={this.proceed.bind(this) }>Continue</button>
-            </div>
+                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={this.cancel.bind(this) }>Cancel</button>
+                <button className='primaryButton' style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed.bind(this) }>Continue</button>
+            </div >
         );
     }
-
-    // <MapType
-    //     name = 'Dot map'
-    //     type = {LayerTypes.DotMap}
-    //     imageLocation = 'app/images/dotpreview.png'
-    //     description = 'make sideways scrollable'
-    //     enabled = {false}
-    //     onClick = {this.selectMapType.bind(this) }
-    //
-    //     />
 
 }

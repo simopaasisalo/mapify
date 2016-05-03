@@ -1,3 +1,9 @@
+body{
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+}
 /*base divs*/
 #content{
   width: 100%;
@@ -10,7 +16,19 @@
 }
 
 h2,h3{
-  text-align: center;
+  text-align: center;;
+  margin: 0
+}
+.menuHeader{
+  line-height: 48px !important;
+  width: 100%;
+  margin: 0;
+}
+
+.dialogHeader{
+  height: 40;
+  background: #699ef4;
+  color: white;
 }
 
 .draggable{
@@ -21,4 +39,45 @@ h2,h3{
   border-radius: 15px;
   border: 2px solid gray;
   float: left;
+}
+
+.primaryButton {
+	background-color:#699ef4;
+	text-indent:0;
+	border:1px solid #549341;
+  border-radius: 5px;
+	display:inline-block;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+	height:40px;
+	line-height:40px;
+	width:131px;
+	text-decoration:none;
+	text-align:center;
+}.primaryButton:hover {
+	background-color:#1e62d0;
+}
+/* This button was generated using CSSButtonGenerator.com */
+
+.secondaryButton{
+  background-color:transparent;
+	text-indent:0;
+	border:1px solid transparent;
+  border-radius: 5px;
+	display:inline-block;
+	color:#c1c1c1;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+	height:40px;
+	line-height:40px;
+	width:131px;
+	text-decoration:none;
+	text-align:center;
+}.secondaryButton:hover {
+	border: 1px solid #c1c1c1;
 }

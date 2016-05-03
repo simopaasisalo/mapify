@@ -407,14 +407,23 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
 
     render() {
-
+        let modalStyle = {
+            content: {
+                border: '4px solid #699ef4',
+                borderRadius: '15px',
+                padding: '0px'
+            }
+        }
         return (
             <div>
                 <div id='map'/>
-                <Modal isOpen={this.state.importWizardShown}>
+                <Modal
+                    isOpen={this.state.importWizardShown}
+                    style = {modalStyle}>
                     <LayerImportWizard
                         submit={this.layerImportSubmit.bind(this) }
                         cancel={this.cancelLayerImport.bind(this) }
+
                         />
                 </Modal>
                 <MapifyMenu

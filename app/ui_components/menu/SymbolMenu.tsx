@@ -54,7 +54,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
         return (
             !this.props.isVisible ? null :
                 <div className="mapify-options">
-                    <h4>Select the variable to scale size by</h4>
+                    <label>Select the variable to scale size by</label>
                     <Select
                         options={this.props.headers}
                         onChange={this.sizeVariableChanged.bind(this) }
