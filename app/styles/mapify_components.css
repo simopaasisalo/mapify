@@ -1,0 +1,90 @@
+body{
+  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+}
+/*base divs*/
+#content{
+  width: 100%;
+  height: 100%;
+}
+
+#map{
+  width: 100%;
+  height: 100%;
+}
+
+h2,h3{
+  text-align: center;;
+  margin: 0
+}
+.menuHeader{
+  line-height: 48px !important;
+  width: 100%;
+  margin: 0;
+}
+.menuHeader:hover{
+  background-color: #415c93 !important;
+}
+.mapify-options{
+  background-color: #1a263f;
+  cursor: default;
+}
+
+.dialogHeader{
+  height: 40;
+  background: #6891e2;
+  color: white;
+}
+
+.draggable{
+  position: absolute;
+  left: 0px;
+  top: 400px;
+  background: white;
+  border-radius: 15px;
+  border: 2px solid gray;
+  float: left;
+}
+
+.primaryButton {
+	background-color:#6891e2;
+	text-indent:0;
+	border:1px solid #549341;
+  border-radius: 5px;
+	display:inline-block;
+	color:#ffffff;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+	height:40px;
+	line-height:40px;
+	width:131px;
+	text-decoration:none;
+	text-align:center;
+}.primaryButton:hover {
+	background-color:#415c93;
+}
+/* This button was generated using CSSButtonGenerator.com */
+
+.secondaryButton{
+  background-color:transparent;
+	text-indent:0;
+	border:1px solid transparent;
+  border-radius: 5px;
+	display:inline-block;
+	color:#c1c1c1;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+	height:40px;
+	line-height:40px;
+	width:131px;
+	text-decoration:none;
+	text-align:center;
+}.secondaryButton:hover {
+	border: 1px solid #c1c1c1;
+}
