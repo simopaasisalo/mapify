@@ -31,7 +31,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
     }
     render() {
         return !this.props.isVisible ? null :
-            <div>
+            <div className="mapify-options">
                 <label>Select the variable by which to filter</label>
                 <Select
                     options={this.props.headers}

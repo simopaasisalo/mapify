@@ -165,35 +165,36 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     layerData.layer.setStyle(layerData.visOptions.colorOptions);
                 }
                 let opt = layerData.visOptions.symbolOptions;
-                if (opt.sizeVariable) {
-                    (layerData.layer as any).eachLayer(function(layer) {
-                        let val = layer.feature.properties[opt.sizeVariable];
-                        let radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
+                (layerData.layer as any).eachLayer(function(layer) {
+                    let val = layer.feature.properties[opt.sizeVariable];
+                    let radius = 10;
+                    if (opt.sizeVariable) {
+                        radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
                         if (radius < opt.sizeLowerLimit)
                             radius = opt.sizeLowerLimit;
                         else if (radius > opt.sizeUpperLimit)
                             radius = opt.sizeUpperLimit;
-                        layer.setRadius(radius);
-                        //calculate min and max values and -radii
-                        if (!opt.actualMaxValue && !opt.actualMinValue) {
-                            opt.actualMinValue = val;
-                            opt.actualMaxValue = val;
+                    }
+                    layer.setRadius(radius);
+                    //calculate min and max values and -radii
+                    if (!opt.actualMaxValue && !opt.actualMinValue) {
+                        opt.actualMinValue = val;
+                        opt.actualMaxValue = val;
+                        opt.actualMaxRadius = radius;
+                        opt.actualMinRadius = radius;
+                    }
+                    else {
+                        if (val > opt.actualMaxValue) {
                             opt.actualMaxRadius = radius;
+                            opt.actualMaxValue = val;
+                        }
+                        if (radius < opt.actualMinRadius) {
                             opt.actualMinRadius = radius;
+                            opt.actualMinValue = val;
                         }
-                        else {
-                            if (val > opt.actualMaxValue) {
-                                opt.actualMaxRadius = radius;
-                                opt.actualMaxValue = val;
-                            }
-                            if (radius < opt.actualMinRadius) {
-                                opt.actualMinRadius = radius;
-                                opt.actualMinValue = val;
-                            }
 
-                        }
-                    });
-                }
+                    }
+                });
             }
             layers.push(layerData);
             this.setState({
@@ -201,8 +202,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             });
         }
     }
-
-
 
     /**
      * createChoroplethLayer - Create a new choropleth layer by leaflet-choropleth.js
@@ -248,6 +247,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 opacity: opts.opacity,
                 fillColor: getColor(feature.properties[opts.choroplethFieldName]),
                 color: opts.color,
+                weight: 1,
             }
         }
 
@@ -409,7 +409,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     render() {
         let modalStyle = {
             content: {
-                border: '4px solid #699ef4',
+                border: '4px solid #6891e2',
                 borderRadius: '15px',
                 padding: '0px'
             }

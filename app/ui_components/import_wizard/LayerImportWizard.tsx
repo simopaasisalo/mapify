@@ -4,6 +4,8 @@ import {LayerTypeSelectView} from './LayerTypeSelectView';
 import {FileUploadView} from './FileUploadView';
 import {FileDetailsView} from './FileDetailsView';
 import {FilePreProcessModel} from '../../models/FilePreProcessModel';
+import {choroplethSample, symbolSample} from './FileSamples';
+import {LayerTypes} from "../common_items/common";
 
 let _fileModel = new FilePreProcessModel();
 
@@ -94,10 +96,29 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         };
         this.props.submit(submitData);
     }
+
+    loadDemo(type: LayerTypes) {
+        values.layerType = type;
+        let fileInfo: IFileUploadStates = {
+            fileExtension: 'geojson',
+
+        }
+        if (type === LayerTypes.ChoroplethMap) {
+            fileInfo.layerName = 'US States';
+            fileInfo.content = choroplethSample;
+        }
+        else if (type === LayerTypes.SymbolMap) {
+          fileInfo.layerName = 'Air Particle Demo';
+          fileInfo.content = symbolSample;
+        }
+        this.setFileInfo(fileInfo);
+
+    }
     render() {
         switch (this.state.step) {
             case 0:
                 return <LayerTypeSelectView
+                    loadDemo={this.loadDemo.bind(this) }
                     saveValues={this.setLayerType.bind(this) }
                     cancel = {this.cancel.bind(this) }
                     />;

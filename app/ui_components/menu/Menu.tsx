@@ -212,7 +212,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     Options
                 </Menu.Brand>
                 <Menu.Item>
-                    <p className="menuHeader fa fa-bars" onClick = {this.changeActiveMenu.bind(this, 0) }> Layers </p>
+                    <p
+                        className="menuHeader fa fa-bars"
+                        onClick = {this.changeActiveMenu.bind(this, 0) }
+                        style={{ backgroundColor: this.state.layerOptionsShown ? '#1a263f' : '#293c60' }}> Layers </p>
                     <LayerMenu
                         isVisible = {this.state.layerOptionsShown}
                         layers={this.props.layers}
@@ -231,7 +234,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     />
 
                 <Menu.Item>
-                    <p className="menuHeader fa fa-paint-brush" onClick = {this.changeActiveMenu.bind(this, 1) }> Colors </p>
+                    <p
+                        className="menuHeader fa fa-paint-brush"
+                        onClick = {this.changeActiveMenu.bind(this, 1) }
+                        style={{ backgroundColor: this.state.colorOptionsShown ? '#1a263f' : '#293c60' }}> Colors </p>
                     <ColorMenu
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                         saveValues = {this.refreshColorOptions.bind(this) }
@@ -242,7 +248,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 </Menu.Item>
                 {this.state.activeLayer && this.state.activeLayer.layerType != LayerTypes.ChoroplethMap ?
                     <Menu.Item >
-                        <p className="menuHeader fa fa-map-marker" onClick = {this.changeActiveMenu.bind(this, 2) }> Symbols </p>
+                        <p
+                            className="menuHeader fa fa-map-marker"
+                            onClick = {this.changeActiveMenu.bind(this, 2) }
+                            style={{ backgroundColor: this.state.symbolOptionsShown ? '#1a263f' : '#293c60' }}> Symbols </p>
                         <SymbolMenu
                             headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                             saveValues = {this.refreshSymbolOptions.bind(this) }
@@ -253,7 +262,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     : <div/>
                 }
                 <Menu.Item>
-                    <p className="menuHeader fa fa-sliders" onClick = {this.changeActiveMenu.bind(this, 3) }> Filters </p>
+                    <p
+                        className="menuHeader fa fa-sliders"
+                        onClick = {this.changeActiveMenu.bind(this, 3) }
+                        style={{ backgroundColor: this.state.filterOptionsShown ? '#1a263f' : '#293c60' }}> Filters </p>
 
                     <FilterMenu
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
@@ -261,7 +273,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         isVisible = {this.state.filterOptionsShown}/>
                 </Menu.Item>
                 <Menu.Item>
-                    <p className="menuHeader fa fa-map-o" onClick = {this.changeActiveMenu.bind(this, 4) }> Legend </p>
+                    <p
+                        className="menuHeader fa fa-map-o"
+                        onClick = {this.changeActiveMenu.bind(this, 4) }
+                        style={{ backgroundColor: this.state.legendOptionsShown ? '#1a263f' : '#293c60' }}> Legend </p>
                     <LegendMenu
                         valuesChanged={this.legendStatusChanged.bind(this) }
                         isVisible = {this.state.legendOptionsShown}/>
@@ -269,7 +284,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
 
                 </Menu.Item >
                 <Menu.Item>
-                    <p className="menuHeader fa fa-newspaper-o" onClick = {this.changeActiveMenu.bind(this, 5) }> Pop-ups </p>
+                    <p
+                        className="menuHeader fa fa-newspaper-o"
+                        onClick = {this.changeActiveMenu.bind(this, 5) }
+                        style={{ backgroundColor: this.state.popupOptionsShown ? '#1a263f' : '#293c60' }}> Pop-ups </p>
                     <PopUpMenu
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
                         saveSelection = {this.changePopUpHeaders.bind(this) }

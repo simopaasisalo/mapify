@@ -38,6 +38,7 @@ export class LayerTypeSelectView extends React.Component<ILayerTypeSelectProps, 
                         description = 'Map type description TODO'
                         onClick = {this.selectMapType.bind(this) }
                         selected = {this.state.selectedType == LayerTypes.ChoroplethMap}
+                        loadDemo = {this.props.loadDemo}
                         />
                     <LayerType
                         name = 'Symbol map'
@@ -46,6 +47,8 @@ export class LayerTypeSelectView extends React.Component<ILayerTypeSelectProps, 
                         description = 'All images are placeholders'
                         onClick = {this.selectMapType.bind(this) }
                         selected = {this.state.selectedType == LayerTypes.SymbolMap}
+                        loadDemo = {this.props.loadDemo}
+
                         />
 
 

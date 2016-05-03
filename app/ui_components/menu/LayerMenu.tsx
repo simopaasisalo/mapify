@@ -83,7 +83,7 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
             lineHeight: '20px',
         }
         return (!this.props.isVisible ? null :
-            <div>
+            <div className="mapify-options">
                 <label>Drag and drop to reorder layers on map</label>
                 <Sortable className='layerList' onChange={this.handleSort.bind(this) }>
                     {this.state.order.map(function(layer) {

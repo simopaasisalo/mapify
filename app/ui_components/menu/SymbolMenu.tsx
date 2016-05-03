@@ -24,7 +24,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
 
     sizeVariableChanged(val) {
         this.setState({
-            sizeVar: val.value
+            sizeVar: val ? val.value : '',
         });
     }
     sizeMultiplierChanged(e) {
@@ -60,7 +60,6 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                         onChange={this.sizeVariableChanged.bind(this) }
                         value={this.state.sizeVar}
                         />
-                    <br/>
                     <label>Select the size multiplier</label>
                     <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={0.1} max={10} step={0.1}/>
                     <br/>

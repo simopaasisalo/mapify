@@ -5,7 +5,10 @@ import {LayerTypes} from "../common_items/common";
  * The component shown in the map type selection window
  */
 export class LayerType extends React.Component<ILayerTypeProps, {}>{
-    public render() {
+    loadDemo() {
+        this.props.loadDemo(this.props.type);
+    }
+    render() {
         let style = {
             display: 'inline-block',
             borderRadius: '25px',
@@ -19,7 +22,9 @@ export class LayerType extends React.Component<ILayerTypeProps, {}>{
             <div style = {style}
                 onClick={this.props.onClick.bind(this, this.props.type) }>
                 <h3>{this.props.name}</h3>
+                <img src={this.props.imageLocation} alt={this.props.name} style={{ width: '100%' }}/>
                 <p>{this.props.description}</p>
+                <button onClick={this.loadDemo.bind(this) } className='primaryButton'>Try demo</button>
             </div>
         )
     }

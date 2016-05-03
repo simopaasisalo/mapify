@@ -28,12 +28,13 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
         this.props.valuesChanged(info);
     }
     render() {
-        return (!this.props.isVisible ? null : <div>
-            <label>Show legend</label>
-            <input type='checkbox' checked={this.state.showLegend} onChange={this.showLegendChanged.bind(this) }/>
-            <br/>
-            <label>Align horizontally</label>
-            <input type='checkbox' checked={this.state.horizontal} onChange={this.horizontalChanged.bind(this) }/>
-        </div >)
+        return (!this.props.isVisible ? null :
+            <div className="mapify-options">
+                <label>Show legend</label>
+                <input type='checkbox' checked={this.state.showLegend} onChange={this.showLegendChanged.bind(this) }/>
+                <br/>
+                <label>Align horizontally</label>
+                <input type='checkbox' checked={this.state.horizontal} onChange={this.horizontalChanged.bind(this) }/>
+            </div >)
     }
 }

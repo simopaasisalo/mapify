@@ -19,6 +19,8 @@ interface ILayerTypeProps {
     imageLocation: string,
     /** The selection event */
     onClick: (type: LayerTypes) => void,
+    /** The demo load button click event */
+    loadDemo: (type: LayerTypes) => void,
     selected: boolean,
 }
 
@@ -26,6 +28,9 @@ interface ILayerTypeProps {
 interface ILayerTypeSelectProps {
     /** saves the selected layer type to the import wizard */
     saveValues: (type: LayerTypes) => void,
+    /** skips the other steps, loads a sample of selected map type*/
+    loadDemo: (type: LayerTypes) => void,
+
     cancel: () => void,
 }
 
