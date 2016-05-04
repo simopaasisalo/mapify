@@ -59,8 +59,10 @@
 	var Filter_1 = __webpack_require__(250);
 	var Legend_1 = __webpack_require__(253);
 	__webpack_require__(249);
-	var Modal = __webpack_require__(254);
+	__webpack_require__(254);
+	var Modal = __webpack_require__(255);
 	var chroma = __webpack_require__(242);
+	var aweso;
 	var _mapInitModel = new MapInitModel_1.MapInitModel();
 	var _currentLayerId = 0;
 	var _currentFilterId = 0;
@@ -72,7 +74,8 @@
 	        _super.call(this);
 	        this.defaultColorOptions = {
 	            fillColor: '#E0E62D',
-	            fillOpacity: 1,
+	            fillOpacity: 0.8,
+	            opacity: 0.8,
 	            color: '#000',
 	            choroplethFieldName: '',
 	            colorScheme: 'Greys',
@@ -82,7 +85,7 @@
 	        };
 	        this.defaultVisOptions = {
 	            colorOptions: this.defaultColorOptions,
-	            symbolOptions: {},
+	            symbolOptions: { symbolType: common_1.SymbolTypes.Circle },
 	            onEachFeature: this.addPopupsToLayer,
 	            pointToLayer: (function (feature, latlng) {
 	                return L.circleMarker(latlng, this.defaultColorOptions);
@@ -164,51 +167,56 @@
 	    };
 	    MapMain.prototype.refreshLayer = function (layerData) {
 	        if (layerData) {
+	            _map.removeLayer(layerData.layer);
+	            var layer = (layerData.layerType === common_1.LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') ?
+	                this.createChoroplethLayer(layerData) :
+	                L.geoJson(layerData.geoJSON, layerData.visOptions);
+	            layer.addTo(_map);
+	            layerData.layer = layer;
 	            var layers = this.state.layers.filter(function (lyr) { return lyr.id != layerData.id; });
 	            if (layerData.layerType === common_1.LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
-	                _map.removeLayer(layerData.layer);
-	                var layer = this.createChoroplethLayer(layerData);
+	                var layer_1 = this.createChoroplethLayer(layerData);
 	                delete layerData.visOptions.colorOptions.style;
-	                layer.addTo(_map);
-	                layerData.layer = layer;
 	            }
 	            if (layerData.layerType === common_1.LayerTypes.SymbolMap) {
-	                if (!layerData.visOptions.colorOptions.choroplethFieldName) {
-	                    layerData.layer.setStyle(layerData.visOptions.colorOptions);
+	                var opt = layerData.visOptions.symbolOptions;
+	                if (opt.sizeVariable && opt.symbolType === common_1.SymbolTypes.Circle) {
+	                    createScaledSymbolLayer(opt);
 	                }
-	                var opt_1 = layerData.visOptions.symbolOptions;
-	                layerData.layer.eachLayer(function (layer) {
-	                    var val = layer.feature.properties[opt_1.sizeVariable];
-	                    var radius = 10;
-	                    if (opt_1.sizeVariable) {
-	                        radius = Math.sqrt(val * opt_1.sizeMultiplier / Math.PI) * 2;
-	                        if (radius < opt_1.sizeLowerLimit)
-	                            radius = opt_1.sizeLowerLimit;
-	                        else if (radius > opt_1.sizeUpperLimit)
-	                            radius = opt_1.sizeUpperLimit;
-	                    }
-	                    layer.setRadius(radius);
-	                    if (!opt_1.actualMaxValue && !opt_1.actualMinValue) {
-	                        opt_1.actualMinValue = val;
-	                        opt_1.actualMaxValue = val;
-	                        opt_1.actualMaxRadius = radius;
-	                        opt_1.actualMinRadius = radius;
-	                    }
-	                    else {
-	                        if (val > opt_1.actualMaxValue) {
-	                            opt_1.actualMaxRadius = radius;
-	                            opt_1.actualMaxValue = val;
-	                        }
-	                        if (radius < opt_1.actualMinRadius) {
-	                            opt_1.actualMinRadius = radius;
-	                            opt_1.actualMinValue = val;
-	                        }
-	                    }
-	                });
 	            }
 	            layers.push(layerData);
 	            this.setState({
 	                layers: layers,
+	            });
+	        }
+	        function createScaledSymbolLayer(opt) {
+	            layerData.layer.eachLayer(function (layer) {
+	                var val = layer.feature.properties[opt.sizeVariable];
+	                var radius = 10;
+	                if (opt.sizeVariable) {
+	                    radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
+	                    if (radius < opt.sizeLowerLimit)
+	                        radius = opt.sizeLowerLimit;
+	                    else if (radius > opt.sizeUpperLimit)
+	                        radius = opt.sizeUpperLimit;
+	                }
+	                layer.setRadius(radius);
+	                if (!opt.actualMaxValue && !opt.actualMinValue) {
+	                    opt.actualMinValue = val;
+	                    opt.actualMaxValue = val;
+	                    opt.actualMaxRadius = radius;
+	                    opt.actualMinRadius = radius;
+	                }
+	                else {
+	                    if (val > opt.actualMaxValue) {
+	                        opt.actualMaxRadius = radius;
+	                        opt.actualMaxValue = val;
+	                    }
+	                    if (radius < opt.actualMinRadius) {
+	                        opt.actualMinRadius = radius;
+	                        opt.actualMinValue = val;
+	                    }
+	                }
 	            });
 	        }
 	    };
@@ -20186,6 +20194,13 @@
 	    LayerTypes[LayerTypes["HeatMap"] = 3] = "HeatMap";
 	})(LayerTypes || (LayerTypes = {}));
 	exports.LayerTypes = LayerTypes;
+	var SymbolTypes;
+	(function (SymbolTypes) {
+	    SymbolTypes[SymbolTypes["Circle"] = 0] = "Circle";
+	    SymbolTypes[SymbolTypes["Chart"] = 1] = "Chart";
+	    SymbolTypes[SymbolTypes["Icon"] = 2] = "Icon";
+	})(SymbolTypes || (SymbolTypes = {}));
+	exports.SymbolTypes = SymbolTypes;
 	var DefaultProjections = ['WGS84', 'EPSG:4269', 'EPSG:3857', 'ETRS-GK25FIN'];
 	exports.DefaultProjections = DefaultProjections;
 
@@ -24368,9 +24383,6 @@
 	    MapifyMenu.prototype.refreshColorOptions = function (options) {
 	        var lyr = this.state.activeLayer;
 	        lyr.visOptions.colorOptions = options;
-	        lyr.visOptions.pointToLayer = (function (feature, latlng) {
-	            return L.circleMarker(latlng, options);
-	        });
 	        this.setState({
 	            activeLayer: lyr
 	        });
@@ -24385,6 +24397,23 @@
 	        this.refreshMap();
 	    };
 	    MapifyMenu.prototype.refreshMap = function () {
+	        var lyr = this.state.activeLayer;
+	        lyr.visOptions.pointToLayer = (function (feature, latlng) {
+	            if (lyr.visOptions.symbolOptions.symbolType === common_1.SymbolTypes.Icon) {
+	                var customIcon = L.AwesomeMarkers.icon({
+	                    icon: lyr.visOptions.symbolOptions.iconFA,
+	                    prefix: 'fa',
+	                    markerColor: 'red'
+	                });
+	                return L.marker(latlng, { icon: customIcon });
+	            }
+	            else {
+	                return L.circleMarker(latlng, lyr.visOptions.colorOptions);
+	            }
+	        });
+	        this.setState({
+	            activeLayer: lyr,
+	        });
 	        this.props.refreshMap(this.state.activeLayer);
 	    };
 	    MapifyMenu.prototype.layerOrderChanged = function (order) {
@@ -24522,7 +24551,8 @@
 	        this.props.saveOrder(arr);
 	    };
 	    LayerMenu.prototype.render = function () {
-	        var style = {
+	        var layerStyle = {
+	            cursor: 'pointer',
 	            width: '90%',
 	            background: 'white',
 	            color: 'black',
@@ -24534,8 +24564,8 @@
 	            lineHeight: '20px',
 	        };
 	        return (!this.props.isVisible ? null :
-	            React.createElement("div", {className: "mapify-options"}, React.createElement("label", null, "Drag and drop to reorder layers on map"), React.createElement(Sortable, {className: 'layerList', onChange: this.handleSort.bind(this)}, this.state.order.map(function (layer) {
-	                return React.createElement("div", {style: style, key: layer.id, "data-id": layer.id}, layer.name, React.createElement("i", {className: "fa fa-times", onClick: this.deleteLayer.bind(this, layer.id)}));
+	            React.createElement("div", {className: "mapify-options"}, React.createElement("label", null, "Drag and drop to reorder"), React.createElement(Sortable, {className: 'layerList', onChange: this.handleSort.bind(this)}, this.state.order.map(function (layer) {
+	                return React.createElement("div", {style: layerStyle, key: layer.id, "data-id": layer.id}, layer.name, React.createElement("i", {className: "fa fa-times", onClick: this.deleteLayer.bind(this, layer.id)}));
 	            }, this)), React.createElement("button", {onClick: this.saveOrder.bind(this)}, "Save"), React.createElement("button", {onClick: this.addNewLayer.bind(this)}, "Add new layer")));
 	    };
 	    return LayerMenu;
@@ -25973,7 +26003,7 @@
 	                colorSelectOpen: false,
 	                baseColor: '#E0E62D',
 	                borderColor: '#000',
-	                opacity: 1,
+	                opacity: 0.7,
 	                choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : this.props.headers[0].label,
 	                colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
 	                useMultipleColors: this.props.isChoropleth,
@@ -26066,6 +26096,7 @@
 	    };
 	    ColorMenu.prototype.render = function () {
 	        var currentColorBlockStyle = {
+	            cursor: 'pointer',
 	            width: 100,
 	            height: 70,
 	            borderRadius: 15,
@@ -26075,6 +26106,7 @@
 	            color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.baseColor.substr(1), 16)).toString(16))).slice(-6)
 	        };
 	        var borderColorBlockStyle = {
+	            cursor: 'pointer',
 	            width: 100,
 	            height: 70,
 	            borderRadius: 15,
@@ -51829,6 +51861,65 @@
 	};
 	var React = __webpack_require__(1);
 	var Select = __webpack_require__(172);
+	var common_1 = __webpack_require__(162);
+	var faIcons = [
+	    'fa-anchor',
+	    'fa-asterisk',
+	    'fa-automobile',
+	    'fa-motorcycle',
+	    'fa-ship',
+	    'fa-bank',
+	    'fa-shopping-bag',
+	    'fa-shopping-cart',
+	    'fa-bed',
+	    'fa-bell',
+	    'fa-binoculars',
+	    'fa-bicycle',
+	    'fa-bug',
+	    'fa-paw',
+	    'fa-camera',
+	    'fa-cloud',
+	    'fa-bolt',
+	    'fa-sun-o',
+	    'fa-beer',
+	    'fa-coffee',
+	    'fa-cutlery',
+	    'fa-diamond',
+	    'fa-exclamation',
+	    'fa-exclamation-triangle',
+	    'fa-female',
+	    'fa-male',
+	    'fa-fire',
+	    'fa-fire-extinguisher',
+	    'fa-flag',
+	    'fa-futbol-o',
+	    'fa-heart-o',
+	    'fa-home',
+	    'fa-info',
+	    'fa-leaf',
+	    'fa-tree',
+	    'fa-map-marker',
+	    'fa-minus-circle',
+	    'fa-pencil',
+	    'fa-question-circle',
+	    'fa-power-off',
+	    'fa-recycle',
+	    'fa-remove',
+	    'fa-road',
+	    'fa-rocket',
+	    'fa-search',
+	    'fa-star-o',
+	    'fa-thumb-tack',
+	    'fa-thumbs-o-up',
+	    'fa-thumbs-o-down',
+	    'fa-tint',
+	    'fa-trash',
+	    'fa-umbrella',
+	    'fa-wifi',
+	    'fa-wrench',
+	    'fa-life-ring',
+	    'fa-wheelchair',
+	];
 	var SymbolMenu = (function (_super) {
 	    __extends(SymbolMenu, _super);
 	    function SymbolMenu(props) {
@@ -51839,6 +51930,8 @@
 	                sizeMultiplier: 1,
 	                sizeLowLimit: 0,
 	                sizeUpLimit: 90,
+	                symbolType: common_1.SymbolTypes.Circle,
+	                iconFA: 'fa-anchor',
 	            };
 	    }
 	    SymbolMenu.prototype.shouldComponentUpdate = function (nextProps, nextState) {
@@ -51847,7 +51940,14 @@
 	            nextState.sizeVar !== this.state.sizeVar ||
 	            nextState.sizeMultiplier !== this.state.sizeMultiplier ||
 	            nextState.sizeLowLimit !== this.state.sizeLowLimit ||
-	            nextState.sizeUpLimit !== this.state.sizeUpLimit;
+	            nextState.sizeUpLimit !== this.state.sizeUpLimit ||
+	            nextState.symbolType !== this.state.symbolType ||
+	            nextState.iconFA !== this.state.iconFA;
+	    };
+	    SymbolMenu.prototype.typeChanged = function (type) {
+	        this.setState({
+	            symbolType: type,
+	        });
 	    };
 	    SymbolMenu.prototype.sizeVariableChanged = function (val) {
 	        this.setState({
@@ -51869,17 +51969,54 @@
 	            sizeUpLimit: e.currentTarget.valueAsNumber
 	        });
 	    };
+	    SymbolMenu.prototype.faIconChanged = function (icon) {
+	        this.setState({
+	            iconFA: icon,
+	        });
+	    };
 	    SymbolMenu.prototype.saveOptions = function () {
 	        this.props.saveValues({
 	            sizeVariable: this.state.sizeVar,
 	            sizeMultiplier: this.state.sizeMultiplier,
 	            sizeLowerLimit: this.state.sizeLowLimit,
 	            sizeUpperLimit: this.state.sizeUpLimit,
+	            symbolType: this.state.symbolType,
+	            iconFA: this.state.iconFA,
 	        });
+	    };
+	    SymbolMenu.prototype.getIcons = function (that) {
+	        var arr = [];
+	        var columnCount = 7;
+	        for (var i = 0; i < faIcons.length; i += columnCount) {
+	            arr.push(React.createElement("tr", {key: i}, getColumns(that, i).map(function (column) {
+	                return column;
+	            })));
+	        }
+	        function getColumns(that, i) {
+	            var columns = [];
+	            for (var c = 0; c < columnCount; c++) {
+	                var style = {
+	                    width: 30,
+	                    height: 30,
+	                    border: that.state.iconFA === faIcons[i + c] ? '1px solid #999999' : '1px solid #1a263f',
+	                    lineHeight: '30px',
+	                    textAlign: 'center'
+	                };
+	                columns.push(React.createElement("td", {style: style, key: i + c, className: 'fa ' + faIcons[i + c], onClick: that.faIconChanged.bind(that, faIcons[i + c])}));
+	            }
+	            return columns;
+	        }
+	        return (React.createElement("table", {style: { width: '100%', cursor: 'pointer' }}, React.createElement("tbody", null, arr.map(function (td) {
+	            return td;
+	        }))));
 	    };
 	    SymbolMenu.prototype.render = function () {
 	        return (!this.props.isVisible ? null :
-	            React.createElement("div", {className: "mapify-options"}, React.createElement("label", null, "Select the variable to scale size by"), React.createElement(Select, {options: this.props.headers, onChange: this.sizeVariableChanged.bind(this), value: this.state.sizeVar}), React.createElement("label", null, "Select the size multiplier"), React.createElement("input", {type: "number", value: this.state.sizeMultiplier, onChange: this.sizeMultiplierChanged.bind(this), min: 0.1, max: 10, step: 0.1}), React.createElement("br", null), React.createElement("label", null, "Select the size lower limit"), React.createElement("input", {type: "number", value: this.state.sizeLowLimit, onChange: this.sizeLowLimitChanged.bind(this), min: 0}), React.createElement("br", null), React.createElement("label", null, "Select the size upper limit"), React.createElement("input", {type: "number", value: this.state.sizeUpLimit, onChange: this.sizeUpLimitChanged.bind(this), min: 1}), React.createElement("br", null), React.createElement("button", {onClick: this.saveOptions.bind(this)}, "Refresh map")));
+	            React.createElement("div", {className: "mapify-options"}, React.createElement("label", {forHTML: 'circle'}, "Circle", React.createElement("input", {type: 'radio', onChange: this.typeChanged.bind(this, common_1.SymbolTypes.Circle), checked: this.state.symbolType === common_1.SymbolTypes.Circle, name: 'symboltype', id: 'circle'})), React.createElement("label", {forHTML: 'icon'}, "Icon", React.createElement("input", {type: 'radio', onChange: this.typeChanged.bind(this, common_1.SymbolTypes.Icon), checked: this.state.symbolType === common_1.SymbolTypes.Icon, name: 'symboltype', id: 'icon'})), this.state.symbolType === common_1.SymbolTypes.Circle ?
+	                React.createElement("div", null, React.createElement("label", null, "Select the variable to scale size by"), React.createElement(Select, {options: this.props.headers, onChange: this.sizeVariableChanged.bind(this), value: this.state.sizeVar}), React.createElement("label", null, "Select the size multiplier"), React.createElement("input", {type: "number", value: this.state.sizeMultiplier, onChange: this.sizeMultiplierChanged.bind(this), min: 0.1, max: 10, step: 0.1}), React.createElement("br", null), React.createElement("label", null, "Select the size lower limit"), React.createElement("input", {type: "number", value: this.state.sizeLowLimit, onChange: this.sizeLowLimitChanged.bind(this), min: 0}), React.createElement("br", null), React.createElement("label", null, "Select the size upper limit"), React.createElement("input", {type: "number", value: this.state.sizeUpLimit, onChange: this.sizeUpLimitChanged.bind(this), min: 1}))
+	                : null, this.state.symbolType === common_1.SymbolTypes.Icon ?
+	                React.createElement("div", null, this.getIcons(this))
+	                : null, React.createElement("button", {onClick: this.saveOptions.bind(this)}, "Refresh map")));
 	    };
 	    return SymbolMenu;
 	}(React.Component));
@@ -63659,13 +63796,18 @@
 	        }
 	        return React.createElement("div", {style: { float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}, options.symbolOptions.sizeVariable, React.createElement("div", null, divs.map(function (d) { return d; })));
 	    };
+	    Legend.prototype.createNormalLegend = function (options) {
+	    };
 	    Legend.prototype.createLegend = function (options) {
-	        var choroLegend, scaledLegend;
+	        var choroLegend, scaledLegend, normalLegend;
 	        if (options.colorOptions.colors) {
 	            choroLegend = this.createChoroplethLegend(options);
 	        }
 	        if (options.symbolOptions.sizeVariable) {
 	            scaledLegend = this.createScaledSizeLegend(options);
+	        }
+	        if (!choroLegend && !scaledLegend) {
+	            normalLegend = this.createNormalLegend(options);
 	        }
 	        return React.createElement("div", null, choroLegend, scaledLegend);
 	    };
@@ -63679,9 +63821,132 @@
 
 /***/ },
 /* 254 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	module.exports = __webpack_require__(255);
+	/*
+	  Leaflet.AwesomeMarkers, a plugin that adds colorful iconic markers for Leaflet, based on the Font Awesome icons
+	  (c) 2012-2013, Lennard Voogdt
+
+	  http://leafletjs.com
+	  https://github.com/lvoogdt
+	*/
+
+	/*global L*/
+
+	(function (window, document, undefined) {
+	    "use strict";
+	    /*
+	     * Leaflet.AwesomeMarkers assumes that you have already included the Leaflet library.
+	     */
+
+	    L.AwesomeMarkers = {};
+
+	    L.AwesomeMarkers.version = '2.0.1';
+
+	    L.AwesomeMarkers.Icon = L.Icon.extend({
+	        options: {
+	            iconSize: [35, 45],
+	            iconAnchor:   [17, 42],
+	            popupAnchor: [1, -32],
+	            shadowAnchor: [10, 12],
+	            shadowSize: [36, 16],
+	            className: 'awesome-marker',
+	            prefix: 'glyphicon',
+	            spinClass: 'fa-spin',
+	            extraClasses: '',
+	            icon: 'home',
+	            markerColor: 'blue',
+	            iconColor: 'white'
+	        },
+
+	        initialize: function (options) {
+	            options = L.Util.setOptions(this, options);
+	        },
+
+	        createIcon: function () {
+	            var div = document.createElement('div'),
+	                options = this.options;
+
+	            if (options.icon) {
+	                div.innerHTML = this._createInner();
+	            }
+
+	            if (options.bgPos) {
+	                div.style.backgroundPosition =
+	                    (-options.bgPos.x) + 'px ' + (-options.bgPos.y) + 'px';
+	            }
+
+	            this._setIconStyles(div, 'icon-' + options.markerColor);
+	            return div;
+	        },
+
+	        _createInner: function() {
+	            var iconClass, iconSpinClass = "", iconColorClass = "", iconColorStyle = "", options = this.options;
+
+	            if(options.icon.slice(0,options.prefix.length+1) === options.prefix + "-") {
+	                iconClass = options.icon;
+	            } else {
+	                iconClass = options.prefix + "-" + options.icon;
+	            }
+
+	            if(options.spin && typeof options.spinClass === "string") {
+	                iconSpinClass = options.spinClass;
+	            }
+
+	            if(options.iconColor) {
+	                if(options.iconColor === 'white' || options.iconColor === 'black') {
+	                    iconColorClass = "icon-" + options.iconColor;
+	                } else {
+	                    iconColorStyle = "style='color: " + options.iconColor + "' ";
+	                }
+	            }
+
+	            return "<i " + iconColorStyle + "class='" + options.extraClasses + " " + options.prefix + " " + iconClass + " " + iconSpinClass + " " + iconColorClass + "'></i>";
+	        },
+
+	        _setIconStyles: function (img, name) {
+	            var options = this.options,
+	                size = L.point(options[name === 'shadow' ? 'shadowSize' : 'iconSize']),
+	                anchor;
+
+	            if (name === 'shadow') {
+	                anchor = L.point(options.shadowAnchor || options.iconAnchor);
+	            } else {
+	                anchor = L.point(options.iconAnchor);
+	            }
+
+	            if (!anchor && size) {
+	                anchor = size.divideBy(2, true);
+	            }
+
+	            img.className = 'awesome-marker-' + name + ' ' + options.className;
+
+	            if (anchor) {
+	                img.style.marginLeft = (-anchor.x) + 'px';
+	                img.style.marginTop  = (-anchor.y) + 'px';
+	            }
+
+	            if (size) {
+	                img.style.width  = size.x + 'px';
+	                img.style.height = size.y + 'px';
+	            }
+	        },
+
+	        createShadow: function () {
+	            var div = document.createElement('div');
+
+	            this._setIconStyles(div, 'shadow');
+	            return div;
+	      }
+	    });
+	        
+	    L.AwesomeMarkers.icon = function (options) {
+	        return new L.AwesomeMarkers.Icon(options);
+	    };
+
+	}(this, document));
+
+
 
 
 
@@ -63689,12 +63954,20 @@
 /* 255 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = __webpack_require__(256);
+
+
+
+/***/ },
+/* 256 */
+/***/ function(module, exports, __webpack_require__) {
+
 	/* WEBPACK VAR INJECTION */(function(process) {var React = __webpack_require__(1);
 	var ReactDOM = __webpack_require__(158);
-	var ExecutionEnvironment = __webpack_require__(256);
-	var ModalPortal = React.createFactory(__webpack_require__(257));
-	var ariaAppHider = __webpack_require__(272);
-	var elementClass = __webpack_require__(273);
+	var ExecutionEnvironment = __webpack_require__(257);
+	var ModalPortal = React.createFactory(__webpack_require__(258));
+	var ariaAppHider = __webpack_require__(273);
+	var elementClass = __webpack_require__(274);
 	var renderSubtreeIntoContainer = __webpack_require__(158).unstable_renderSubtreeIntoContainer;
 
 	var SafeHTMLElement = ExecutionEnvironment.canUseDOM ? window.HTMLElement : {};
@@ -63773,7 +64046,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
-/* 256 */
+/* 257 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -63818,14 +64091,14 @@
 
 
 /***/ },
-/* 257 */
+/* 258 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
 	var div = React.DOM.div;
-	var focusManager = __webpack_require__(258);
-	var scopeTab = __webpack_require__(260);
-	var Assign = __webpack_require__(261);
+	var focusManager = __webpack_require__(259);
+	var scopeTab = __webpack_require__(261);
+	var Assign = __webpack_require__(262);
 
 
 	// so that our CSS is statically analyzable
@@ -64022,10 +64295,10 @@
 
 
 /***/ },
-/* 258 */
+/* 259 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var findTabbable = __webpack_require__(259);
+	var findTabbable = __webpack_require__(260);
 	var modalElement = null;
 	var focusLaterElement = null;
 	var needToFocus = false;
@@ -64096,7 +64369,7 @@
 
 
 /***/ },
-/* 259 */
+/* 260 */
 /***/ function(module, exports) {
 
 	/*!
@@ -64152,10 +64425,10 @@
 
 
 /***/ },
-/* 260 */
+/* 261 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var findTabbable = __webpack_require__(259);
+	var findTabbable = __webpack_require__(260);
 
 	module.exports = function(node, event) {
 	  var tabbable = findTabbable(node);
@@ -64173,7 +64446,7 @@
 
 
 /***/ },
-/* 261 */
+/* 262 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -64184,9 +64457,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAssign = __webpack_require__(262),
-	    createAssigner = __webpack_require__(268),
-	    keys = __webpack_require__(264);
+	var baseAssign = __webpack_require__(263),
+	    createAssigner = __webpack_require__(269),
+	    keys = __webpack_require__(265);
 
 	/**
 	 * A specialized version of `_.assign` for customizing assigned values without
@@ -64259,7 +64532,7 @@
 
 
 /***/ },
-/* 262 */
+/* 263 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -64270,8 +64543,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseCopy = __webpack_require__(263),
-	    keys = __webpack_require__(264);
+	var baseCopy = __webpack_require__(264),
+	    keys = __webpack_require__(265);
 
 	/**
 	 * The base implementation of `_.assign` without support for argument juggling,
@@ -64292,7 +64565,7 @@
 
 
 /***/ },
-/* 263 */
+/* 264 */
 /***/ function(module, exports) {
 
 	/**
@@ -64330,7 +64603,7 @@
 
 
 /***/ },
-/* 264 */
+/* 265 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -64341,9 +64614,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var getNative = __webpack_require__(265),
-	    isArguments = __webpack_require__(266),
-	    isArray = __webpack_require__(267);
+	var getNative = __webpack_require__(266),
+	    isArguments = __webpack_require__(267),
+	    isArray = __webpack_require__(268);
 
 	/** Used to detect unsigned integer values. */
 	var reIsUint = /^\d+$/;
@@ -64572,7 +64845,7 @@
 
 
 /***/ },
-/* 265 */
+/* 266 */
 /***/ function(module, exports) {
 
 	/**
@@ -64715,7 +64988,7 @@
 
 
 /***/ },
-/* 266 */
+/* 267 */
 /***/ function(module, exports) {
 
 	/**
@@ -64964,7 +65237,7 @@
 
 
 /***/ },
-/* 267 */
+/* 268 */
 /***/ function(module, exports) {
 
 	/**
@@ -65150,7 +65423,7 @@
 
 
 /***/ },
-/* 268 */
+/* 269 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -65161,9 +65434,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var bindCallback = __webpack_require__(269),
-	    isIterateeCall = __webpack_require__(270),
-	    restParam = __webpack_require__(271);
+	var bindCallback = __webpack_require__(270),
+	    isIterateeCall = __webpack_require__(271),
+	    restParam = __webpack_require__(272);
 
 	/**
 	 * Creates a function that assigns properties of source object(s) to a given
@@ -65208,7 +65481,7 @@
 
 
 /***/ },
-/* 269 */
+/* 270 */
 /***/ function(module, exports) {
 
 	/**
@@ -65279,7 +65552,7 @@
 
 
 /***/ },
-/* 270 */
+/* 271 */
 /***/ function(module, exports) {
 
 	/**
@@ -65417,7 +65690,7 @@
 
 
 /***/ },
-/* 271 */
+/* 272 */
 /***/ function(module, exports) {
 
 	/**
@@ -65490,7 +65763,7 @@
 
 
 /***/ },
-/* 272 */
+/* 273 */
 /***/ function(module, exports) {
 
 	var _element = typeof document !== 'undefined' ? document.body : null;
@@ -65537,7 +65810,7 @@
 
 
 /***/ },
-/* 273 */
+/* 274 */
 /***/ function(module, exports) {
 
 	module.exports = function(opts) {
