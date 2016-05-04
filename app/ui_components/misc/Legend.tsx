@@ -77,13 +77,19 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
 
     }
+    createNormalLegend(options: IVisualizationOptions) {
+
+    }
     createLegend(options: IVisualizationOptions) {
-        let choroLegend, scaledLegend;
+        let choroLegend, scaledLegend, normalLegend;
         if (options.colorOptions.colors) {
             choroLegend = this.createChoroplethLegend(options);
         }
         if (options.symbolOptions.sizeVariable) {
             scaledLegend = this.createScaledSizeLegend(options);
+        }
+        if (!choroLegend && !scaledLegend) {
+            normalLegend = this.createNormalLegend(options);
         }
         return <div>
             {choroLegend}

@@ -108,8 +108,8 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
             fileInfo.content = choroplethSample;
         }
         else if (type === LayerTypes.SymbolMap) {
-          fileInfo.layerName = 'Air Particle Demo';
-          fileInfo.content = symbolSample;
+            fileInfo.layerName = 'Air Particle Demo';
+            fileInfo.content = symbolSample;
         }
         this.setFileInfo(fileInfo);
 

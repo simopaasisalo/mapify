@@ -5,7 +5,7 @@ import {SymbolMenu} from './SymbolMenu';
 import {FilterMenu} from './FilterMenu';
 import {LegendMenu} from './LegendMenu';
 import {PopUpMenu} from './PopUpMenu';
-import {LayerTypes} from '../common_items/common';
+import {LayerTypes, SymbolTypes} from '../common_items/common';
 
 let Select = require('react-select');
 let Menu = require('impromptu-react-sidemenu');
@@ -138,9 +138,6 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     refreshColorOptions(options: IColorOptions) {
         let lyr: ILayerData = this.state.activeLayer;
         lyr.visOptions.colorOptions = options;
-        lyr.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
-            return L.circleMarker(latlng, options)
-        });
         this.setState({
             activeLayer: lyr
         })
@@ -156,6 +153,23 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         this.refreshMap();
     }
     refreshMap() {
+        let lyr: ILayerData = this.state.activeLayer;
+        lyr.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
+            if (lyr.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
+                let customIcon = L.AwesomeMarkers.icon({
+                    icon: lyr.visOptions.symbolOptions.iconFA,
+                    prefix: 'fa',
+                    markerColor: 'red'
+                })
+                return L.marker(latlng, { icon: customIcon });
+            }
+            else {
+                return L.circleMarker(latlng, lyr.visOptions.colorOptions);
+            }
+        });
+        this.setState({
+            activeLayer: lyr,
+        })
         this.props.refreshMap(this.state.activeLayer);
     }
     layerOrderChanged(order: number[]) {

@@ -66,6 +66,8 @@ interface ISymbolMenuProps extends ISubMenuProps {
 }
 
 interface ISymbolMenuStates {
+    symbolType?: SymbolTypes,
+    iconFA?: string,
     sizeVar?: string,
     sizeLowLimit?: number,
     sizeUpLimit?: number,

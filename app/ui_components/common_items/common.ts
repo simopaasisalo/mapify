@@ -9,6 +9,16 @@ enum LayerTypes {
     HeatMap
 }
 
+
+/**
+ * The possible symbol types for symbol maps
+ */
+enum SymbolTypes {
+    Circle,
+    Chart,
+    Icon
+}
+
 let DefaultProjections: Array<string> = ['WGS84', 'EPSG:4269', 'EPSG:3857', 'ETRS-GK25FIN'];
 
-export {LayerTypes, DefaultProjections}
+export {LayerTypes, SymbolTypes, DefaultProjections}

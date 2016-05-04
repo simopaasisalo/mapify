@@ -4,12 +4,14 @@ import * as ReactDOM from 'react-dom';
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
-import {LayerTypes} from './common_items/common';
+import {LayerTypes, SymbolTypes} from './common_items/common';
 import {Filter} from './misc/Filter';
 import {Legend} from './misc/Legend';
 import 'leaflet';
+import 'drmonty-leaflet-awesome-markers';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
+let aweso
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _currentFilterId: number = 0;
@@ -23,7 +25,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
     private defaultColorOptions: IColorOptions = {
         fillColor: '#E0E62D',
-        fillOpacity: 1,
+        fillOpacity: 0.8,
+        opacity: 0.8,
         color: '#000',
         choroplethFieldName: '',
         colorScheme: 'Greys',
@@ -31,10 +34,9 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         mode: 'q',
         revert: false,
     }
-
     private defaultVisOptions: IVisualizationOptions = {
         colorOptions: this.defaultColorOptions,
-        symbolOptions: {},
+        symbolOptions: { symbolType: SymbolTypes.Circle },
         onEachFeature: this.addPopupsToLayer,
         pointToLayer: (function(feature, latlng: L.LatLng) {
             return L.circleMarker(latlng, this.defaultColorOptions)
@@ -148,59 +150,63 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
+            _map.removeLayer(layerData.layer);
+            let layer = (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') ?
+                this.createChoroplethLayer(layerData) :
+                L.geoJson(layerData.geoJSON, layerData.visOptions);
+            layer.addTo(_map);
+            layerData.layer = layer;
             let layers = this.state.layers.filter((lyr) => { return lyr.id != layerData.id });
-
             if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
-
-                _map.removeLayer(layerData.layer);
-
                 let layer = this.createChoroplethLayer(layerData);
                 delete (layerData.visOptions.colorOptions as any).style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
-                layer.addTo(_map);
-                layerData.layer = layer;
+
 
             }
             if (layerData.layerType === LayerTypes.SymbolMap) {
-                if (!layerData.visOptions.colorOptions.choroplethFieldName) {
-                    layerData.layer.setStyle(layerData.visOptions.colorOptions);
-                }
                 let opt = layerData.visOptions.symbolOptions;
-                (layerData.layer as any).eachLayer(function(layer) {
-                    let val = layer.feature.properties[opt.sizeVariable];
-                    let radius = 10;
-                    if (opt.sizeVariable) {
-                        radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
-                        if (radius < opt.sizeLowerLimit)
-                            radius = opt.sizeLowerLimit;
-                        else if (radius > opt.sizeUpperLimit)
-                            radius = opt.sizeUpperLimit;
-                    }
-                    layer.setRadius(radius);
-                    //calculate min and max values and -radii
-                    if (!opt.actualMaxValue && !opt.actualMinValue) {
-                        opt.actualMinValue = val;
-                        opt.actualMaxValue = val;
-                        opt.actualMaxRadius = radius;
-                        opt.actualMinRadius = radius;
-                    }
-                    else {
-                        if (val > opt.actualMaxValue) {
-                            opt.actualMaxRadius = radius;
-                            opt.actualMaxValue = val;
-                        }
-                        if (radius < opt.actualMinRadius) {
-                            opt.actualMinRadius = radius;
-                            opt.actualMinValue = val;
-                        }
-
-                    }
-                });
+                if (opt.sizeVariable && opt.symbolType === SymbolTypes.Circle) {
+                    createScaledSymbolLayer(opt);
+                }
             }
             layers.push(layerData);
             this.setState({
                 layers: layers,
             });
         }
+        function createScaledSymbolLayer(opt: ISymbolOptions) {
+            (layerData.layer as any).eachLayer(function(layer) {
+                let val = layer.feature.properties[opt.sizeVariable];
+                let radius = 10;
+                if (opt.sizeVariable) {
+                    radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
+                    if (radius < opt.sizeLowerLimit)
+                        radius = opt.sizeLowerLimit;
+                    else if (radius > opt.sizeUpperLimit)
+                        radius = opt.sizeUpperLimit;
+                }
+                layer.setRadius(radius);
+                //calculate min and max values and -radii
+                if (!opt.actualMaxValue && !opt.actualMinValue) {
+                    opt.actualMinValue = val;
+                    opt.actualMaxValue = val;
+                    opt.actualMaxRadius = radius;
+                    opt.actualMinRadius = radius;
+                }
+                else {
+                    if (val > opt.actualMaxValue) {
+                        opt.actualMaxRadius = radius;
+                        opt.actualMaxValue = val;
+                    }
+                    if (radius < opt.actualMinRadius) {
+                        opt.actualMinRadius = radius;
+                        opt.actualMinValue = val;
+                    }
+
+                }
+            });
+        }
+
     }
 
     /**

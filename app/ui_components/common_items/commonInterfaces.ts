@@ -5,11 +5,15 @@ declare enum LayerTypes {
     HeatMap
 }
 
+declare enum SymbolTypes {
+    Circle,
+    Chart,
+    Icon
+}
+
 // This results in a whole lot of "Cannot find name"-errors
 //import {LayerTypes} from './common';
 //
-
-//import {GeoJSON} from 'leaflet';
 
 interface ISelectData {
     value: any,
@@ -72,8 +76,10 @@ interface IColorOptions extends L.PathOptions {
 }
 /** Symbol specific options - size, icon etc. */
 interface ISymbolOptions {
-    /** the link to the icon file (if used) */
-    iconURL?: string,
+    symbolType: SymbolTypes,
+
+    /** the font-awesome tag. used if symbolType == Icon*/
+    iconFA?: string,
     /** the variable by which to scale the symbol size */
     sizeVariable?: string,
     sizeLowerLimit?: number,
@@ -113,18 +119,14 @@ interface IFilter {
      * Initialized as the unfiltered data. Filtering changes this layer
      */
     layerData?: ILayerData,
-
     /**
      * The name of the field to filter
      */
     fieldToFilter: string,
-
-
     /**
      * Dictionary containing lists of layers by the value being filtered
      */
     filterValues?: { [index: number]: L.ILayer[] },
-
     maxValue?: number,
     minValue?: number,
 
@@ -134,7 +136,7 @@ interface IFilter {
 interface IVisualizationOptions {
     layerName?: string
     onEachFeature?: (feature: any, layer: L.GeoJSON) => void,
-    pointToLayer: (featureData: any, latlng: L.LatLng) => L.ILayer
+    pointToLayer: (featureData: any, latlng: L.LatLng) => any,
     colorOptions: IColorOptions,
     symbolOptions: ISymbolOptions,
 }

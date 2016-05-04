@@ -17,7 +17,6 @@ const _gradientOptions: { value: string }[] =
         { value: 'YlGnBu' },
     ];
 
-
 export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates>{
     constructor(props: IColorMenuProps) {
         super(props);
@@ -27,7 +26,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 colorSelectOpen: false,
                 baseColor: '#E0E62D',
                 borderColor: '#000',
-                opacity: 1,
+                opacity: 0.7,
                 choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : this.props.headers[0].label,
                 colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
                 useMultipleColors: this.props.isChoropleth,
@@ -122,6 +121,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     render() {
         let currentColorBlockStyle = {
+            cursor: 'pointer',
             width: 100,
             height: 70,
             borderRadius: 15,
@@ -131,6 +131,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.baseColor.substr(1), 16)).toString(16))).slice(-6)
         }
         let borderColorBlockStyle = {
+            cursor: 'pointer',
             width: 100,
             height: 70,
             borderRadius: 15,
