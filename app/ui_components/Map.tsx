@@ -151,6 +151,25 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
             _map.removeLayer(layerData.layer);
+            layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
+                if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
+                    let customIcon = L.AwesomeMarkers.icon({
+                        icon: layerData.visOptions.symbolOptions.iconFA,
+                        prefix: 'fa',
+                        markerColor: 'red'
+                    })
+                    return L.marker(latlng, { icon: customIcon });
+                }
+                else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
+                    let opt = layerData.visOptions.colorOptions;
+                    let html = '<div style="height: 20px; width: 20px; opacity:' + opt.opacity + '; background-color:' + (opt.fillColor ? opt.fillColor : this.getChoroplethColor(opt.limits, opt.colors, feature.properties[opt.choroplethFieldName])) + '; border: 1px solid ' + opt.color + '"/>';
+                    let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
+                    return L.marker(latlng, { icon: rectMarker });
+                }
+                else {
+                    return L.circleMarker(latlng, layerData.visOptions.colorOptions);
+                }
+            });
             let layer = (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') ?
                 this.createChoroplethLayer(layerData) :
                 L.geoJson(layerData.geoJSON, layerData.visOptions);
@@ -159,7 +178,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             let layers = this.state.layers.filter((lyr) => { return lyr.id != layerData.id });
             if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
                 let layer = this.createChoroplethLayer(layerData);
-                delete (layerData.visOptions.colorOptions as any).style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
 
 
             }
@@ -236,22 +254,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             opts.colors.reverse();
         }
         let style = function(feature) {
-            function getColor(value: number) {
-                if (!isNaN(value)) {
-                    for (var i = 0; i < opts.limits.length; i++) {
-                        if (value === opts.limits[opts.limits.length - 1]) { //color the last item correctly
-                            return opts.colors[opts.colors.length - 1]
-                        }
-                        if (opts.limits[i] <= value && value <= opts.limits[i + 1]) {
-                            return opts.colors[i];
-                        }
-                    }
-                }
-            }
+
             return {
                 fillOpacity: opts.fillOpacity,
                 opacity: opts.opacity,
-                fillColor: getColor(feature.properties[opts.choroplethFieldName]),
+                fillColor: this.getChoroplethColor(opts.limits, opts.colors, feature.properties[opts.choroplethFieldName]),
                 color: opts.color,
                 weight: 1,
             }
@@ -260,12 +267,24 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         let options: L.GeoJSONOptions = {
             pointToLayer: layerData.visOptions.pointToLayer.bind(this),
             onEachFeature: layerData.visOptions.onEachFeature ? layerData.visOptions.onEachFeature : this.defaultVisOptions.onEachFeature,
-            style: style,
+            style: style.bind(this),
         }
 
         return L.geoJson(layerData.geoJSON, options);
     }
 
+    getChoroplethColor(limits: any[], colors: string[], value: number) {
+        if (!isNaN(value)) {
+            for (var i = 0; i < limits.length; i++) {
+                if (value === limits[limits.length - 1]) { //color the last item correctly
+                    return colors[colors.length - 1]
+                }
+                if (limits[i] <= value && value <= limits[i + 1]) {
+                    return colors[i];
+                }
+            }
+        }
+    }
 
     /**
      * addPopupsToLayer - adds the feature details popup to layer

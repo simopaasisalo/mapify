@@ -7,6 +7,7 @@ declare enum LayerTypes {
 
 declare enum SymbolTypes {
     Circle,
+    Rectangle,
     Chart,
     Icon
 }

@@ -15,6 +15,7 @@ enum LayerTypes {
  */
 enum SymbolTypes {
     Circle,
+    Rectangle,
     Chart,
     Icon
 }

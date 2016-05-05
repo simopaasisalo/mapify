@@ -149,6 +149,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                     width: 30,
                     height: 30,
                     border: that.state.iconFA === faIcons[i + c] ? '1px solid #999999' : '1px solid #1a263f',
+                    borderRadius: 30,
                     lineHeight: '30px',
                     textAlign: 'center'
                 }
@@ -192,6 +193,17 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             />
 
                     </label>
+                    <label forHTML='rect'>
+                        Rectangle
+                        <input
+                            type='radio'
+                            onChange={this.typeChanged.bind(this, SymbolTypes.Rectangle) }
+                            checked={this.state.symbolType === SymbolTypes.Rectangle}
+                            name='symboltype'
+                            id='rect'
+                            />
+
+                    </label>
                     {this.state.symbolType === SymbolTypes.Circle ?
                         <div>
                             <label>Select the variable to scale size by</label>
@@ -200,14 +212,17 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                                 onChange={this.sizeVariableChanged.bind(this) }
                                 value={this.state.sizeVar}
                                 />
-                            <label>Select the size multiplier</label>
-                            <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={0.1} max={10} step={0.1}/>
-                            <br/>
-                            <label>Select the size lower limit</label>
-                            <input type="number" value={this.state.sizeLowLimit} onChange={this.sizeLowLimitChanged.bind(this) } min={0}/>
-                            <br/>
-                            <label>Select the size upper limit</label>
-                            <input type="number" value={this.state.sizeUpLimit} onChange={this.sizeUpLimitChanged.bind(this) } min={1}/>
+                            {this.state.sizeVar ?
+                                <div><label>Select the size multiplier</label>
+                                    <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={0.1} max={10} step={0.1}/>
+                                    <br/>
+                                    <label>Select the size lower limit</label>
+                                    <input type="number" value={this.state.sizeLowLimit} onChange={this.sizeLowLimitChanged.bind(this) } min={0}/>
+                                    <br/>
+                                    <label>Select the size upper limit</label>
+                                    <input type="number" value={this.state.sizeUpLimit} onChange={this.sizeUpLimitChanged.bind(this) } min={1}/>
+                                </div>
+                                : null}
                         </div>
 
                         : null}
@@ -216,6 +231,11 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                         <div>
                             {this.getIcons(this) }
                         </div>
+
+                        : null}
+
+                    {this.state.symbolType === SymbolTypes.Rectangle ?
+                        <div/>
 
                         : null}
                     <button onClick={this.saveOptions.bind(this) }>Refresh map</button>

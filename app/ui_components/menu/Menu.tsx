@@ -153,23 +153,6 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         this.refreshMap();
     }
     refreshMap() {
-        let lyr: ILayerData = this.state.activeLayer;
-        lyr.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
-            if (lyr.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
-                let customIcon = L.AwesomeMarkers.icon({
-                    icon: lyr.visOptions.symbolOptions.iconFA,
-                    prefix: 'fa',
-                    markerColor: 'red'
-                })
-                return L.marker(latlng, { icon: customIcon });
-            }
-            else {
-                return L.circleMarker(latlng, lyr.visOptions.colorOptions);
-            }
-        });
-        this.setState({
-            activeLayer: lyr,
-        })
         this.props.refreshMap(this.state.activeLayer);
     }
     layerOrderChanged(order: number[]) {

@@ -27,7 +27,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 baseColor: '#E0E62D',
                 borderColor: '#000',
                 opacity: 0.7,
-                choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : this.props.headers[0].label,
+                choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
                 colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
                 useMultipleColors: this.props.isChoropleth,
                 revertChoroplethScheme: false,
@@ -160,6 +160,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                     <div style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor') }>Border color</div>
 
                 </div>
+                <label>Opacity</label>
+                <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.opacity}/>
+
                 {!this.state.colorSelectOpen ? null :
                     <div style={colorSelectStyle}>
                         <ColorPicker.SketchPicker
@@ -178,24 +181,25 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                 value={this.state.choroFieldName}
                                 clearable={false}
                                 />
-                            <label>Select the color scale</label>
-                            <Select
-                                clearable = {false}
-                                searchable = {false}
-                                options = {_gradientOptions}
-                                optionRenderer={this.renderScheme.bind(this) }
-                                valueRenderer = {this.renderScheme.bind(this) }
-                                onChange={this.schemeChanged.bind(this) }
-                                value={this.state.colorScheme}
-                                />
-                            <label htmlFor='revertSelect'>Revert</label>
-                            <input id='revertSelect' type='checkbox' onChange={this.revertChanged.bind(this) } checked={this.state.revertChoroplethScheme}/>
+                            {this.state.choroFieldName ?
+                                <div>
+                                    <label>Select the color scale</label>
+                                    <Select
+                                        clearable = {false}
+                                        searchable = {false}
+                                        options = {_gradientOptions}
+                                        optionRenderer={this.renderScheme.bind(this) }
+                                        valueRenderer = {this.renderScheme.bind(this) }
+                                        onChange={this.schemeChanged.bind(this) }
+                                        value={this.state.colorScheme}
+                                        />
+                                    <label htmlFor='revertSelect'>Revert</label>
+                                    <input id='revertSelect' type='checkbox' onChange={this.revertChanged.bind(this) } checked={this.state.revertChoroplethScheme}/>
+                                </div>
+                                : null}
                         </div>
                         : null
                 }
-                <label>Opacity</label>
-
-                <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.opacity}/>
                 <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
             </div >
         );
