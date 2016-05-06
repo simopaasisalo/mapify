@@ -144,6 +144,8 @@ interface IVisualizationOptions {
 
 
 interface IOnScreenLegendProps {
+    title: string,
+    meta: string,
     mapLayers: ILayerData[],
     horizontal: boolean,
 }

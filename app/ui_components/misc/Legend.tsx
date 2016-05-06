@@ -4,6 +4,12 @@ import {SymbolTypes} from '../common_items/common';
 
 export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
+    shouldComponentUpdate(nextProps: IOnScreenLegendProps, nextState: {}) {
+        return nextProps.title !== this.props.title ||
+            nextProps.meta !== this.props.meta ||
+            nextProps.mapLayers !== this.props.mapLayers ||
+            nextProps.horizontal !== this.props.horizontal;
+    }
     createChoroplethLegend(options: IVisualizationOptions) {
         let divs = [];
         let limits = options.colorOptions.limits;
@@ -26,7 +32,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         }
         return <div style={{ margin: '5px', float: 'left' }}>
             { options.colorOptions.choroplethFieldName }
-            < div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+            <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
             </div >
         </div >;
@@ -107,10 +113,13 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                 handle={'.legendTitle'}
                 >
                 <div className='draggable'>
-                    <h2 className='legendTitle'>Legend</h2>
-                    {this.createLegend(this.props.mapLayers[0].visOptions) }
-                </div>
-            </Draggable>
+                    <h2 className='legendTitle'>{this.props.title}</h2>
+                    <div>
+                        {this.createLegend(this.props.mapLayers[0].visOptions) }
+                    </div>
+                    <p style={{ clear: 'both', maxWidth: this.props.horizontal ? 500 : 200 }}>{this.props.meta}</p>
+                </div >
+            </Draggable >
         );
     }
 }

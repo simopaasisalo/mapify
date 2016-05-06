@@ -6,7 +6,19 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
             {
                 showLegend: false,
                 horizontal: false,
+                title: 'Legend',
+                meta: 'Map created with Mapify'
             };
+    }
+    titleChanged(e) {
+        this.setState({
+            title: e.target.value
+        })
+    }
+    metaChanged(e) {
+        this.setState({
+            meta: e.target.value
+        })
     }
     showLegendChanged(e) {
         this.setState({
@@ -22,8 +34,8 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
         let info: ILegend = {
             horizontal: this.state.horizontal,
             visible: this.state.showLegend,
-            title: 'Legend',
-            meta: ''
+            title: this.state.title,
+            meta: this.state.meta
         }
         this.props.valuesChanged(info);
     }
@@ -32,6 +44,16 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
             <div className="mapify-options">
                 <label htmlFor='showLegend'>Show legend</label>
                 <input id='showLegend' type='checkbox' checked={this.state.showLegend} onChange={this.showLegendChanged.bind(this) }/>
+                <br/>
+                <label>Title</label>
+                <input type='text' style={{ width: '100%' }} value={this.state.title} onChange={this.titleChanged.bind(this) }/>
+                <br/>
+                <label>Meta</label>
+                <textarea
+                    style={{ width: '100%', height: 50 }}
+                    rows={5}
+                    value={this.state.meta}
+                    onChange={this.metaChanged.bind(this) }/>
                 <br/>
                 <label htmlFor='makeHorizontal'>Align horizontally</label>
                 <input id='makeHorizontal' type='checkbox' checked={this.state.horizontal} onChange={this.horizontalChanged.bind(this) }/>

@@ -42,8 +42,14 @@ interface IColorMenuStates {
     borderColor?: string,
     colorSelectOpen?: boolean,
     revertChoroplethScheme?: boolean,
+    steps?: number,
+
     /**
-     * The name of the property being edited
+     * Chroma-js-modes. q=quantiles, k=k-means, e=equidistant    
+     */
+    mode?: string,
+    /**
+     * The name of the color being edited in color selection
      */
     editing?: string,
 
@@ -116,6 +122,7 @@ interface ILegendMenuStates {
     showLegend?: boolean,
     horizontal?: boolean,
     title?: string,
+    meta?: string,
 }
 
 interface IPopUpMenuProps extends ISubMenuProps {

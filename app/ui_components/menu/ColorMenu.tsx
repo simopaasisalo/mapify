@@ -26,11 +26,13 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 colorSelectOpen: false,
                 baseColor: '#E0E62D',
                 borderColor: '#000',
-                opacity: 0.7,
+                opacity: 0.8,
                 choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
                 colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
                 useMultipleColors: this.props.isChoropleth,
                 revertChoroplethScheme: false,
+                steps: 7,
+                mode: 'q',
             };
     }
     shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
@@ -43,7 +45,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             nextState.borderColor !== this.state.borderColor ||
             nextState.colorSelectOpen !== this.state.colorSelectOpen ||
             nextState.useMultipleColors !== this.state.useMultipleColors ||
-            nextState.revertChoroplethScheme !== this.state.revertChoroplethScheme;
+            nextState.revertChoroplethScheme !== this.state.revertChoroplethScheme ||
+            nextState.steps !== this.state.steps ||
+            nextState.mode !== this.state.mode;
     }
     baseColorChanged(color) {
         this.setState({
@@ -66,6 +70,16 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     opacityChanged(e) {
         this.setState({
             opacity: e.target.valueAsNumber,
+        });
+    }
+    stepsChanged(e) {
+        this.setState({
+            steps: e.target.valueAsNumber,
+        });
+    }
+    modeChanged(mode) {
+        this.setState({
+            mode: mode,
         });
     }
     multipleColorsChanged(e) {
@@ -109,9 +123,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     saveOptions() {
         this.props.saveValues({
             choroplethFieldName: this.state.useMultipleColors ? this.state.choroFieldName : '',
-            steps: 7,
+            steps: this.state.steps,
             colorScheme: this.state.colorScheme,
-            mode: 'q',
+            mode: this.state.mode,
             fillOpacity: this.state.opacity,
             opacity: this.state.opacity,
             fillColor: this.state.useMultipleColors ? '' : this.state.baseColor,
@@ -165,7 +179,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
 
                 {!this.state.colorSelectOpen ? null :
                     <div style={colorSelectStyle}>
-                        <ColorPicker.SketchPicker
+                        <ColorPicker.SwatchesPicker
                             color={ this.state.startColor}
                             onChange={this.baseColorChanged.bind(this) }
                             />
@@ -195,6 +209,44 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                         />
                                     <label htmlFor='revertSelect'>Revert</label>
                                     <input id='revertSelect' type='checkbox' onChange={this.revertChanged.bind(this) } checked={this.state.revertChoroplethScheme}/>
+                                    <br/>
+                                    <label>Steps</label>
+                                    <input type='number' max={10} min={2} step={1} onChange={this.stepsChanged.bind(this) } value={this.state.steps}/>
+                                    <br/>
+                                    <label forHTML='quantiles'>
+                                        Quantiles
+                                        <input
+                                            type='radio'
+                                            onChange={this.modeChanged.bind(this, 'q') }
+                                            checked={this.state.mode === 'q'}
+                                            name='mode'
+                                            id='quantiles'
+                                            />
+                                        <br/>
+                                    </label>
+                                    <label forHTML='kmeans'>
+                                        K-means
+                                        <input
+                                            type='radio'
+                                            onChange={this.modeChanged.bind(this, 'k') }
+                                            checked={this.state.mode === 'k'}
+                                            name='mode'
+                                            id='kmeans'
+                                            />
+                                        <br/>
+
+                                    </label><label forHTML='equidistant'>
+                                        Equidistant
+                                        <input
+                                            type='radio'
+                                            onChange={this.modeChanged.bind(this, 'e') }
+                                            checked={this.state.mode === 'e'}
+                                            name='mode'
+                                            id='equidistant'
+                                            />
+                                        <br/>
+
+                                    </label>
                                 </div>
                                 : null}
                         </div>

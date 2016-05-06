@@ -251,7 +251,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         });
 
         opts.limits = chroma.limits(values, opts.mode, opts.steps);
-        opts.colors = chroma.scale(opts.colorScheme).colors(opts.steps);
+        opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length-1);
         if (opts.revert) {
             opts.colors.reverse();
         }
@@ -427,7 +427,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
     showLegend() {
         if (this.state.legend && this.state.legend.visible) {
-            return <Legend mapLayers={this.state.layers} horizontal={this.state.legend.horizontal}/>
+            return <Legend
+                title={this.state.legend.title}
+                meta ={this.state.legend.meta}
+                mapLayers={this.state.layers}
+                horizontal={this.state.legend.horizontal}/>
 
         }
     }
