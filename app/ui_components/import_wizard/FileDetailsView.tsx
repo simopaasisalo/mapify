@@ -15,8 +15,8 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
             coords[i] = { value: val, label: val };
         }
         this.setState({
-            latField: this.props.headers.filter(function(val) { return val.type === 'number' })[0].label,
-            lonField: this.props.headers.filter(function(val) { return val.type === 'number' })[1].label,
+            latitudeField: this.props.headers.filter(function(val) { return val.type === 'number' })[0].label,
+            longitudeField: this.props.headers.filter(function(val) { return val.type === 'number' })[1].label,
             coordinateSystem: 'WGS84',
         });
 
@@ -24,24 +24,24 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
     latitudeSelectionChanged(val) {
         this.setState(
             {
-                latField: val.value,
-                lonField: this.state.lonField,
+                latitudeField: val.value,
+                longitudeField: this.state.longitudeField,
                 coordinateSystem: this.state.coordinateSystem,
             });
     }
     longitudeSelectionChanged(val) {
         this.setState(
             {
-                latField: this.state.latField,
-                lonField: val.value,
+                latitudeField: this.state.latitudeField,
+                longitudeField: val.value,
                 coordinateSystem: this.state.coordinateSystem,
             });
     }
     coordinateSystemChanged(val) {
         this.setState(
             {
-                latField: this.state.latField,
-                lonField: this.state.lonField,
+                latitudeField: this.state.latitudeField,
+                longitudeField: this.state.longitudeField,
                 coordinateSystem: val.value,
             });
     }
@@ -50,8 +50,8 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
     }
     proceed() {
         let values = {
-            latitudeField: this.state.latField,
-            longitudeField: this.state.lonField,
+            latitudeField: this.state.latitudeField,
+            longitudeField: this.state.longitudeField,
             coordinateSystem: this.state.coordinateSystem,
         }
         this.props.saveValues(values);
@@ -66,13 +66,13 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
                 <Select
                     options={this.props.headers}
                     onChange={this.latitudeSelectionChanged.bind(this) }
-                    value={this.state.latField}
+                    value={this.state.latitudeField}
                     placeholder='Latitude field...'/>
                 <label>Select the longitude/X field name</label>
                 <Select
                     options={this.props.headers}
                     onChange={this.longitudeSelectionChanged.bind(this) }
-                    value={this.state.lonField}/>
+                    value={this.state.longitudeField}/>
                 <label>Select the coordinate system</label>
                 <Select
                     options={coords}

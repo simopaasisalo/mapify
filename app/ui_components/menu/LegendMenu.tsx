@@ -1,10 +1,10 @@
 import * as React from 'react';
-export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuStates>{
+export class LegendMenu extends React.Component<ILegendMenuProps, ILegend>{
     constructor() {
         super();
         this.state =
             {
-                showLegend: false,
+                visible: false,
                 horizontal: false,
                 title: 'Legend',
                 meta: 'Map created with Mapify'
@@ -22,7 +22,7 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
     }
     showLegendChanged(e) {
         this.setState({
-            showLegend: e.currentTarget.checked,
+            visible: e.currentTarget.checked,
         });
     }
     horizontalChanged(e) {
@@ -33,7 +33,7 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
     componentDidUpdate() {
         let info: ILegend = {
             horizontal: this.state.horizontal,
-            visible: this.state.showLegend,
+            visible: this.state.visible,
             title: this.state.title,
             meta: this.state.meta
         }
@@ -43,7 +43,7 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
         return (!this.props.isVisible ? null :
             <div className="mapify-options">
                 <label htmlFor='showLegend'>Show legend</label>
-                <input id='showLegend' type='checkbox' checked={this.state.showLegend} onChange={this.showLegendChanged.bind(this) }/>
+                <input id='showLegend' type='checkbox' checked={this.state.visible} onChange={this.showLegendChanged.bind(this) }/>
                 <br/>
                 <label>Title</label>
                 <input type='text' style={{ width: '100%' }} value={this.state.title} onChange={this.titleChanged.bind(this) }/>

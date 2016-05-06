@@ -417,7 +417,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     }
 
 
-    legendStatusChanged(legend: ILegend) {
+    legendPropsChanged(legend: ILegend) {
         this.setState({
             legend: legend,
             menuShown: this.state.menuShown,
@@ -464,7 +464,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     deleteLayer={this.deleteLayer.bind(this) }
                     createFilter ={this.createFilterToLayer.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
-                    legendStatusChanged = {this.legendStatusChanged.bind(this) }
+                    legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     visible={this.state.menuShown}
                     />
                 {this.getFilters() }

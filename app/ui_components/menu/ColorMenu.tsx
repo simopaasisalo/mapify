@@ -27,10 +27,10 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 baseColor: '#E0E62D',
                 borderColor: '#000',
                 opacity: 0.8,
-                choroFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
+                colorScaleFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
                 colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
                 useMultipleColors: this.props.isChoropleth,
-                revertChoroplethScheme: false,
+                revertColorScheme: false,
                 steps: 7,
                 mode: 'q',
             };
@@ -38,14 +38,14 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
         return nextProps.isVisible !== this.props.isVisible ||
             nextProps.prevOptions !== this.props.prevOptions ||
-            nextState.choroFieldName !== this.state.choroFieldName ||
+            nextState.colorScaleFieldName !== this.state.colorScaleFieldName ||
             nextState.colorScheme !== this.state.colorScheme ||
             nextState.opacity !== this.state.opacity ||
             nextState.baseColor !== this.state.baseColor ||
             nextState.borderColor !== this.state.borderColor ||
             nextState.colorSelectOpen !== this.state.colorSelectOpen ||
             nextState.useMultipleColors !== this.state.useMultipleColors ||
-            nextState.revertChoroplethScheme !== this.state.revertChoroplethScheme ||
+            nextState.revertColorScheme !== this.state.revertColorScheme ||
             nextState.steps !== this.state.steps ||
             nextState.mode !== this.state.mode;
     }
@@ -58,7 +58,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     choroVariableChanged(e) {
         this.setState({
-            choroFieldName: e.value,
+            colorScaleFieldName: e.value,
             opacityField: e.value
         });
     }
@@ -90,16 +90,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     revertChanged(e) {
         let scheme = this.state.colorScheme;
         this.setState({
-            revertChoroplethScheme: e.target.checked,
-            colorScheme: '',
+            revertColorScheme: e.target.checked,
         });
-        window.setTimeout(dirtyHack.bind(this), 5);
 
-        function dirtyHack() {
-            this.setState({
-                colorScheme: scheme
-            });
-        }
     }
     toggleColorPick(property: string) {
         let startColor;
@@ -118,11 +111,11 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         });
     }
     renderScheme(option) {
-        return <ColorScheme gradientName={option.value} steps = {100} revert={this.state.revertChoroplethScheme}/>;
+        return <ColorScheme gradientName={option.value} revert={this.state.revertColorScheme}/>;
     }
     saveOptions() {
         this.props.saveValues({
-            choroplethFieldName: this.state.useMultipleColors ? this.state.choroFieldName : '',
+            choroplethFieldName: this.state.useMultipleColors ? this.state.colorScaleFieldName : '',
             steps: this.state.steps,
             colorScheme: this.state.colorScheme,
             mode: this.state.mode,
@@ -130,7 +123,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             opacity: this.state.opacity,
             fillColor: this.state.useMultipleColors ? '' : this.state.baseColor,
             color: this.state.borderColor,
-            revert: this.state.revertChoroplethScheme,
+            revert: this.state.revertColorScheme,
         });
     }
     render() {
@@ -192,10 +185,10 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                             <Select
                                 options={this.props.headers}
                                 onChange={this.choroVariableChanged.bind(this) }
-                                value={this.state.choroFieldName}
+                                value={this.state.colorScaleFieldName}
                                 clearable={false}
                                 />
-                            {this.state.choroFieldName ?
+                            {this.state.colorScaleFieldName ?
                                 <div>
                                     <label>Select the color scale</label>
                                     <Select
@@ -208,7 +201,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                         value={this.state.colorScheme}
                                         />
                                     <label htmlFor='revertSelect'>Revert</label>
-                                    <input id='revertSelect' type='checkbox' onChange={this.revertChanged.bind(this) } checked={this.state.revertChoroplethScheme}/>
+                                    <input id='revertSelect' type='checkbox' onChange={this.revertChanged.bind(this) } checked={this.state.revertColorScheme}/>
                                     <br/>
                                     <label>Steps</label>
                                     <input type='number' max={10} min={2} step={1} onChange={this.stepsChanged.bind(this) } value={this.state.steps}/>

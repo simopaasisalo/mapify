@@ -10,11 +10,11 @@ export class ColorScheme extends React.Component<IColorSchemeProps, {}>{
             color: 'rgba(0,0,0,0)',
             margin: 0
         }
-        return <div style={style} key={name}>{this.getChromaScale(this.props.revert, this.props.gradientName, this.props.steps) }</div>;
+        return <div style={style} key={name}>{this.getChromaScale(this.props.revert, this.props.gradientName, 100) }</div>;
     }
     shouldComponentUpdate(nextProps: IColorSchemeProps, nextState) {
         return nextProps.gradientName != this.props.gradientName ||
-            nextProps.steps != this.props.steps;
+            nextProps.revert != this.props.revert;
     }
 
     getChromaScale(revert: boolean, chromaString: string, steps: number) {
