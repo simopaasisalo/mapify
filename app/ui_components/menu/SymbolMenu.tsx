@@ -181,17 +181,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             name='symboltype'
                             id='circle'
                             />
-                    </label>
-                    <label forHTML='icon'>
-                        Icon
-                        <input
-                            type='radio'
-                            onChange={this.typeChanged.bind(this, SymbolTypes.Icon) }
-                            checked={this.state.symbolType === SymbolTypes.Icon}
-                            name='symboltype'
-                            id='icon'
-                            />
-
+                        <br/>
                     </label>
                     <label forHTML='rect'>
                         Rectangle
@@ -202,9 +192,22 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             name='symboltype'
                             id='rect'
                             />
+                        <br/>
+
+                    </label><label forHTML='icon'>
+                        Icon
+                        <input
+                            type='radio'
+                            onChange={this.typeChanged.bind(this, SymbolTypes.Icon) }
+                            checked={this.state.symbolType === SymbolTypes.Icon}
+                            name='symboltype'
+                            id='icon'
+                            />
+                        <br/>
 
                     </label>
-                    {this.state.symbolType === SymbolTypes.Circle ?
+
+                    {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle ?
                         <div>
                             <label>Select the variable to scale size by</label>
                             <Select

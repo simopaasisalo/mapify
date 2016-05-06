@@ -1,5 +1,7 @@
 import * as React from 'react';
 let Draggable = require('react-draggable');
+import {SymbolTypes} from '../common_items/common';
+
 export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
     createChoroplethLegend(options: IVisualizationOptions) {
@@ -34,7 +36,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
         let divs = [];
         let opt = options.symbolOptions;
-        let classes: number = options.colorOptions.limits ? options.colorOptions.limits.length : Math.min(Math.round(opt.actualMaxValue - opt.actualMinValue), 5);
+        let classes: number = 5;//options.colorOptions.limits ? options.colorOptions.limits.length : Math.min(Math.round(opt.actualMaxValue - opt.actualMinValue), 5);
         let radii = [], values = [];
         for (let i = 0; i < classes - 1; i++) {
             radii[i] = Math.round(opt.actualMinRadius + i * ((opt.actualMaxRadius - opt.actualMinRadius) / classes));
@@ -43,16 +45,19 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         radii.push(opt.actualMaxRadius);
         values.push(opt.actualMaxValue.toFixed(0));
         for (let i = 0; i < classes; i++) {
-            let divStyle = {
-                width: 2 * radii[i] + 'px',
-                height: 2 * radii[i] + 'px',
+            let margin = options.symbolOptions.symbolType === SymbolTypes.Circle ? radii[radii.length - 1] - radii[i] + 2 : (radii[radii.length - 1] - radii[i]) / 2 + 2;
+            let l = options.symbolOptions.symbolType === SymbolTypes.Circle ? 2 * radii[i] : radii[i];
+            let style = {
+                width: l,
+                height: l,
+                backgroundColor: options.colorOptions.fillColor,
                 float: this.props.horizontal ? '' : 'left',
                 border: '1px solid gray',
-                borderRadius: '50%',
-                marginLeft: this.props.horizontal ? 2 : (radii[radii.length - 1] - radii[i] + 2) + 'px', //center values
-                marginRight: this.props.horizontal ? 2 : (radii[radii.length - 1] - radii[i] + 2) + 'px', //center values
-                marginTop: this.props.horizontal ? (radii[radii.length - 1] - radii[i] + 2) + 'px' : 2,
-                marginBottom: this.props.horizontal ? (radii[radii.length - 1] - radii[i] + 2) + 'px' : 2,
+                borderRadius: options.symbolOptions.symbolType === SymbolTypes.Circle ? '50%' : '',
+                marginLeft: this.props.horizontal ? 2 : margin, //center values
+                marginRight: this.props.horizontal ? 2 : margin, //center values
+                marginTop: this.props.horizontal ? margin : 2,
+                marginBottom: this.props.horizontal ? margin : 2,
             }
             let parentDivStyle = {
                 float: this.props.horizontal ? 'left' : '',
@@ -63,8 +68,8 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             }
             divs.push(
                 <div key={i} style={parentDivStyle}>
-                    <div style={divStyle} />
-                    {values[i]}
+                    <div style={style} />
+                    { values[i]}
                 </div>);
         }
 

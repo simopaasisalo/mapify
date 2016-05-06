@@ -4,14 +4,13 @@ import * as ReactDOM from 'react-dom';
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
-import {LayerTypes, SymbolTypes} from './common_items/common';
+import {LayerTypes, SymbolTypes, GetSymbolRadius} from './common_items/common';
 import {Filter} from './misc/Filter';
 import {Legend} from './misc/Legend';
 import 'leaflet';
 import 'drmonty-leaflet-awesome-markers';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
-let aweso
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _currentFilterId: number = 0;
@@ -161,8 +160,12 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     return L.marker(latlng, { icon: customIcon });
                 }
                 else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
-                    let opt = layerData.visOptions.colorOptions;
-                    let html = '<div style="height: 20px; width: 20px; opacity:' + opt.opacity + '; background-color:' + (opt.fillColor ? opt.fillColor : this.getChoroplethColor(opt.limits, opt.colors, feature.properties[opt.choroplethFieldName])) + '; border: 1px solid ' + opt.color + '"/>';
+                    let vis = layerData.visOptions.colorOptions;
+                    let sym = layerData.visOptions.symbolOptions;
+                    let fillColor = vis.fillColor ? vis.fillColor : this.getChoroplethColor(vis.limits, vis.colors, feature.properties[vis.choroplethFieldName]);
+                    let borderColor = vis.color;
+                    let side: number = sym.sizeVariable ? GetSymbolRadius(feature.properties[sym.sizeVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
+                    let html = '<div style="height: ' + side + 'px; width: ' + side + 'px; opacity:' + vis.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
                     let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
                     return L.marker(latlng, { icon: rectMarker });
                 }
@@ -178,12 +181,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             let layers = this.state.layers.filter((lyr) => { return lyr.id != layerData.id });
             if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
                 let layer = this.createChoroplethLayer(layerData);
-
-
             }
             if (layerData.layerType === LayerTypes.SymbolMap) {
                 let opt = layerData.visOptions.symbolOptions;
-                if (opt.sizeVariable && opt.symbolType === SymbolTypes.Circle) {
+                //if needs to scale and is of scalable type
+                if (opt.sizeVariable && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
                     createScaledSymbolLayer(opt);
                 }
             }
@@ -197,35 +199,35 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 let val = layer.feature.properties[opt.sizeVariable];
                 let radius = 10;
                 if (opt.sizeVariable) {
-                    radius = Math.sqrt(val * opt.sizeMultiplier / Math.PI) * 2;
-                    if (radius < opt.sizeLowerLimit)
-                        radius = opt.sizeLowerLimit;
-                    else if (radius > opt.sizeUpperLimit)
-                        radius = opt.sizeUpperLimit;
-                }
-                layer.setRadius(radius);
-                //calculate min and max values and -radii
-                if (!opt.actualMaxValue && !opt.actualMinValue) {
-                    opt.actualMinValue = val;
-                    opt.actualMaxValue = val;
-                    opt.actualMaxRadius = radius;
-                    opt.actualMinRadius = radius;
-                }
-                else {
-                    if (val > opt.actualMaxValue) {
-                        opt.actualMaxRadius = radius;
-                        opt.actualMaxValue = val;
+                    radius = GetSymbolRadius(val, opt.sizeMultiplier, opt.sizeLowerLimit, opt.sizeUpperLimit);
+                    if (opt.symbolType === SymbolTypes.Circle) {
+                        layer.setRadius(radius);
                     }
-                    if (radius < opt.actualMinRadius) {
-                        opt.actualMinRadius = radius;
+                    //calculate min and max values and -radii
+                    if (!opt.actualMaxValue && !opt.actualMinValue) {
                         opt.actualMinValue = val;
+                        opt.actualMaxValue = val;
+                        opt.actualMaxRadius = radius;
+                        opt.actualMinRadius = radius;
                     }
+                    else {
+                        if (val > opt.actualMaxValue) {
+                            opt.actualMaxRadius = radius;
+                            opt.actualMaxValue = val;
+                        }
+                        if (radius < opt.actualMinRadius) {
+                            opt.actualMinRadius = radius;
+                            opt.actualMinValue = val;
+                        }
 
+                    }
                 }
             });
         }
 
     }
+
+
 
     /**
      * createChoroplethLayer - Create a new choropleth layer by leaflet-choropleth.js

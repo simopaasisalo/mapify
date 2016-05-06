@@ -3,6 +3,7 @@ node_modules/
 typings/
 release/
 *.js
+*.js.map
 *.d.ts
 *.log.*
 *.log

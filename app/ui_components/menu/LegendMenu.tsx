@@ -30,11 +30,11 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegendMenuSta
     render() {
         return (!this.props.isVisible ? null :
             <div className="mapify-options">
-                <label>Show legend</label>
-                <input type='checkbox' checked={this.state.showLegend} onChange={this.showLegendChanged.bind(this) }/>
+                <label htmlFor='showLegend'>Show legend</label>
+                <input id='showLegend' type='checkbox' checked={this.state.showLegend} onChange={this.showLegendChanged.bind(this) }/>
                 <br/>
-                <label>Align horizontally</label>
-                <input type='checkbox' checked={this.state.horizontal} onChange={this.horizontalChanged.bind(this) }/>
+                <label htmlFor='makeHorizontal'>Align horizontally</label>
+                <input id='makeHorizontal' type='checkbox' checked={this.state.horizontal} onChange={this.horizontalChanged.bind(this) }/>
             </div >)
     }
 }

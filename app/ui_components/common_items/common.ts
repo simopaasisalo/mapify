@@ -22,4 +22,14 @@ enum SymbolTypes {
 
 let DefaultProjections: Array<string> = ['WGS84', 'EPSG:4269', 'EPSG:3857', 'ETRS-GK25FIN'];
 
-export {LayerTypes, SymbolTypes, DefaultProjections}
+function GetSymbolRadius(val: number, sizeMultiplier: number, minSize: number, maxSize: number) {
+    let radius = Math.sqrt(val * sizeMultiplier / Math.PI) * 2;
+    if (radius < minSize)
+        radius = minSize;
+    else if (radius > maxSize)
+        radius = maxSize;
+    return radius;
+
+}
+
+export {LayerTypes, SymbolTypes, DefaultProjections, GetSymbolRadius}
