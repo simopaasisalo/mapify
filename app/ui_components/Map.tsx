@@ -11,6 +11,7 @@ import 'leaflet';
 import 'drmonty-leaflet-awesome-markers';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
+let heat = require('leaflet.heat');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _currentFilterId: number = 0;
@@ -91,15 +92,15 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  {ILayerData} layerData contains layer name and GeoJSON object
      */
     layerImportSubmit(layerData: ILayerData) {
-        let layer: L.GeoJSON;
+        let layer;
         layerData.visOptions = this.defaultVisOptions;
         layerData.id = _currentLayerId;
         _currentLayerId++;
-        if (layerData.layerType == LayerTypes.ChoroplethMap) {
+        if (layerData.layerType === LayerTypes.ChoroplethMap) {
             layer = this.createChoroplethLayer(layerData);
-            delete (layerData.visOptions.colorOptions as any).style; //prevents an error when doing choroplethOptions->refresh->symbolOptions->refresh
-            delete (layerData.visOptions.colorOptions as any).onEachFeature;
-            delete (layerData.visOptions.colorOptions as any).pointToLayer;
+        }
+        else if (layerData.layerType === LayerTypes.HeatMap) {
+            layer = this.createHeatLayer(layerData);
         }
         else {
             layer = L.geoJson(layerData.geoJSON, {
@@ -109,7 +110,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
         layerData.layer = layer;
         layer.addTo(_map);
-        _map.fitBounds(layer.getBounds());
+        _map.fitBounds(layerData.layerType === LayerTypes.HeatMap ? (layer as any)._latlngs : layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
 
         var lyrs = this.state.layers ? this.state.layers : [];
         lyrs.push(layerData);
@@ -150,43 +151,50 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
             _map.removeLayer(layerData.layer);
-            layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
-                if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
-                    let customIcon = L.AwesomeMarkers.icon({
-                        icon: layerData.visOptions.symbolOptions.iconFA,
-                        prefix: 'fa',
-                        markerColor: 'red'
-                    })
-                    return L.marker(latlng, { icon: customIcon });
-                }
-                else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
-                    let vis = layerData.visOptions.colorOptions;
-                    let sym = layerData.visOptions.symbolOptions;
-                    let fillColor = vis.fillColor ? vis.fillColor : this.getChoroplethColor(vis.limits, vis.colors, feature.properties[vis.choroplethFieldName]);
-                    let borderColor = vis.color;
-                    let side: number = sym.sizeVariable ? GetSymbolRadius(feature.properties[sym.sizeVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
-                    let html = '<div style="height: ' + side + 'px; width: ' + side + 'px; opacity:' + vis.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
-                    let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
-                    return L.marker(latlng, { icon: rectMarker });
-                }
-                else {
-                    return L.circleMarker(latlng, layerData.visOptions.colorOptions);
-                }
-            });
-            let layer = (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') ?
-                this.createChoroplethLayer(layerData) :
-                L.geoJson(layerData.geoJSON, layerData.visOptions);
+            if (layerData.layerType !== LayerTypes.HeatMap) {
+                layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
+                    if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
+                        let customIcon = L.AwesomeMarkers.icon({
+                            icon: layerData.visOptions.symbolOptions.iconFA,
+                            prefix: 'fa',
+                            markerColor: 'red'
+                        })
+                        return L.marker(latlng, { icon: customIcon });
+                    }
+                    else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
+                        let vis = layerData.visOptions.colorOptions;
+                        let sym = layerData.visOptions.symbolOptions;
+                        let fillColor = vis.fillColor ? vis.fillColor : this.getChoroplethColor(vis.limits, vis.colors, feature.properties[vis.choroplethFieldName]);
+                        let borderColor = vis.color;
+                        let side: number = sym.sizeVariable ? GetSymbolRadius(feature.properties[sym.sizeVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
+                        let html = '<div style="height: ' + side + 'px; width: ' + side + 'px; opacity:' + vis.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
+                        let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
+                        return L.marker(latlng, { icon: rectMarker });
+                    }
+                    else {
+                        return L.circleMarker(latlng, layerData.visOptions.colorOptions);
+                    }
+                });
+            }
+            let layer;
+            if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
+                layer = this.createChoroplethLayer(layerData);
+            }
+            else if (layerData.layerType === LayerTypes.SymbolMap) {
+                layer = L.geoJson(layerData.geoJSON, layerData.visOptions);
+            }
+            else if (layerData.layerType === LayerTypes.HeatMap) {
+                console.log('heatenings')
+                layer = this.createHeatLayer(layerData);
+            }
             layer.addTo(_map);
             layerData.layer = layer;
             let layers = this.state.layers.filter((lyr) => { return lyr.id != layerData.id });
-            if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
-                let layer = this.createChoroplethLayer(layerData);
-            }
             if (layerData.layerType === LayerTypes.SymbolMap) {
                 let opt = layerData.visOptions.symbolOptions;
                 //if needs to scale and is of scalable type
                 if (opt.sizeVariable && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
-                    createScaledSymbolLayer(opt);
+                    scaleSymbolLayerSize(opt);
                 }
             }
             layers.push(layerData);
@@ -194,7 +202,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 layers: layers,
             });
         }
-        function createScaledSymbolLayer(opt: ISymbolOptions) {
+
+        function scaleSymbolLayerSize(opt: ISymbolOptions) {
             (layerData.layer as any).eachLayer(function(layer) {
                 let val = layer.feature.properties[opt.sizeVariable];
                 let radius = 10;
@@ -251,7 +260,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         });
 
         opts.limits = chroma.limits(values, opts.mode, opts.steps);
-        opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length-1);
+        opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
         if (opts.revert) {
             opts.colors.reverse();
         }
@@ -286,6 +295,23 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 }
             }
         }
+    }
+
+
+    createHeatLayer(layerData: ILayerData) {
+        let arr: number[][] = [];
+        let max = 0;
+        layerData.geoJSON.features.map(function(feat) {
+            let pos = [];
+            let heatVal = feat.properties['autot'];
+            if (heatVal > max)
+                max = heatVal;
+            pos.push(feat.geometry.coordinates[1]);
+            pos.push(feat.geometry.coordinates[0]);
+            pos.push(heatVal / max);
+            arr.push(pos);
+        });
+        return L.heatLayer(arr, {})
     }
 
     /**
@@ -348,23 +374,41 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         let maxVal, minVal;
         let filterValues: { [index: number]: L.ILayer[] } = {};
         let filters: { [title: string]: IFilter } = this.state.filters;
-        info.layerData.layer.eachLayer(function(layer) {
-            let val = (layer as any).feature.properties[info.fieldToFilter];
-            if (!minVal && !maxVal) { //initialize min and max values as the first value
-                minVal = val;
-                maxVal = val;
-            }
-            else {
-                if (val < minVal)
+        if (info.layerData.layerType !== LayerTypes.HeatMap) {
+            info.layerData.layer.eachLayer(function(layer) {
+                let val = (layer as any).feature.properties[info.fieldToFilter];
+                if (!minVal && !maxVal) { //initialize min and max values as the first value
                     minVal = val;
-                if (val > maxVal)
                     maxVal = val;
-            }
-            if (filterValues[val])
-                filterValues[val].push(layer);
-            else
-                filterValues[val] = [layer];
-        })
+                }
+                else {
+                    if (val < minVal)
+                        minVal = val;
+                    if (val > maxVal)
+                        maxVal = val;
+                }
+                if (filterValues[val])
+                    filterValues[val].push(layer);
+                else
+                    filterValues[val] = [layer];
+            });
+        }
+        //for heatmaps (and other non-layer types) only save the values from the GeoJSON object
+        else {
+            info.layerData.geoJSON.features.map(function(feat) {
+                let val = feat.properties[info.fieldToFilter];
+                if (!minVal && !maxVal) {
+                    minVal = val;
+                    maxVal = val;
+                }
+                else {
+                    if (val < minVal)
+                        minVal = val;
+                    if (val > maxVal)
+                        maxVal = val;
+                }
+            });
+        }
         filters[info.title] = { id: _currentFilterId++, title: info.title, layerData: info.layerData, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: minVal, maxValue: maxVal };
         this.setState({
             filters: filters,
@@ -384,18 +428,32 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     filterLayer(title: string, lowerLimit: any, upperLimit: any) {
         let filter = this.state.filters[title];
-        for (let val in filter.filterValues) {
-            if (val < lowerLimit || val > upperLimit) {
-                filter.filterValues[val].map(function(lyr) {
-                    filter.layerData.layer.removeLayer(lyr);
-                });
+        if (filter.layerData.layerType !== LayerTypes.HeatMap) {
+            for (let val in filter.filterValues) {
+                if (val < lowerLimit || val > upperLimit) {
+                    filter.filterValues[val].map(function(lyr) {
+                        filter.layerData.layer.removeLayer(lyr);
+                    });
 
+                }
+                else {
+                    filter.filterValues[val].map(function(lyr) {
+                        filter.layerData.layer.addLayer(lyr);
+                    });
+                }
             }
-            else {
-                filter.filterValues[val].map(function(lyr) {
-                    filter.layerData.layer.addLayer(lyr);
-                });
-            }
+        }
+        else {
+            let arr: number[][] = [];
+            filter.layerData.geoJSON.features.map(function(feat) {
+                if (feat.properties[filter.fieldToFilter] > lowerLimit && feat.properties[filter.fieldToFilter] < upperLimit) {
+                    let pos = [];
+                    pos.push(feat.geometry.coordinates[1]);
+                    pos.push(feat.geometry.coordinates[0]);
+                    arr.push(pos);
+                }
+            });
+            filter.layerData.layer.setLatLngs(arr);
         }
     }
 

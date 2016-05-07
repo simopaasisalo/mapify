@@ -54,13 +54,13 @@ interface ILayerData {
     /** The name of the layer. Will be shown in the UI*/
     layerName: string,
     /** The GeoJSON representation of the data.*/
-    geoJSON: Object,
+    geoJSON: { features: any[], type: string },
     /** The type of the layer. Will affect the options available.*/
     layerType: LayerTypes,
     /** The data property names.*/
     headers: IHeader[],
     /** The Leaflet layer. Will be modified by changing options*/
-    layer?: L.GeoJSON,
+    layer?: any,
     /** The active visualization options configuration*/
     visOptions?: IVisualizationOptions
 }
@@ -155,7 +155,7 @@ interface IFilter {
     /** The name of the field to filter*/
     fieldToFilter: string,
     /** Dictionary containing lists of layers by the value being filtered*/
-    filterValues?: { [index: number]: L.ILayer[] },
+    filterValues?: { [value: number]: L.ILayer[] },
     /** Current maximum value */
     maxValue?: number,
     /** Current min value */

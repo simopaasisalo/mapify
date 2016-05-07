@@ -229,21 +229,23 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     valueRenderer = {this.showLayerNameOnMenu}
                     clearable={false}
                     />
-
-                <Menu.Item>
-                    <p
-                        className="menuHeader fa fa-paint-brush"
-                        onClick = {this.changeActiveMenu.bind(this, 1) }
-                        style={{ backgroundColor: this.state.colorOptionsShown ? '#1a263f' : '#293c60' }}> Colors </p>
-                    <ColorMenu
-                        headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
-                        saveValues = {this.refreshColorOptions.bind(this) }
-                        isVisible = {this.state.colorOptionsShown}
-                        prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
-                        isChoropleth = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.ChoroplethMap : false}
-                        />
-                </Menu.Item>
-                {this.state.activeLayer && this.state.activeLayer.layerType != LayerTypes.ChoroplethMap ?
+                {this.state.activeLayer && this.state.activeLayer.layerType !== LayerTypes.HeatMap ?
+                    <Menu.Item>
+                        <p
+                            className="menuHeader fa fa-paint-brush"
+                            onClick = {this.changeActiveMenu.bind(this, 1) }
+                            style={{ backgroundColor: this.state.colorOptionsShown ? '#1a263f' : '#293c60' }}> Colors </p>
+                        <ColorMenu
+                            headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
+                            saveValues = {this.refreshColorOptions.bind(this) }
+                            isVisible = {this.state.colorOptionsShown}
+                            prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
+                            isChoropleth = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.ChoroplethMap : false}
+                            />
+                    </Menu.Item>
+                    : <div/>
+                }
+                {this.state.activeLayer && this.state.activeLayer.layerType !== LayerTypes.ChoroplethMap && this.state.activeLayer.layerType !== LayerTypes.HeatMap ?
                     <Menu.Item >
                         <p
                             className="menuHeader fa fa-map-marker"
@@ -258,7 +260,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     </Menu.Item>
                     : <div/>
                 }
-                <Menu.Item>
+                < Menu.Item >
                     <p
                         className="menuHeader fa fa-sliders"
                         onClick = {this.changeActiveMenu.bind(this, 3) }
@@ -280,17 +282,20 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
 
 
                 </Menu.Item >
-                <Menu.Item>
-                    <p
-                        className="menuHeader fa fa-newspaper-o"
-                        onClick = {this.changeActiveMenu.bind(this, 5) }
-                        style={{ backgroundColor: this.state.popupOptionsShown ? '#1a263f' : '#293c60' }}> Pop-ups </p>
-                    <PopUpMenu
-                        headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
-                        saveSelection = {this.changePopUpHeaders.bind(this) }
-                        isVisible = {this.state.popupOptionsShown}/>
-                </Menu.Item>
+                {this.state.activeLayer && this.state.activeLayer.layerType !== LayerTypes.HeatMap ?
 
+                    <Menu.Item>
+                        <p
+                            className="menuHeader fa fa-newspaper-o"
+                            onClick = {this.changeActiveMenu.bind(this, 5) }
+                            style={{ backgroundColor: this.state.popupOptionsShown ? '#1a263f' : '#293c60' }}> Pop-ups </p>
+                        <PopUpMenu
+                            headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
+                            saveSelection = {this.changePopUpHeaders.bind(this) }
+                            isVisible = {this.state.popupOptionsShown}/>
+                    </Menu.Item>
+                    : <div/>
+                }
 
             </Menu.Menu >
         );

@@ -111,6 +111,10 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
             fileInfo.layerName = 'Air Particle Demo';
             fileInfo.content = symbolSample;
         }
+        else if (type === LayerTypes.HeatMap) {
+            fileInfo.layerName = 'Air Particle Heat Demo';
+            fileInfo.content = symbolSample;
+        }
         this.setFileInfo(fileInfo);
 
     }

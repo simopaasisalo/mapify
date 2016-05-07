@@ -50,7 +50,15 @@ export class LayerTypeSelectView extends React.Component<ILayerTypeSelectProps, 
                         loadDemo = {this.props.loadDemo}
 
                         />
-
+                    <LayerType
+                        name = 'Heatmap'
+                        type = {LayerTypes.HeatMap}
+                        imageLocation = 'app/images/heatpreview.png'
+                        description = 'In development'
+                        onClick = {this.selectMapType.bind(this) }
+                        selected = {this.state.selectedType === LayerTypes.HeatMap}
+                        loadDemo = {this.props.loadDemo}
+                        />
 
                 </div>
                 <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={this.cancel.bind(this) }>Cancel</button>
