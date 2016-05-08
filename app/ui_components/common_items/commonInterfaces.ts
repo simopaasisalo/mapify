@@ -59,6 +59,8 @@ interface ILayerData {
     layerType: LayerTypes,
     /** The data property names.*/
     headers: IHeader[],
+    /** The variable by which to create the heat map*/
+    heatMapVariable?: string,
     /** The Leaflet layer. Will be modified by changing options*/
     layer?: any,
     /** The active visualization options configuration*/

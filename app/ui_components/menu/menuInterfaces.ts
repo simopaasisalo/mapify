@@ -16,22 +16,15 @@ interface IMenuProps {
     legendStatusChanged: (info: ILegend) => void,
     /** Should the menu be rendered*/
     visible: boolean,
+    /** Export map as .png */
+    saveImage: (options: IExportMenuStates) => void,
 }
 
 /** The React states of the menu */
 interface IMenuStates {
-    /** Are the layer options visible*/
-    layerOptionsShown?: boolean,
-    /** Are the color options visible*/
-    colorOptionsShown?: boolean,
-    /** Are the symbol options visible*/
-    symbolOptionsShown?: boolean,
-    /** Are the filter options visible*/
-    filterOptionsShown?: boolean,
-    /** Are the legend options visible*/
-    legendOptionsShown?: boolean,
-    /** Are the pop-up options visible*/
-    popupOptionsShown?: boolean,
+    /** 1-layer,2-color,3-symbol,4-filter,5-legend,6-popup,7-export*/
+    visibleOptions?: number,
+
     /** The currently selected layer*/
     activeLayer?: ILayerData,
 
@@ -94,7 +87,7 @@ interface IColorSchemeProps {
 
 /** The React properties of the symbol menu*/
 interface ISymbolMenuProps extends ISubMenuProps {
-  /** Previous symbol options. Used to keeping the selected values the same between transitions*/
+    /** Previous symbol options. Used to keeping the selected values the same between transitions*/
     prevOptions: ISymbolOptions,
     /** Save the current options to the layer*/
     saveValues: (values: ISymbolOptions) => void,
@@ -154,7 +147,6 @@ interface IFilterMenuStates {
 
 }
 
-
 /** The React properties of the legend menu */
 interface ILegendMenuProps extends ISubMenuProps {
     /** Save the legend options. Is triggered any time a value is changed */
@@ -171,4 +163,16 @@ interface IPopUpMenuProps extends ISubMenuProps {
 interface IPopUpMenuStates {
     /** The pop-up contents */
     shownHeaders: IHeader[],
+}
+
+/** The React states of the export menu */
+interface IExportMenuProps extends ISubMenuProps {
+    saveImage: (options: IExportMenuStates) => void,
+}
+
+/** The React states of the export menu */
+interface IExportMenuStates {
+    showLegend?: boolean,
+    showFilters?: boolean,
+    imageName?: boolean,
 }

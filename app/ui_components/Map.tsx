@@ -12,6 +12,7 @@ import 'drmonty-leaflet-awesome-markers';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
 let heat = require('leaflet.heat');
+let domToImage = require('dom-to-image');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _currentFilterId: number = 0;
@@ -303,12 +304,13 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         let max = 0;
         layerData.geoJSON.features.map(function(feat) {
             let pos = [];
-            let heatVal = feat.properties['autot'];
+
+            let heatVal = feat.properties[layerData.heatMapVariable];
             if (heatVal > max)
                 max = heatVal;
             pos.push(feat.geometry.coordinates[1]);
             pos.push(feat.geometry.coordinates[0]);
-            pos.push(heatVal / max);
+            if (layerData.heatMapVariable) { pos.push(heatVal / max) };
             arr.push(pos);
         });
         return L.heatLayer(arr, {})
@@ -330,9 +332,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             layer.bindPopup(popupContent);
     }
 
-
-
-
     /**
      * addNewLayer - Opens the import wizard for  a new layer
      *
@@ -343,7 +342,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             menuShown: false,
         });
     }
-
 
     /**
      * deleteLayer - Removes a layer from the map and layer list
@@ -494,13 +492,30 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
     }
 
-
+    saveImage(options: IExportMenuStates) {
+        function filter(node) {
+            if (!node.className || !node.className.indexOf)
+                return true;
+            else
+                return (node.className.indexOf('impromptu') === -1
+                    && node.className.indexOf('leaflet-control') === -1
+                    && (options.showLegend || (!options.showLegend && node.className.indexOf('legend') === -1))
+                    && (options.showFilters || (!options.showFilters && node.className.indexOf('filter') === -1))
+                );
+        }
+        domToImage.toBlob(document.getElementById('content'), { filter: filter })
+            .then(function(blob) {
+                (window as any).saveAs(blob, 'Mapify_map.png');
+            });
+    }
     render() {
         let modalStyle = {
             content: {
                 border: '4px solid #6891e2',
                 borderRadius: '15px',
-                padding: '0px'
+                padding: '0px',
+                maxWidth: 800,
+
             }
         }
         return (
@@ -524,6 +539,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     visible={this.state.menuShown}
+                    saveImage ={this.saveImage}
                     />
                 {this.getFilters() }
                 {this.showLegend() }

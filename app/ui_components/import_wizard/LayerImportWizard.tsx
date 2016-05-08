@@ -20,6 +20,7 @@ var values = {
     latField: '',
     lonField: '',
     coordinateSystem: '',
+    heatMapVariable: '',
 }
 
 export class LayerImportWizard extends React.Component<ILayerImportProps, ILayerImportStates>{
@@ -48,7 +49,6 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         this.setLayerName(fileInfo.layerName);
         values.headers = [];
         if (fileInfo.fileExtension === 'geojson') {
-
             values.geoJSON = JSON.parse(fileInfo.content);
             let props = values.geoJSON.features[0].properties;
             for (let h of Object.keys(props)) {
@@ -92,7 +92,8 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
             layerName: values.layerName,
             geoJSON: values.geoJSON,
             layerType: values.layerType,
-            headers: values.headers
+            headers: values.headers,
+            heatMapVariable: values.heatMapVariable,
         };
         this.props.submit(submitData);
     }
@@ -114,11 +115,12 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         else if (type === LayerTypes.HeatMap) {
             fileInfo.layerName = 'Air Particle Heat Demo';
             fileInfo.content = symbolSample;
+            values.heatMapVariable = 'particles'
         }
         this.setFileInfo(fileInfo);
 
     }
-    render() {
+    getCurrentView() {
         switch (this.state.step) {
             case 0:
                 return <LayerTypeSelectView
@@ -138,5 +140,17 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
                     goBack = {this.previousStep.bind(this) }
                     />
         }
+    }
+    render() {
+        let style = {
+            width: 1000
+        }
+        return (
+            <div style ={{ overflowX: 'scroll' }}>
+                <div style ={style}>
+                    { this.getCurrentView() }
+                </div>
+            </div>
+        )
     }
 }

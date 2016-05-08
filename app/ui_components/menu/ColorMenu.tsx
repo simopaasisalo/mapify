@@ -49,8 +49,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             nextState.steps !== this.state.steps ||
             nextState.mode !== this.state.mode;
     }
-    baseColorChanged(color) {
+    colorSelect(color) {
         this.setState({
+            startColor: '#' + color.hex,
             baseColor: this.state.editing === 'baseColor' ? '#' + color.hex : this.state.baseColor,
             borderColor: this.state.editing === 'borderColor' ? '#' + color.hex : this.state.borderColor,
 
@@ -174,7 +175,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                     <div style={colorSelectStyle}>
                         <ColorPicker.SwatchesPicker
                             color={ this.state.startColor}
-                            onChange={this.baseColorChanged.bind(this) }
+                            onChange={this.colorSelect.bind(this) }
                             />
                     </div>
                 }

@@ -28,7 +28,7 @@ export class LegendMenu extends React.Component<ILegendMenuProps, ILegend>{
     horizontalChanged(e) {
         this.setState({
             horizontal: e.currentTarget.checked
-        })
+        });
     }
     componentDidUpdate() {
         let info: ILegend = {

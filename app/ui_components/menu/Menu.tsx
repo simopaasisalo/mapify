@@ -5,6 +5,7 @@ import {SymbolMenu} from './SymbolMenu';
 import {FilterMenu} from './FilterMenu';
 import {LegendMenu} from './LegendMenu';
 import {PopUpMenu} from './PopUpMenu';
+import {ExportMenu} from './ExportMenu';
 import {LayerTypes, SymbolTypes} from '../common_items/common';
 
 let Select = require('react-select');
@@ -13,12 +14,7 @@ let Menu = require('impromptu-react-sidemenu');
 export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     componentWillMount() {
         this.state = {
-            colorOptionsShown: false,
-            symbolOptionsShown: false,
-            layerOptionsShown: false,
-            filterOptionsShown: false,
-            legendOptionsShown: false,
-            popupOptionsShown: false,
+            visibleOptions: 0,
             activeLayer: this.props.layers ? this.props.layers[0] : null,
         };
     }
@@ -28,98 +24,36 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         });
     }
     shouldComponentUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
-
         return this.props.layers !== nextProps.layers ||
             this.props.visible !== nextProps.visible ||
-            this.state.colorOptionsShown !== nextState.colorOptionsShown ||
-            this.state.symbolOptionsShown !== nextState.symbolOptionsShown ||
-            this.state.layerOptionsShown !== nextState.layerOptionsShown ||
-            this.state.filterOptionsShown !== nextState.filterOptionsShown ||
-            this.state.legendOptionsShown !== nextState.legendOptionsShown ||
-            this.state.popupOptionsShown !== nextState.popupOptionsShown ||
+            this.state.visibleOptions !== nextState.visibleOptions ||
             this.state.activeLayer !== nextState.activeLayer;
     }
 
     componentWillUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
         if (nextProps.layers.length === 0) {
             this.setState({
-                colorOptionsShown: false,
-                symbolOptionsShown: false,
                 activeLayer: null,
             })
         }
     }
 
     changeActiveMenu(item) {
-        switch (item) {
-            case 0:
-                this.setState({
-                    layerOptionsShown: !this.state.layerOptionsShown,
-                    colorOptionsShown: false,
-                    symbolOptionsShown: false,
-                    filterOptionsShown: false,
-                    legendOptionsShown: false,
-                    popupOptionsShown: false,
-                });
-                break;
-            case 1:
-                this.setState({
-                    layerOptionsShown: false,
-                    colorOptionsShown: !this.state.colorOptionsShown,
-                    symbolOptionsShown: false,
-                    filterOptionsShown: false,
-                    legendOptionsShown: false,
-                    popupOptionsShown: false,
-                });
-                break;
-            case 2:
-                this.setState({
-                    layerOptionsShown: false,
-                    colorOptionsShown: false,
-                    symbolOptionsShown: !this.state.symbolOptionsShown,
-                    filterOptionsShown: false,
-                    legendOptionsShown: false,
-                    popupOptionsShown: false,
-                });
-                break;
-            case 3:
-                this.setState({
-                    layerOptionsShown: false,
-                    colorOptionsShown: false,
-                    symbolOptionsShown: false,
-                    filterOptionsShown: !this.state.filterOptionsShown,
-                    legendOptionsShown: false,
-                    popupOptionsShown: false,
-                });
-                break;
-            case 4:
-                this.setState({
-                    layerOptionsShown: false,
-                    colorOptionsShown: false,
-                    symbolOptionsShown: false,
-                    filterOptionsShown: false,
-                    legendOptionsShown: !this.state.legendOptionsShown,
-                    popupOptionsShown: false,
-                });
-                break;
-            case 5:
-                this.setState({
-                    layerOptionsShown: false,
-                    colorOptionsShown: false,
-                    symbolOptionsShown: false,
-                    filterOptionsShown: false,
-                    legendOptionsShown: false,
-                    popupOptionsShown: !this.state.popupOptionsShown,
-                });
-                break;
+        if (this.state.visibleOptions === item) {
+            this.setState({
+                visibleOptions: 0
+            });
+        }
+        else {
+            this.setState({
+                visibleOptions: item
+            });
         }
 
     }
     activeLayerChanged(val: { label: string, value: ILayerData }) {
         this.setState({
-            colorOptionsShown: false,
-            symbolOptionsShown: false,
-            layerOptionsShown: false,
+            visibleOptions: 0,
             activeLayer: val.value,
         });
 
@@ -130,8 +64,8 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     }
     addNewLayer() {
         this.setState({
-            colorOptionsShown: false,
-            symbolOptionsShown: false,
+            visibleOptions: 0,
+
         });
         this.props.addLayer();
     }
@@ -193,7 +127,9 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
         })
         this.refreshMap();
     }
-
+    saveImage(options: IExportMenuStates) {
+        this.props.saveImage(options);
+    }
     render() {
         let layers = [];
         if (this.props.layers) {
@@ -211,10 +147,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 <Menu.Item>
                     <p
                         className="menuHeader fa fa-bars"
-                        onClick = {this.changeActiveMenu.bind(this, 0) }
-                        style={{ backgroundColor: this.state.layerOptionsShown ? '#1a263f' : '#293c60' }}> Layers </p>
+                        onClick = {this.changeActiveMenu.bind(this, 1) }
+                        style={{ backgroundColor: this.state.visibleOptions === 1 ? '#1a263f' : '#293c60' }}> Layers </p>
                     <LayerMenu
-                        isVisible = {this.state.layerOptionsShown}
+                        isVisible = {this.state.visibleOptions === 1}
                         layers={this.props.layers}
                         saveOrder={this.layerOrderChanged.bind(this) }
                         addNewLayer = {this.addNewLayer.bind(this) }
@@ -233,12 +169,12 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-paint-brush"
-                            onClick = {this.changeActiveMenu.bind(this, 1) }
-                            style={{ backgroundColor: this.state.colorOptionsShown ? '#1a263f' : '#293c60' }}> Colors </p>
+                            onClick = {this.changeActiveMenu.bind(this, 2) }
+                            style={{ backgroundColor: this.state.visibleOptions === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
                         <ColorMenu
                             headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                             saveValues = {this.refreshColorOptions.bind(this) }
-                            isVisible = {this.state.colorOptionsShown}
+                            isVisible = {this.state.visibleOptions === 2}
                             prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
                             isChoropleth = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.ChoroplethMap : false}
                             />
@@ -249,12 +185,12 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     <Menu.Item >
                         <p
                             className="menuHeader fa fa-map-marker"
-                            onClick = {this.changeActiveMenu.bind(this, 2) }
-                            style={{ backgroundColor: this.state.symbolOptionsShown ? '#1a263f' : '#293c60' }}> Symbols </p>
+                            onClick = {this.changeActiveMenu.bind(this, 3) }
+                            style={{ backgroundColor: this.state.visibleOptions === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
                         <SymbolMenu
                             headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                             saveValues = {this.refreshSymbolOptions.bind(this) }
-                            isVisible = {this.state.symbolOptionsShown}
+                            isVisible = {this.state.visibleOptions === 3}
                             prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.symbolOptions : null}
                             />
                     </Menu.Item>
@@ -263,22 +199,22 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 < Menu.Item >
                     <p
                         className="menuHeader fa fa-sliders"
-                        onClick = {this.changeActiveMenu.bind(this, 3) }
-                        style={{ backgroundColor: this.state.filterOptionsShown ? '#1a263f' : '#293c60' }}> Filters </p>
+                        onClick = {this.changeActiveMenu.bind(this, 4) }
+                        style={{ backgroundColor: this.state.visibleOptions === 4 ? '#1a263f' : '#293c60' }}> Filters </p>
 
                     <FilterMenu
                         headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
                         addFilterToMap = {this.addFilterToMap.bind(this) }
-                        isVisible = {this.state.filterOptionsShown}/>
+                        isVisible = {this.state.visibleOptions === 4}/>
                 </Menu.Item>
                 <Menu.Item>
                     <p
                         className="menuHeader fa fa-map-o"
-                        onClick = {this.changeActiveMenu.bind(this, 4) }
-                        style={{ backgroundColor: this.state.legendOptionsShown ? '#1a263f' : '#293c60' }}> Legend </p>
+                        onClick = {this.changeActiveMenu.bind(this, 5) }
+                        style={{ backgroundColor: this.state.visibleOptions === 5 ? '#1a263f' : '#293c60' }}> Legend </p>
                     <LegendMenu
                         valuesChanged={this.legendStatusChanged.bind(this) }
-                        isVisible = {this.state.legendOptionsShown}/>
+                        isVisible = {this.state.visibleOptions === 5}/>
 
 
                 </Menu.Item >
@@ -287,16 +223,25 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-newspaper-o"
-                            onClick = {this.changeActiveMenu.bind(this, 5) }
-                            style={{ backgroundColor: this.state.popupOptionsShown ? '#1a263f' : '#293c60' }}> Pop-ups </p>
+                            onClick = {this.changeActiveMenu.bind(this, 6) }
+                            style={{ backgroundColor: this.state.visibleOptions === 6 ? '#1a263f' : '#293c60' }}> Pop-ups </p>
                         <PopUpMenu
                             headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
                             saveSelection = {this.changePopUpHeaders.bind(this) }
-                            isVisible = {this.state.popupOptionsShown}/>
+                            isVisible = {this.state.visibleOptions === 6}/>
                     </Menu.Item>
                     : <div/>
                 }
-
+                <Menu.Item>
+                    <p
+                        className="menuHeader fa fa-newspaper-o"
+                        onClick = {this.changeActiveMenu.bind(this, 7) }
+                        style={{ backgroundColor: this.state.visibleOptions === 7 ? '#1a263f' : '#293c60' }}> Export map </p>
+                    <ExportMenu
+                        isVisible = {this.state.visibleOptions === 7}
+                        saveImage = {this.saveImage.bind(this) }
+                        />
+                </Menu.Item>
             </Menu.Menu >
         );
     }

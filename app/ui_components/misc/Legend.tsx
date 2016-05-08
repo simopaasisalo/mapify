@@ -110,10 +110,10 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
     render() {
         return (
             <Draggable
-                handle={'.legendTitle'}
+                handle={'.legendHeader'}
                 >
-                <div className='draggable'>
-                    <h2 className='legendTitle'>{this.props.title}</h2>
+                <div className='legend'>
+                    <h2 className='draggableHeader legendHeader'>{this.props.title}</h2>
                     <div>
                         {this.createLegend(this.props.mapLayers[0].visOptions) }
                     </div>

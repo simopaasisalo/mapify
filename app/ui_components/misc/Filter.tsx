@@ -92,11 +92,11 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
 
     render() {
         return <Draggable
-            handle={'.filterTitle'}
+            handle={'.filterHeader'}
             >
 
-            <div className='draggable'>
-                <h2 className='filterTitle'>{this.props.title}</h2>
+            <div className='filter'>
+                <h2 className='draggableHeader filterHeader'>{this.props.title}</h2>
                 <span>
                     <input type='number' style={{ width: '60px' }} value={this.state.lowerLimit.toFixed(0) } onChange={this.lowerLimitChanged.bind(this) }/>
                     <label>Lock distance</label>
