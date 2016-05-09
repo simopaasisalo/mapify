@@ -88,13 +88,42 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
 
     }
+
+    createChartSymbolLegend(options: ISymbolOptions) {
+        let divs = [];
+        let headers = options.chartFields;
+        let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
+
+        for (let i = 0; i < headers.length; i++) {
+            let colorStyle = {
+                background: colors[i],
+                minWidth: '20px',
+                minHeight: '20px',
+            }
+            divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
+                <div style={colorStyle} />
+                <span style={{ marginLeft: '3px', marginRight: '3px' }}>
+                    { headers[i]}
+                </span>
+            </div >);
+        }
+        return <div style={{ margin: '5px', float: 'left' }}>
+            <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+                { divs.map(function(d) { return d }) }
+            </div >
+        </div >;
+    }
+
     createNormalLegend(options: IVisualizationOptions) {
 
     }
     createLegend(options: IVisualizationOptions) {
-        let choroLegend, scaledLegend, normalLegend;
+        let choroLegend, scaledLegend, chartLegend, normalLegend;
         if (options.colorOptions.colors) {
             choroLegend = this.createChoroplethLegend(options);
+        }
+        if (options.symbolOptions.symbolType === SymbolTypes.Chart) {
+            chartLegend = this.createChartSymbolLegend(options.symbolOptions);
         }
         if (options.symbolOptions.sizeVariable) {
             scaledLegend = this.createScaledSizeLegend(options);
@@ -105,6 +134,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         return <div>
             {choroLegend}
             {scaledLegend}
+            {chartLegend}
         </div>
     }
     render() {

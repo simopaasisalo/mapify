@@ -1,6 +1,7 @@
 declare var require: any;
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
@@ -10,6 +11,8 @@ import {Legend} from './misc/Legend';
 import 'leaflet';
 import 'drmonty-leaflet-awesome-markers';
 let Modal = require('react-modal');
+let d3 = require('d3');
+
 let chroma = require('chroma-js');
 let heat = require('leaflet.heat');
 let domToImage = require('dom-to-image');
@@ -172,6 +175,28 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
                         return L.marker(latlng, { icon: rectMarker });
                     }
+                    else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Chart) {
+                        let sym = layerData.visOptions.symbolOptions;
+                        let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
+                        let vals = [];
+                        let i = 0;
+                        sym.chartFields.map(function(e) {
+                            vals.push({ feat: e, val: feature.properties[e], color: colors[i] });
+                            i++;
+                        });
+
+                        let html = makePieChart({
+                            data: vals,
+                            valueFunc: function(d) { return d.val; },
+                            strokeWidth: 1,
+                            outerRadius: 30,
+                            innerRadius: 10,
+                            pieClass: function(d) { return d.data.feat },
+                            pathFillFunc: function(d) { return d.data.color },
+                        });
+                        let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
+                        return L.marker(latlng, { icon: marker });
+                    }
                     else {
                         return L.circleMarker(latlng, layerData.visOptions.colorOptions);
                     }
@@ -185,7 +210,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 layer = L.geoJson(layerData.geoJSON, layerData.visOptions);
             }
             else if (layerData.layerType === LayerTypes.HeatMap) {
-                console.log('heatenings')
                 layer = this.createHeatLayer(layerData);
             }
             layer.addTo(_map);
@@ -202,6 +226,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             this.setState({
                 layers: layers,
             });
+
         }
 
         function scaleSymbolLayerSize(opt: ISymbolOptions) {
@@ -233,6 +258,65 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     }
                 }
             });
+        }
+
+        function makePieChart(options) {
+            if (!options.data || !options.valueFunc) {
+                return '';
+            }
+            var data = options.data,
+                valueFunc = options.valueFunc,
+                r = options.outerRadius ? options.outerRadius : 28,
+                rInner = options.innerRadius ? options.innerRadius : r - 10,
+                strokeWidth = options.strokeWidth ? options.strokeWidth : 1,
+                pathTitleFunc = options.pathTitleFunc ? options.pathTitleFunc : function(d) { return d.data.feat + ': ' + d.data.val }, //Title for each path
+                pieLabel = options.pieLabel ? options.pieLabel : '', //Label for the whole pie
+                pieLabelClass = options.pieLabelClass ? options.pieLabelClass : 'marker-cluster-pie-label',//Class for the pie label
+                pathFillFunc = options.pathFillFunc,
+
+                origo = (r + strokeWidth), //Center coordinate
+                w = origo * 2, //width and height of the svg element
+                h = w,
+                donut = d3.layout.pie(),
+                arc = d3.svg.arc().innerRadius(rInner).outerRadius(r);
+
+            //Create an svg element
+            var svg = document.createElementNS(d3.ns.prefix.svg, 'svg');
+            //Create the pie chart
+            var vis = d3.select(svg)
+                .data([data])
+                .attr('width', w)
+                .attr('height', h);
+
+            var arcs = vis.selectAll('g.arc')
+                .data(donut.value(valueFunc))
+                .enter().append('svg:g')
+                .attr('class', 'arc')
+                .attr('transform', 'translate(' + origo + ',' + origo + ')');
+
+            arcs.append('svg:path')
+                .attr('fill', pathFillFunc)
+                .attr('stroke', '#2b262a')
+                .attr('stroke-width', strokeWidth)
+                .attr('d', arc)
+                .append('svg:title')
+                .text(pathTitleFunc);
+
+            vis.append('text')
+                .attr('x', origo)
+                .attr('y', origo)
+                .attr('text-anchor', 'middle')
+                //.attr('dominant-baseline', 'central')
+                /*IE doesn't seem to support dominant-baseline, but setting dy to .3em does the trick*/
+                .attr('dy', '.3em')
+                .text(pieLabel);
+            //Return the svg-markup rather than the actual element
+            if (typeof (window as any).XMLSerializer != "undefined") {
+                return (new (window as any).XMLSerializer()).serializeToString(svg);
+            } else if (typeof (svg as any).xml != "undefined") {
+                return (svg as any).xml;
+            }
+            return "";
         }
 
     }

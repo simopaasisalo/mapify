@@ -120,6 +120,8 @@ interface ISymbolOptions {
     actualMaxValue?: number,
     /** If symbol is of scalable type, the maximum of all the radii being calculated. Is used in the legend */
     actualMaxRadius?: number,
+    /** The fields which to draw on a chart*/
+    chartFields?: string[]
 }
 /** The React properties of the filters shown on the map */
 interface IOnScreenFilterProps {

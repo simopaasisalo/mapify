@@ -123,11 +123,13 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
     getCurrentView() {
         switch (this.state.step) {
             case 0:
-                return <LayerTypeSelectView
-                    loadDemo={this.loadDemo.bind(this) }
-                    saveValues={this.setLayerType.bind(this) }
-                    cancel = {this.cancel.bind(this) }
-                    />;
+                return <div style={{ width: 1000 }}>
+                    <LayerTypeSelectView
+                        loadDemo={this.loadDemo.bind(this) }
+                        saveValues={this.setLayerType.bind(this) }
+                        cancel = {this.cancel.bind(this) }
+                        />;
+                </div>
             case 1:
                 return <FileUploadView
                     saveValues={this.setFileInfo.bind(this) }
@@ -142,14 +144,9 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         }
     }
     render() {
-        let style = {
-            width: 1000
-        }
         return (
-            <div style ={{ overflowX: 'scroll' }}>
-                <div style ={style}>
-                    { this.getCurrentView() }
-                </div>
+            <div style ={{ overflowX: 'auto' }}>
+                { this.getCurrentView() }
             </div>
         )
     }

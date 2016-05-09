@@ -8,8 +8,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chart.js": "^2.1.2",
     "chroma-js": "^1.1.1",
     "csv2geojson": "^5.0.0",
+    "d3": "^3.5.17",
     "dom-to-image": "^2.4.0",
     "drmonty-leaflet-awesome-markers": "^2.0.2",
     "impromptu-react-sidemenu": "^0.1.1",

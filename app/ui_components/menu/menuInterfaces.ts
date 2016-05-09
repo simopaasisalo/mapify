@@ -107,6 +107,8 @@ interface ISymbolMenuStates {
     sizeUpLimit?: number,
     /** The multiplier to scale the value by*/
     sizeMultiplier?: number,
+    /** Currently selected chart fields*/
+    chartFields?: IHeader[],
 }
 
 /** The React properties of the layer menu*/

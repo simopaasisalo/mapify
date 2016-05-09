@@ -57,7 +57,7 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
         this.props.saveValues(values);
     }
     render() {
-        return <div>
+        return <div style={{ height: '100%' }}>
             <div>
                 <div className = 'dialogHeader'>
                     <h2>Just a few more details</h2>
