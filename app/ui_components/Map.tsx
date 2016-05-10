@@ -453,45 +453,18 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  info   The IFilter description of the new filter
      */
     createFilterToLayer(info: IFilter) {
-        let maxVal, minVal;
         let filterValues: { [index: number]: L.ILayer[] } = {};
         let filters: { [title: string]: IFilter } = this.state.filters;
         if (info.layerData.layerType !== LayerTypes.HeatMap) {
             info.layerData.layer.eachLayer(function(layer) {
                 let val = (layer as any).feature.properties[info.fieldToFilter];
-                if (!minVal && !maxVal) { //initialize min and max values as the first value
-                    minVal = val;
-                    maxVal = val;
-                }
-                else {
-                    if (val < minVal)
-                        minVal = val;
-                    if (val > maxVal)
-                        maxVal = val;
-                }
                 if (filterValues[val])
                     filterValues[val].push(layer);
                 else
                     filterValues[val] = [layer];
             });
         }
-        //for heatmaps (and other non-layer types) only save the values from the GeoJSON object
-        else {
-            info.layerData.geoJSON.features.map(function(feat) {
-                let val = feat.properties[info.fieldToFilter];
-                if (!minVal && !maxVal) {
-                    minVal = val;
-                    maxVal = val;
-                }
-                else {
-                    if (val < minVal)
-                        minVal = val;
-                    if (val > maxVal)
-                        maxVal = val;
-                }
-            });
-        }
-        filters[info.title] = { id: _currentFilterId++, title: info.title, layerData: info.layerData, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: minVal, maxValue: maxVal };
+        filters[info.title] = { id: _currentFilterId++, title: info.title, layerData: info.layerData, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: info.minValue, maxValue: info.maxValue, steps: info.steps };
         this.setState({
             filters: filters,
             importWizardShown: this.state.importWizardShown,
@@ -551,7 +524,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 title={key}
                 valueChanged={this.filterLayer.bind(this) }
                 key={key} maxValue={this.state.filters[key].maxValue}
-                minValue={this.state.filters[key].minValue}/>)
+                minValue={this.state.filters[key].minValue}
+                steps={this.state.filters[key].steps}/>)
         }
         return arr;
     }

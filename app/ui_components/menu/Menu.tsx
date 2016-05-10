@@ -203,9 +203,9 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         style={{ backgroundColor: this.state.visibleOptions === 4 ? '#1a263f' : '#293c60' }}> Filters </p>
 
                     <FilterMenu
-                        headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
+                        layer = {this.state.activeLayer}
                         addFilterToMap = {this.addFilterToMap.bind(this) }
-                        isVisible = {this.state.visibleOptions === 4}/>
+                        isVisible = {this.state.activeLayer && this.state.visibleOptions === 4}/>
                 </Menu.Item>
                 <Menu.Item>
                     <p
@@ -234,7 +234,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 }
                 <Menu.Item>
                     <p
-                        className="menuHeader fa fa-newspaper-o"
+                        className="menuHeader fa fa-download"
                         onClick = {this.changeActiveMenu.bind(this, 7) }
                         style={{ backgroundColor: this.state.visibleOptions === 7 ? '#1a263f' : '#293c60' }}> Export map </p>
                     <ExportMenu

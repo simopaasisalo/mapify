@@ -61,15 +61,14 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             chartFields: chartHeads
         });
     }
-    getIcons(that) {
-
+    getIcons() {
         let arr = [];
         let columnCount = 7;
         for (let i = 0; i < faIcons.length; i += columnCount) {
 
             arr.push(
                 <tr key={i}>
-                    {getColumns(that, i).map(
+                    {getColumns.call(this, i).map(
                         function(column) {
                             return column;
                         })
@@ -78,18 +77,18 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             );
         }
 
-        function getColumns(that, i: number) {
+        function getColumns(i: number) {
             let columns = [];
             for (let c = 0; c < columnCount; c++) {
                 let style = {
                     width: 30,
                     height: 30,
-                    border: that.state.iconFA === faIcons[i + c] ? '1px solid #999999' : '1px solid #1a263f',
+                    border: this.state.iconFA === faIcons[i + c] ? '1px solid #999999' : '1px solid #1a263f',
                     borderRadius: 30,
                     lineHeight: '30px',
                     textAlign: 'center'
                 }
-                columns.push(<td style={style} key={i + c} className={'fa ' + faIcons[i + c]} onClick={that.faIconChanged.bind(that, faIcons[i + c]) }/>);
+                columns.push(<td style={style} key={i + c} className={'fa ' + faIcons[i + c]} onClick={this.faIconChanged.bind(this, faIcons[i + c]) }/>);
             }
             return columns;
         }
@@ -137,7 +136,8 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             />
                         <br/>
 
-                    </label><label forHTML='icon'>
+                    </label>
+                    <label forHTML='icon'>
                         Icon
                         <input
                             type='radio'
@@ -189,7 +189,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                     {
                         this.state.symbolType === SymbolTypes.Icon ?
                             <div>
-                                {this.getIcons(this) }
+                                {this.getIcons.call(this) }
                             </div>
 
                             : null
@@ -209,6 +209,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                                 onChange={this.chartFieldsChanged.bind(this) }
                                 value={this.state.chartFields}
                                 />
+                            <i>TIP: hover over symbol segments to see corresponding value</i>
                         </div>
 
                         : null}

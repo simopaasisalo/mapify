@@ -89,14 +89,49 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
             lockDistance: e.currentTarget.checked,
         });
     }
+    customStepClicked(i: number) {
+        let minVal = this.props.steps[i][0];
+        let maxVal = this.props.steps[i][1];
+        this.setState({
+            lowerLimit: minVal,
+            upperLimit: maxVal,
+        });
+    }
+    renderSteps() {
+        let rows = [];
+        let inputStyle = {
+            display: 'inline',
+            width: 100
+        }
+        console.log(this)
+        if (this.props.steps) {
+            let index = 0;
+            this.props.steps.forEach(function(step) {
+                console.log(this)
+                rows.push(
+                    <div
+                        key={step}
+                        onClick={this.customStepClicked.bind(this, index) }
+                        >{step[0] + '-' + step[1]}
+                    </div>)
+                index++;
+            }, this);
+
+        }
+        return <div>{rows.map(function(e) { return e }) } </div>
+
+        function getRows(step) {
+
+        }
+    }
 
     render() {
         return <Draggable
-            handle={'.filterHeader'}
+            handle={'.draggableHeader'}
             >
-
             <div className='filter'>
-                <h2 className='draggableHeader filterHeader'>{this.props.title}</h2>
+                <h2 className='draggableHeader'>{this.props.title}</h2>
+                {this.renderSteps.call(this) }
                 <span>
                     <input type='number' style={{ width: '60px' }} value={this.state.lowerLimit.toFixed(0) } onChange={this.lowerLimitChanged.bind(this) }/>
                     <label>Lock distance</label>

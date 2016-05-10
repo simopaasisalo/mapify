@@ -132,7 +132,8 @@ interface IOnScreenFilterProps {
     /** The maximum of the value being filtered */
     maxValue: number,
     /** The event for following the current values  */
-    valueChanged: (title: string, lowerLimit: number, upperLimit: number) => void
+    valueChanged: (title: string, lowerLimit: number, upperLimit: number) => void,
+    steps: [number, number][],
 }
 /** The React statuses of the filters shown on the map */
 interface IOnScreenFilterStates {
@@ -164,6 +165,8 @@ interface IFilter {
     maxValue?: number,
     /** Current min value */
     minValue?: number,
+    /** User defined steps*/
+    steps?: [number, number][],
 
 }
 

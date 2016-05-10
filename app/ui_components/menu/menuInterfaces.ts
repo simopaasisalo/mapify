@@ -132,11 +132,16 @@ interface ILayerMenuStates {
 }
 
 /** The React properties of the filter menu*/
-interface IFilterMenuProps extends ISubMenuProps {
+interface IFilterMenuProps {
     /** adds the filter control to the map. Is triggered by button press */
     addFilterToMap: (info: IFilter) => void,
     /** Removes filter by specified id from the map */
     removeFilterFromMap?: (id: number) => void,
+    /** Should the menu be displayed */
+    isVisible: boolean,
+    /** The currently selected layer from the Menu*/
+    layer: ILayerData,
+
 
 }
 
@@ -146,7 +151,16 @@ interface IFilterMenuStates {
     selectedField?: string,
     /** The title of the filter to be rendered*/
     filterTitle?: string,
-
+    /** Let the user define custom steps for the filter */
+    useCustomSteps?: boolean,
+    /** Amount of steps. Default 5*/
+    customStepCount?: number,
+    /** The custom steps (minVal-maxVal)[]*/
+    customSteps?: [number, number][],
+    /** Layer's feature's minimum value*/
+    minVal?: number,
+    /** Layer's feature's maximum value*/
+    maxVal?: number,
 }
 
 /** The React properties of the legend menu */
