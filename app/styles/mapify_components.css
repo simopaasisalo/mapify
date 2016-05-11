@@ -38,7 +38,12 @@ h2,h3{
   color: white;
 }
 
-.draggable{
+.draggableHeader{
+  background: #6891e2;
+  color: white;
+}
+
+.react-draggable{
   position: absolute;
   left: 0px;
   top: 400px;
@@ -46,6 +51,7 @@ h2,h3{
   border-radius: 15px;
   border: 2px solid gray;
   float: left;
+  overflow: hidden;
 }
 
 .primaryButton {
