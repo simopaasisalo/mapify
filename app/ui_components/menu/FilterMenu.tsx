@@ -100,7 +100,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
     filterChanged(id: number) {
         this.setState({
             selectedFilterId: id,
-            filterTitle: this.props.filters.filter(function(f) { return f.id = id })[0].title
+            filterTitle: this.props.filters.filter(function(f) { return f.id === id })[0].title
         });
     }
     createNewFilter() {
