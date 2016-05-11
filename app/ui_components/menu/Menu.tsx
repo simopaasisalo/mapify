@@ -98,8 +98,8 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     }
 
     addFilterToMap(info: IFilter) {
-        info.layerData = this.state.activeLayer;
-        this.props.createFilter(info);
+        info.layerDataId = this.state.activeLayer.id;
+        return this.props.createFilter(info);
     }
 
     legendStatusChanged(info: ILegend) {
@@ -203,6 +203,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         style={{ backgroundColor: this.state.visibleOptions === 4 ? '#1a263f' : '#293c60' }}> Filters </p>
 
                     <FilterMenu
+                        filters={this.props.filters}
                         layer = {this.state.activeLayer}
                         addFilterToMap = {this.addFilterToMap.bind(this) }
                         isVisible = {this.state.activeLayer && this.state.visibleOptions === 4}/>

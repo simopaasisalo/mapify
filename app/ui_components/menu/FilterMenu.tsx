@@ -6,6 +6,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
         super(props);
         this.state =
             {
+                selectedFilterId: -1,
                 filterTitle: '',
                 selectedField: '',
                 useCustomSteps: false,
@@ -18,7 +19,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
 
         this.setState({
             selectedField: val.value,
-            filterTitle: this.state.filterTitle ? this.state.filterTitle : val.value
+            filterTitle: this.state.filterTitle ? this.state.filterTitle : val.value + '-filter'
         });
     }
     useStepsChanged(e) {
@@ -45,6 +46,14 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
         });
 
 
+    }
+    changeStepsCount(amount: number) {
+        let newVal = this.state.customStepCount + amount;
+        if (newVal > 0) {
+            this.setState({
+                customStepCount: newVal,
+            });
+        }
     }
 
     renderSteps() {
@@ -79,17 +88,37 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                 row++;
             }
         }
-        return <ul id='customSteps' style={{ listStyle: 'none' }}>{rows.map(function(r) { return r }) }</ul>
+        return <div>
+            <button onClick={this.changeStepsCount.bind(this, -1) }>-</button>
+            <button onClick={this.changeStepsCount.bind(this, 1) }>+</button>
+            <ul id='customSteps' style={{ listStyle: 'none' }}>{rows.map(function(r) { return r }) }</ul>
+        </div>
     }
     filterTitleChanged(e) {
         this.setState({ filterTitle: e.target.value });
     }
-    createFilter() {
+    filterChanged(id: number) {
+        this.setState({
+            selectedFilterId: id,
+            filterTitle: this.props.filters.filter(function(f) { return f.id = id })[0].title
+        });
+    }
+    createNewFilter() {
+        this.setState({
+            selectedFilterId: -1,
+            filterTitle: '',
+        });
+    }
+    saveFilter() {
         let steps;
         if (this.state.useCustomSteps) {
             steps = this.getStepValues();
         }
-        this.props.addFilterToMap({ id: 0, title: this.state.filterTitle, fieldToFilter: this.state.selectedField, minValue: this.state.minVal, maxValue: this.state.maxVal, steps: steps });
+        let id = this.props.addFilterToMap({ id: this.state.selectedFilterId, title: this.state.filterTitle, fieldToFilter: this.state.selectedField, minValue: this.state.minVal, maxValue: this.state.maxVal, steps: steps });
+        this.setState({
+            selectedFilterId: id,
+
+        });
     }
 
     getStepValues() {
@@ -104,16 +133,37 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
         return steps;
     }
     render() {
+        let filters = [];
+        for (let i in this.props.filters) {
+            filters.push({ value: this.props.filters[i].id, label: this.props.filters[i].title });
+        }
+
         return !this.props.isVisible ? null :
             <div className="mapify-options">
-                <label>Select the variable by which to filter</label>
-                <Select
-                    options={this.props.layer.headers}
-                    onChange={this.filterVariableChanged.bind(this) }
-                    value={this.state.selectedField}
-                    />
+                {filters.length > 0 && this.state.selectedFilterId !== -1 ?
+                    <div>
+                        <label>Select the filter to update</label>
+                        <Select
+                            options={filters}
+                            onChange={this.filterChanged.bind(this) }
+                            value={this.state.selectedFilterId}
+                            />
+                        <p>Or</p>
+                        <button onClick={this.createNewFilter.bind(this) }>Create new filter</button>
+                    </div>
+                    : null}
+                {this.state.selectedFilterId === -1 ?
+                    <div>
+                        <label>Select the variable by which to filter</label>
+                        <Select
+                            options={this.props.layer.headers}
+                            onChange={this.filterVariableChanged.bind(this) }
+                            value={this.state.selectedField}
+                            />
+                    </div>
+                    : null}
                 <label forHTML='steps'>
-                    Set steps
+                    Use predefined steps
                     <input
                         type='checkbox'
                         onChange={this.useStepsChanged.bind(this) }
@@ -129,7 +179,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                     : null}
                 <label>Give a name to the filter</label>
                 <input type="text" onChange={this.filterTitleChanged.bind(this) } value={this.state.filterTitle}/>
-                <button onClick={this.createFilter.bind(this) }>Create filter</button>
+                <button onClick={this.saveFilter.bind(this) }>Create filter</button>
             </div>
     }
 }

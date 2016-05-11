@@ -14,7 +14,7 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
 
     }
     componentDidUpdate() {
-        this.props.valueChanged(this.props.title, this.state.lowerLimit, this.state.upperLimit)
+        this.props.valueChanged(this.props.id, this.state.lowerLimit, this.state.upperLimit)
 
     }
     advanceSliderWhenLocked(lower, upper) {
@@ -99,17 +99,18 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
     }
     renderSteps() {
         let rows = [];
-        let inputStyle = {
-            display: 'inline',
-            width: 100
+        let style = {
+            border: '1px solid #6891e2',
+            borderRadius: '5',
+            textAlign: 'center',
+            cursor: 'pointer'
         }
-        console.log(this)
         if (this.props.steps) {
             let index = 0;
             this.props.steps.forEach(function(step) {
-                console.log(this)
                 rows.push(
                     <div
+                        style={style}
                         key={step}
                         onClick={this.customStepClicked.bind(this, index) }
                         >{step[0] + '-' + step[1]}

@@ -54,7 +54,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             importWizardShown: false,
             menuShown: false,
             layers: null,
-            filters: {}
+            filters: []
         };
 
     }
@@ -154,6 +154,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
+            let filter = this.state.filters.filter((f) => { return f.layerDataId === layerData.id })[0];
+
             _map.removeLayer(layerData.layer);
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
@@ -212,6 +214,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             else if (layerData.layerType === LayerTypes.HeatMap) {
                 layer = this.createHeatLayer(layerData);
             }
+
             layer.addTo(_map);
             layerData.layer = layer;
             let layers = this.state.layers.filter((lyr) => { return lyr.id != layerData.id });
@@ -227,6 +230,9 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 layers: layers,
             });
 
+
+            if (filter)
+                this.saveFilter(filter, true);
         }
 
         function scaleSymbolLayerSize(opt: ISymbolOptions) {
@@ -448,15 +454,31 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
 
     /**
-     * createFilterToLayer - Creates a new filter and calculates its values
+     * createFilterToLayer - Creates a new filter or updates an existing one
      *
      * @param  info   The IFilter description of the new filter
+     * @param  layerUpdate   Was the update triggered by layer refresh? If so, do not reset filter
      */
-    createFilterToLayer(info: IFilter) {
-        let filterValues: { [index: number]: L.ILayer[] } = {};
-        let filters: { [title: string]: IFilter } = this.state.filters;
-        if (info.layerData.layerType !== LayerTypes.HeatMap) {
-            info.layerData.layer.eachLayer(function(layer) {
+    saveFilter(info: IFilter, layerUpdate: boolean = false) {
+        let layerData = this.state.layers.filter((lyr) => { return lyr.id === info.layerDataId })[0];
+        let filters: IFilter[] = this.state.filters;
+
+        let id;
+        if (info.id != -1) { //existing filter being updated
+            id = info.id;
+            filters = filters.filter((f) => { return f.id !== id });
+        }
+        else {
+            id = _currentFilterId++;
+        }
+        let filterValues: { [index: number]: L.ILayer[] };
+        if (info.id !== -1 && !layerUpdate) {
+
+            this.filterLayer(info.id, info.minValue, info.maxValue); //hack-ish way to make sure that all of the layers are displayed after update
+        }
+        filterValues = {}
+        if (layerData.layerType !== LayerTypes.HeatMap) {
+            layerData.layer.eachLayer(function(layer) {
                 let val = (layer as any).feature.properties[info.fieldToFilter];
                 if (filterValues[val])
                     filterValues[val].push(layer);
@@ -464,43 +486,43 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     filterValues[val] = [layer];
             });
         }
-        filters[info.title] = { id: _currentFilterId++, title: info.title, layerData: info.layerData, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: info.minValue, maxValue: info.maxValue, steps: info.steps };
+        filters.push({ id: id, title: info.title, layerDataId: info.layerDataId, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: info.minValue, maxValue: info.maxValue, steps: info.steps });
         this.setState({
             filters: filters,
             importWizardShown: this.state.importWizardShown,
             menuShown: this.state.menuShown,
-        })
+        });
+        return id;
 
     }
-
 
     /**
      * filterLayer - Remove or show items based on changes on a filter
      *
-     * @param  title   The filter to change
+     * @param  id   The filter to change
      * @param  lowerLimit Current minimum value. Hide every value below this
      * @param  upperLimit Current max value. Hide every value above this
      */
-    filterLayer(title: string, lowerLimit: any, upperLimit: any) {
-        let filter = this.state.filters[title];
-        if (filter.layerData.layerType !== LayerTypes.HeatMap) {
+    filterLayer(filterId: number, lowerLimit: any, upperLimit: any) {
+        let filter: IFilter = this.state.filters.filter(function(f) { return f.id === filterId })[0];
+        let layerData: ILayerData = this.state.layers.filter((lyr) => { return lyr.id === filter.layerDataId })[0];
+        if (layerData.layerType !== LayerTypes.HeatMap) {
             for (let val in filter.filterValues) {
                 if (val < lowerLimit || val > upperLimit) {
                     filter.filterValues[val].map(function(lyr) {
-                        filter.layerData.layer.removeLayer(lyr);
+                        layerData.layer.removeLayer(lyr);
                     });
-
                 }
                 else {
                     filter.filterValues[val].map(function(lyr) {
-                        filter.layerData.layer.addLayer(lyr);
+                        layerData.layer.addLayer(lyr);
                     });
                 }
             }
         }
         else {
             let arr: number[][] = [];
-            filter.layerData.geoJSON.features.map(function(feat) {
+            layerData.geoJSON.features.map(function(feat) {
                 if (feat.properties[filter.fieldToFilter] > lowerLimit && feat.properties[filter.fieldToFilter] < upperLimit) {
                     let pos = [];
                     pos.push(feat.geometry.coordinates[1]);
@@ -508,7 +530,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     arr.push(pos);
                 }
             });
-            filter.layerData.layer.setLatLngs(arr);
+            layerData.layer.setLatLngs(arr);
         }
     }
 
@@ -521,7 +543,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         let arr: JSX.Element[] = [];
         for (let key in this.state.filters) {
             arr.push(<Filter
-                title={key}
+                id = {this.state.filters[key].id}
+                title={this.state.filters[key].title}
                 valueChanged={this.filterLayer.bind(this) }
                 key={key} maxValue={this.state.filters[key].maxValue}
                 minValue={this.state.filters[key].minValue}
@@ -590,10 +613,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 </Modal>
                 <MapifyMenu
                     layers = {this.state.layers}
+                    filters={this.state.filters}
                     refreshMap={this.refreshLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
-                    createFilter ={this.createFilterToLayer.bind(this) }
+                    createFilter ={this.saveFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     visible={this.state.menuShown}

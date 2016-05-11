@@ -75,7 +75,7 @@ interface IMapMainStates {
     /** The layers of the map. If you remove a layer from the map, remember to update this list as well.*/
     layers?: ILayerData[],
     /** The data filters of the map.*/
-    filters?: { [title: string]: IFilter; },
+    filters?: IFilter[],
     /** The active legend of the map*/
     legend?: ILegend
 }
@@ -125,6 +125,8 @@ interface ISymbolOptions {
 }
 /** The React properties of the filters shown on the map */
 interface IOnScreenFilterProps {
+    /** Filter identification */
+    id: number,
     /** The name of the filter. Is visible in the UI */
     title: string,
     /** The lowest value being filtered.  */
@@ -132,7 +134,7 @@ interface IOnScreenFilterProps {
     /** The maximum of the value being filtered */
     maxValue: number,
     /** The event for following the current values  */
-    valueChanged: (title: string, lowerLimit: number, upperLimit: number) => void,
+    valueChanged: (id: number, lowerLimit: number, upperLimit: number) => void,
     steps: [number, number][],
 }
 /** The React statuses of the filters shown on the map */
@@ -155,8 +157,8 @@ interface IFilter {
     id: number,
     /** The name of the filter. Will be shown on the map*/
     title: string,
-    /** Initialized as the unfiltered data. Filtering changes this layer*/
-    layerData?: ILayerData,
+    /** Initialized as the unfiltered data when Filter created. Filtering changes this layer*/
+    layerDataId?: number,
     /** The name of the field to filter*/
     fieldToFilter: string,
     /** Dictionary containing lists of layers by the value being filtered*/

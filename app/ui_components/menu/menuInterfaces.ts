@@ -1,7 +1,9 @@
 /** The React properties of the menu */
 interface IMenuProps {
     /** The current list of map layers*/
-    layers: Array<ILayerData>,
+    layers: ILayerData[],
+    /** The current list of map filters*/
+    filters: IFilter[],
     /** Update the selected layer with new options*/
     refreshMap: (options: ILayerData) => void,
     /** Reorder the layers on the map*/
@@ -10,8 +12,8 @@ interface IMenuProps {
     addLayer: () => void,
     /** Remove a layer from the map*/
     deleteLayer: (id: number) => void,
-    /** Create a new filter or replace an existing one*/
-    createFilter: (info: IFilter) => void,
+    /** Create a new filter or replace an existing one. Returns id*/
+    createFilter: (info: IFilter) => number,
     /** Update the map legend*/
     legendStatusChanged: (info: ILegend) => void,
     /** Should the menu be rendered*/
@@ -133,8 +135,9 @@ interface ILayerMenuStates {
 
 /** The React properties of the filter menu*/
 interface IFilterMenuProps {
-    /** adds the filter control to the map. Is triggered by button press */
-    addFilterToMap: (info: IFilter) => void,
+    filters: IFilter[],
+    /** adds the filter control to the map. Is triggered by button press. Returns the id of the created filter */
+    addFilterToMap: (info: IFilter) => number,
     /** Removes filter by specified id from the map */
     removeFilterFromMap?: (id: number) => void,
     /** Should the menu be displayed */
@@ -147,6 +150,8 @@ interface IFilterMenuProps {
 
 /** The React states of the filter menu */
 interface IFilterMenuStates {
+    /** Currently selected filter*/
+    selectedFilterId?: number,
     /** Currently selected field to filter*/
     selectedField?: string,
     /** The title of the filter to be rendered*/
