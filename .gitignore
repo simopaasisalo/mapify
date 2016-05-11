@@ -4,7 +4,6 @@ typings/
 release/
 *.js
 *.js.map
-*.d.ts
 *.log.*
 *.log
 *.tgz
