@@ -13,7 +13,7 @@ interface IMenuProps {
     /** Remove a layer from the map*/
     deleteLayer: (id: number) => void,
     /** Create a new filter or replace an existing one. Returns id*/
-    createFilter: (info: IFilter) => number,
+    saveFilter: (info: IFilter) => number,
     /** Update the map legend*/
     legendStatusChanged: (info: ILegend) => void,
     /** Should the menu be rendered*/
@@ -162,10 +162,14 @@ interface IFilterMenuStates {
     customStepCount?: number,
     /** The custom steps (minVal-maxVal)[]*/
     customSteps?: [number, number][],
+    /** Use distinct values as steps*/
+    useDistinctValues?: boolean,
     /** Layer's feature's minimum value*/
     minVal?: number,
     /** Layer's feature's maximum value*/
     maxVal?: number,
+    /** Whether to remove the filtered layer completely or change opacity*/
+    remove?: boolean,
 }
 
 /** The React properties of the legend menu */

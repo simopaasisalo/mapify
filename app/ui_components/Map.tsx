@@ -454,7 +454,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
 
     /**
-     * createFilterToLayer - Creates a new filter or updates an existing one
+     * saveFilter - Creates a new filter or updates an existing one
      *
      * @param  info   The IFilter description of the new filter
      * @param  layerUpdate   Was the update triggered by layer refresh? If so, do not reset filter
@@ -462,7 +462,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     saveFilter(info: IFilter, layerUpdate: boolean = false) {
         let layerData = this.state.layers.filter((lyr) => { return lyr.id === info.layerDataId })[0];
         let filters: IFilter[] = this.state.filters;
-
+        if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Chart || layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon)
+            info.remove = true; //force removal if type requires it
         let id;
         if (info.id != -1) { //existing filter being updated
             id = info.id;
@@ -486,7 +487,19 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     filterValues[val] = [layer];
             });
         }
-        filters.push({ id: id, title: info.title, layerDataId: info.layerDataId, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: info.minValue, maxValue: info.maxValue, steps: info.steps });
+        filters.push(
+            {
+                id: id,
+                title: info.title,
+                layerDataId: info.layerDataId,
+                filterValues: filterValues,
+                fieldToFilter: info.fieldToFilter,
+                minValue: info.minValue,
+                maxValue: info.maxValue,
+                steps: info.steps,
+                filteredIndices: [],
+                remove: info.remove,
+            });
         this.setState({
             filters: filters,
             importWizardShown: this.state.importWizardShown,
@@ -504,21 +517,36 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  upperLimit Current max value. Hide every value above this
      */
     filterLayer(filterId: number, lowerLimit: any, upperLimit: any) {
-        let filter: IFilter = this.state.filters.filter(function(f) { return f.id === filterId })[0];
+        let filter: IFilter = this.state.filters.filter((f) => { return f.id === filterId })[0];
+        filter.minValue = lowerLimit;
+        filter.maxValue = upperLimit;
         let layerData: ILayerData = this.state.layers.filter((lyr) => { return lyr.id === filter.layerDataId })[0];
         if (layerData.layerType !== LayerTypes.HeatMap) {
             for (let val in filter.filterValues) {
-                if (val < lowerLimit || val > upperLimit) {
+                let filteredIndex = filter.filteredIndices.indexOf(+val); //is filtered?
+                if (filteredIndex === -1 && (val < lowerLimit || val > upperLimit)) { //If not yet filtered and values over thresholds
                     filter.filterValues[val].map(function(lyr) {
-                        layerData.layer.removeLayer(lyr);
+                        if (filter.remove)
+                            layerData.layer.removeLayer(lyr);
+                        else
+                        (lyr as any).setStyle({ opacity: 0.2 })
                     });
+                    filter.filteredIndices.push(+val); //mark as filtered
                 }
-                else {
+                else if (filteredIndex > -1 && (val >= lowerLimit && val <= upperLimit)) { //If filtered and withing thresholds
                     filter.filterValues[val].map(function(lyr) {
-                        layerData.layer.addLayer(lyr);
-                    });
+                        if (shouldLayerBeAdded.call(this, lyr)) {
+                            if (filter.remove)
+                                layerData.layer.addLayer(lyr);
+                            else
+                        (lyr as any).setStyle({ opacity: 1 });
+                        }
+                    }, this);
+                    filter.filteredIndices.splice(filteredIndex, 1);
+
                 }
             }
+
         }
         else {
             let arr: number[][] = [];
@@ -531,6 +559,25 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 }
             });
             layerData.layer.setLatLngs(arr);
+        }
+
+
+        /**
+         * shouldLayerBeAdded - Checks every active filter to see if a layer can be un-filtered
+         *
+         * @return {type}  description
+         */
+        function shouldLayerBeAdded(layer) {
+            let filters: IFilter[] = this.state.filters.filter((f) => { return f.id !== filterId });
+            let canUnFilter = true;
+            for (let i in filters) {
+                let filter = filters[i];
+                let val = layer.feature.properties[filter.fieldToFilter];
+                canUnFilter = val <= filter.maxValue && val >= filter.minValue;
+
+            }
+            return canUnFilter;
+
         }
     }
 
@@ -617,7 +664,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     refreshMap={this.refreshLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
-                    createFilter ={this.saveFilter.bind(this) }
+                    saveFilter ={this.saveFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     visible={this.state.menuShown}

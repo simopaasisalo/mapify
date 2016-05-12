@@ -49,6 +49,7 @@
   top: 0;
   height: 100%;
   background: #293c60;
+  overflow-y: auto;
   -webkit-transition: all 0.4s ease 0s;
   -moz-transition: all 0.4s ease 0s;
   -ms-transition: all 0.4s ease 0s;

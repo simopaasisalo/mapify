@@ -139,11 +139,10 @@ interface IOnScreenFilterProps {
 }
 /** The React statuses of the filters shown on the map */
 interface IOnScreenFilterStates {
-    /** Current  */
-    lowerLimit?: number,
     /** The current lower limit of the filtered value. Values below this point will be hidden */
-    upperLimit?: number,
+    lowerLimit?: number,
     /** The current upper limit of the filtered value. Values above this point will be hidden */
+    upperLimit?: number,
     step?: number,
     /** Keep the distance between the min and max the same when the slider is being moved.
      * Useful for keeping a locked range to filter
@@ -169,6 +168,11 @@ interface IFilter {
     minValue?: number,
     /** User defined steps*/
     steps?: [number, number][],
+    /** Whether to remove the filtered layer completely or change opacity*/
+    remove?: boolean,
+    /** The storage of already filtered indices */
+    filteredIndices?: number[],
+
 
 }
 

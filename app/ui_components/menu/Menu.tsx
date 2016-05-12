@@ -98,8 +98,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     }
 
     addFilterToMap(info: IFilter) {
-        info.layerDataId = this.state.activeLayer.id;
-        return this.props.createFilter(info);
+        return this.props.saveFilter(info);
     }
 
     legendStatusChanged(info: ILegend) {

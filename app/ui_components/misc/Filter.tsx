@@ -79,11 +79,6 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
 
         }
     }
-    stepChanged(e) {
-        this.setState({
-            step: e.currentTarget.valueAsNumber
-        });
-    }
     lockDistanceChanged(e) {
         this.setState({
             lockDistance: e.currentTarget.checked,
@@ -95,22 +90,24 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
         this.setState({
             lowerLimit: minVal,
             upperLimit: maxVal,
+            step: i,
         });
     }
     renderSteps() {
         let rows = [];
-        let style = {
-            border: '1px solid #6891e2',
-            borderRadius: '5',
-            textAlign: 'center',
-            cursor: 'pointer'
-        }
         if (this.props.steps) {
             let index = 0;
             this.props.steps.forEach(function(step) {
                 rows.push(
                     <div
-                        style={style}
+                        style={{
+                            borderBottom: '1px solid #6891e2',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            borderLeft: this.state.step === index ? '6px solid #6891e2' : '',
+                            borderRight: this.state.step === index ? '6px solid #6891e2' : ''
+
+                        }}
                         key={step}
                         onClick={this.customStepClicked.bind(this, index) }
                         >{step[0] + '-' + step[1]}
