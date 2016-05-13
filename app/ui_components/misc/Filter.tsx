@@ -116,10 +116,20 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
             }, this);
 
         }
-        return <div>{rows.map(function(e) { return e }) } </div>
+        return <div> {rows.map(function(e) { return e }) } </div>
+    }
 
-        function getRows(step) {
-
+    onKeyDown(e) {
+        console.log(e);
+        if (e.keyCode == '38') {
+            if (this.state.step) {
+                this.setState({ step: this.state.step - 1 })
+            }
+        }
+        else if (e.keyCode == '40') {
+            if (this.state.step !== undefined) {
+                this.setState({ step: this.state.step + 1 })
+            }
         }
     }
 
@@ -147,9 +157,6 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
                     <div className='maxHandle'></div>
 
                 </Slider>
-                <div>
-
-                </div>
 
             </div>
         </Draggable>

@@ -642,8 +642,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 border: '4px solid #6891e2',
                 borderRadius: '15px',
                 padding: '0px',
-                maxWidth: 800,
-
             }
         }
         return (

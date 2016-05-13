@@ -123,18 +123,18 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
     getCurrentView() {
         switch (this.state.step) {
             case 0:
-                return <div style={{ width: 1000 }}>
+                return <div style={{ minWidth: 1000 }}>
                     <LayerTypeSelectView
                         loadDemo={this.loadDemo.bind(this) }
                         saveValues={this.setLayerType.bind(this) }
                         cancel = {this.cancel.bind(this) }
-                        />;
+                        />
                 </div>
             case 1:
                 return <FileUploadView
                     saveValues={this.setFileInfo.bind(this) }
                     goBack={this.previousStep.bind(this) }
-                    />;
+                    />
             case 2:
                 return <FileDetailsView
                     headers={values.headers}

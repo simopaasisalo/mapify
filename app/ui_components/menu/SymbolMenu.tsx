@@ -41,10 +41,13 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             sizeUpLimit: e.currentTarget.valueAsNumber
         });
     }
-    faIconChanged(icon: string) {
+    faIconChanged(icon) {
+        if (icon.currentTarget) { //if event triggered from input
+            icon = icon.currentTarget.value
+        }
         this.setState({
             iconFA: icon,
-        })
+        });
     }
     saveOptions() {
         let chartHeads: string[] = [];
@@ -189,7 +192,12 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                     {
                         this.state.symbolType === SymbolTypes.Icon ?
                             <div>
+                                Select an icon
                                 {this.getIcons.call(this) }
+                                Or
+                                <br/>
+                                <label>Use a custom <a href='http://fontawesome.io/icons/'>Font Awesome</a> icon</label>
+                                <input type="text" onChange={this.faIconChanged.bind(this) } value={this.state.iconFA}/>
                             </div>
 
                             : null

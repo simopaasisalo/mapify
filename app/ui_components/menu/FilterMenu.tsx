@@ -126,7 +126,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
         return <div>
             <button onClick={this.changeStepsCount.bind(this, -1) }>-</button>
             <button onClick={this.changeStepsCount.bind(this, 1) }>+</button>
-            <ul id='customSteps' style={{ listStyle: 'none' }}>{rows.map(function(r) { return r }) }</ul>
+            <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r }) }</ul>
         </div>
     }
     filterTitleChanged(e) {
@@ -168,7 +168,6 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
     getStepValues() {
         let steps: [number, number][] = [];
         for (let i = 0; i < this.state.customStepCount; i++) {
-            console.log(i)
             let step: [number, number] = [+(document.getElementById(i + 'min') as any).value,
                 +(document.getElementById(i + 'max') as any).value];
             steps.push(step)
@@ -190,6 +189,8 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
 
         return !this.props.isVisible ? null :
             <div className="mapify-options">
+                <label>Give a name to the filter</label>
+                <input type="text" onChange={this.filterTitleChanged.bind(this) } value={this.state.filterTitle}/>
                 {filters.length > 0 && this.state.selectedFilterId !== -1 ?
                     <div>
                         <label>Select the filter to update</label>
@@ -268,9 +269,6 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                         </label>
                     </div>
                 }
-                <br/>
-                <label>Give a name to the filter</label>
-                <input type="text" onChange={this.filterTitleChanged.bind(this) } value={this.state.filterTitle}/>
                 <button onClick={this.saveFilter.bind(this) }>Create filter</button>
             </div >
     }

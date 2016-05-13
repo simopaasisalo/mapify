@@ -3,9 +3,7 @@ let proj4 = require('proj4');
 
 export class MapInitModel {
     /**
-     * initProjections - initializes the custom proj4 map projections
-     *
-     * @return {void}
+     * initCustomProjections - initializes the custom proj4 map projections
      */
     public InitCustomProjections() {
         proj4.defs('ETRS-GK25FIN', "+title=GK25FIN +proj=tmerc +lat_0=0 +lon_0=25 +k=1 +x_0=25500000 +y_0=0 +ellps=GRS80 +units=m +no_defs");

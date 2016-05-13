@@ -2,9 +2,9 @@
         width: 400px;
       }
      .horizontal-slider {
-         width: 100%;
-         max-width: 500px;
+         width: 290;
          height: 20px;
+         margin: 4px;
      }
      .vertical-slider {
          height: 380px;

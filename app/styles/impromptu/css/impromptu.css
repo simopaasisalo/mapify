@@ -82,7 +82,9 @@
   text-decoration: none;
   color: white;
   background: rgba(255, 255, 255, 0.2); }
-.impromptu-menu-wrapper .sidebar-nav li a:active,
+.impromptu-menu-wrapper .sidebar-nav li a{
+  text-decoration: underline;; 
+}
 .impromptu-menu-wrapper .sidebar-nav li a:focus {
   text-decoration: none; }
 .impromptu-menu-wrapper .sidebar-nav > .sidebar-brand {
@@ -96,5 +98,10 @@
   background: none; }
 .impromptu-menu-wrapper .impromptu-divider.sidebar-nav li {
   border-bottom: 1px solid #4a4a4a; }
+
+.impromptu-menu-wrapper button{
+  position: relative;
+  left: 75;
+}
 
 /*# sourceMappingURL=impromptu.css.map */
