@@ -33,7 +33,7 @@ export class ExportMenu extends React.Component<IExportMenuProps, IExportMenuSta
                     <label htmlFor='showFilters'>Show filters on the image</label>
                     <input id='showFilters' type='checkbox' checked={this.state.showFilters} onChange={this.showFiltersChanged.bind(this) }/>
                     <br/>
-                    <button onClick={this.saveImage.bind(this) }>Export map as image</button>
+                    <button className='menuButton' onClick={this.saveImage.bind(this) }>Export map as image</button>
                 </div>
                 : null
         )

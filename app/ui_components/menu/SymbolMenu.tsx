@@ -91,7 +91,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                     lineHeight: '30px',
                     textAlign: 'center'
                 }
-                columns.push(<td style={style} key={i + c} className={'fa ' + faIcons[i + c]} onClick={this.faIconChanged.bind(this, faIcons[i + c]) }/>);
+                columns.push(<td style={style} key={i + c} className={'symbolIcon fa ' + faIcons[i + c]} onClick={this.faIconChanged.bind(this, faIcons[i + c]) }/>);
             }
             return columns;
         }
@@ -196,7 +196,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                                 {this.getIcons.call(this) }
                                 Or
                                 <br/>
-                                <label>Use a custom <a href='http://fontawesome.io/icons/'>Font Awesome</a> icon</label>
+                                <label>Use another <a href='http://fontawesome.io/icons/'>Font Awesome</a> icon</label>
                                 <input type="text" onChange={this.faIconChanged.bind(this) } value={this.state.iconFA}/>
                             </div>
 
@@ -221,7 +221,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                         </div>
 
                         : null}
-                    <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
+                    <button className='menuButton' onClick={this.saveOptions.bind(this) }>Refresh map</button>
                 </div >
         );
     }

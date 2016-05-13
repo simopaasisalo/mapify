@@ -1,33 +1,32 @@
 import * as Papa from 'papaparse';
-var csv2geojson = require('csv2geojson');
-var proj4 = require('proj4');
+let csv2geojson = require('csv2geojson');
+let proj4 = require('proj4');
+let togeojson = require('togeojson');
+let wkt = require('wellknown');
+
 
 export class FilePreProcessModel {
 
 
     /**
      * public - Returns the headers from the input text
-     * TODO: implement support for other formats than csv
      *
      * @param  {string} input         the whole input as string
-     * @param  {string} fileExtension the file format, ie. .csv, .xml
      * @return {[{string, string}[], string]}   tuple containing headers in an array and the delimiter
      */
-    public ParseHeaders(input: string, fileExtension: string) {
-        let headers: Array<{ name: string, type: string }> = [];
+    public ParseHeadersFromCSV(input: string) {
+        let headers: { name: string, type: string }[] = [];
         let delim: string = '';
-        if (fileExtension === 'csv') {
 
-            let parse = Papa.parse(input, { preview: 1, header: true });
-            for (let field of parse.meta.fields) {
-                headers.push({ name: field, type: this.guessType(parse.data, field) })
-            }
-            delim = parse.meta.delimiter;
+        let parse = Papa.parse(input, { preview: 1, header: true });
+        for (let field of parse.meta.fields) {
+            headers.push({ name: field, type: this.guessType(parse.data, field) })
         }
+        delim = parse.meta.delimiter;
+
+
         return [headers, delim];
     }
-
-
     /**
      * private - Preliminary type guessing based on the first row of data
      *TODO: DateTime?
@@ -45,42 +44,16 @@ export class FilePreProcessModel {
 
 
     /**
-     * public - Converts input data into GeoJSON object
-     * TODO: implement support for other formats besides CSV
+     * public - Converts input csv data into GeoJSON object
      *
      * @param  input      the import file in text format
      * @param  latField  latitude field name
      * @param  lonField  longitude field name
-     * @param  fileFormat the file extension
      * @param  delim     delimiter
      * @return           GeoJSON object
      */
-    public ParseToGeoJSON(input: string, latField: string, lonField: string, fileFormat: string, delim: string, coordSystem: string, headers: IHeader[]) {
+    public ParseCSVToGeoJSON(input: string, latField: string, lonField: string, delim: string, coordSystem: string, headers: IHeader[]) {
         let geoJSON: L.GeoJSON = null;
-        if (fileFormat === 'csv') {
-
-            geoJSON = this.parseCSV(input, latField, lonField, delim);
-        }
-
-        geoJSON = this.projectCoords(geoJSON, coordSystem)
-        geoJSON = this.setGeoJSONTypes(geoJSON, headers);
-
-        return geoJSON;
-
-    }
-
-
-    /**
-     * private - Parses CSV-data into a GeoJSON object
-     *
-     * @param  input    The CSV string
-     * @param  latField Latitude column name
-     * @param  lonField Longitude column name
-     * @param  delim    Separator char
-     * @return          GeoJSON object
-     */
-    private parseCSV(input: string, latField: string, lonField: string, delim: string) {
-        let geoJSON: any;
         csv2geojson.csv2geojson(input, {
             latfield: latField,
             lonfield: lonField,
@@ -97,7 +70,34 @@ export class FilePreProcessModel {
                 }
             });
 
+        if (coordSystem !== 'WGS84')
+            geoJSON = this.projectCoords(geoJSON, coordSystem)
+        geoJSON = this.setGeoJSONTypes(geoJSON, headers);
+
         return geoJSON;
+
+    }
+
+
+    public ParseToGeoJSON(input: string, fileFormat: string) {
+        let geoJSON: L.GeoJSON = null;
+
+        if (fileFormat === 'kml') {
+            let xml = this.stringToXML(input);
+            geoJSON = togeojson.kml(xml)
+        }
+        else if (fileFormat === 'gpx') {
+            let xml = this.stringToXML(input);
+            geoJSON = togeojson.gpx(xml)
+        }
+        else if (fileFormat === 'wkt') {
+            geoJSON = wkt(input);
+        }
+        return geoJSON;
+    }
+
+    private stringToXML(oString) {
+        return (new DOMParser()).parseFromString(oString, "text/xml");
     }
 
 

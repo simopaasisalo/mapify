@@ -3,6 +3,7 @@ let Dropzone = require('react-dropzone');
 import {FilePreProcessModel} from '../../models/FilePreProcessModel';
 
 let _fileModel = new FilePreProcessModel();
+let _allowedFileTypes = ['geojson', 'csv', 'gpx', 'kml', 'wkt'];
 
 export class FileUploadView extends React.Component<IFileUploadProps, IFileUploadStates>{
     constructor() {
@@ -29,11 +30,17 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
         });
         function contentUploaded(e) {
             let contents: any = e.target;
-            this.setState({
-                content: contents.result,
-                layerName: fileName,
-                fileExtension: fileName.split('.').pop()
-            });
+            let ext: string = fileName.split('.').pop().toLowerCase();
+            if (_allowedFileTypes.indexOf(ext) !== -1) {
+                this.setState({
+                    content: contents.result,
+                    layerName: fileName,
+                    fileExtension: ext
+                });
+            }
+            else {
+                alert('File type not yet supported!');
+            }
 
         }
     }
@@ -45,10 +52,10 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
         this.props.goBack();
     }
     proceed() {
-        if (this.state.fileExtension !== 'geojson') {
+        if (this.state.fileExtension === 'csv') {
             let head, delim;
             let headers = [];
-            [head, delim] = _fileModel.ParseHeaders(this.state.content, this.state.fileExtension);
+            [head, delim] = _fileModel.ParseHeadersFromCSV(this.state.content);
             for (let i of head) {
                 headers.push({ value: i.name, label: i.name, type: i.type });
             }
@@ -80,6 +87,8 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
                     <div className = 'dialogHeader'>
                         <h2> Upload the file containing the data </h2>
                     </div>
+                    <p>Currently supported file types: </p>
+                    <p> GeoJSON, CSV(point data with coordinates in two columns), KML, GPX, WKT</p>
                     <Dropzone
                         style={dropStyle}
                         onDrop={this.onDrop.bind(this) }>

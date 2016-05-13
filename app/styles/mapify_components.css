@@ -1,5 +1,5 @@
 body{
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: Arial;
   line-height: 1.4;
   margin: 0;
   padding: 0;
@@ -32,7 +32,9 @@ h2,h3{
   background-color: #1a263f;
   cursor: default;
 }
-
+.symbolIcon:hover{
+  border: 1px solid #999999 !important;
+}
 .dialogHeader{
   height: 40;
   background: #6891e2;
@@ -96,4 +98,22 @@ h2,h3{
 	text-align:center;
 }.secondaryButton:hover {
 	border: 1px solid #c1c1c1;
+}
+
+.menuButton {
+	background-color:#FFFFFF;
+	text-indent:0;
+	border:1px solid #549341;
+	color:#c1c1c1;
+	font-family:Arial;
+	font-size:15px;
+	font-weight:bold;
+	font-style:normal;
+	height:40px;
+	line-height:40px;
+	width:100%;
+	text-decoration:none;
+	text-align:center;
+}.menuButton:hover {
+	background-color:#293c60;
 }

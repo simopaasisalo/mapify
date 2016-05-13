@@ -269,7 +269,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                         </label>
                     </div>
                 }
-                <button onClick={this.saveFilter.bind(this) }>Create filter</button>
+                <button className='menuButton' onClick={this.saveFilter.bind(this) }>Create filter</button>
             </div >
     }
 }

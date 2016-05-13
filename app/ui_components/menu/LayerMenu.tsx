@@ -94,8 +94,8 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
                         </div>;
                     }, this) }
                 </Sortable>
-                <button onClick={this.saveOrder.bind(this) }>Save</button>
-                <button onClick={this.addNewLayer.bind(this) }>Add new layer</button>
+                <button className='menuButton' onClick={this.saveOrder.bind(this) }>Save</button>
+                <button className='menuButton' onClick={this.addNewLayer.bind(this) }>Add new layer</button>
 
             </div>
         );

@@ -2,6 +2,7 @@ import * as React from 'react';
 let Select = require('react-select');
 let ColorPicker = require('react-color');
 import {ColorScheme} from './ColorScheme';
+let Modal = require('react-modal');
 
 const _gradientOptions: { value: string }[] =
     [
@@ -149,8 +150,28 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.borderColor.substr(1), 16)).toString(16))).slice(-6)
         }
         let colorSelectStyle = {
-            position: 'absolute',
-            right: 250,
+            overlay: {
+                position: 'fixed',
+                height: 600,
+                width: 300,
+                right: 230,
+                bottom: '',
+                top: 20,
+                left: '',
+                backgroundColor: ''
+
+            },
+            content: {
+                border: '4px solid #6891e2',
+                borderRadius: '15px',
+                padding: '0px',
+                height: 650,
+                width: 300,
+                right: '',
+                bottom: '',
+                top: '',
+                left: '',
+            }
         }
         return (!this.props.isVisible ? null :
             <div className="mapify-options">
@@ -171,14 +192,23 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 <label>Opacity</label>
                 <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.opacity}/>
 
-                {!this.state.colorSelectOpen ? null :
-                    <div style={colorSelectStyle}>
-                        <ColorPicker.SwatchesPicker
-                            color={ this.state.startColor}
-                            onChange={this.colorSelect.bind(this) }
-                            />
-                    </div>
-                }
+                <Modal
+                    isOpen={this.state.colorSelectOpen}
+                    style={colorSelectStyle}
+                    >
+
+                    <ColorPicker.SwatchesPicker
+                        width={300}
+                        height={600}
+                        overlowY='auto'
+                        color={ this.state.startColor}
+                        onChange={this.colorSelect.bind(this) }
+                        />
+                    <button
+                        className='primaryButton'
+                        onClick={this.toggleColorPick.bind(this, this.state.editing) }
+                        style={{ position: 'absolute', left: 80 }}>OK</button>
+                </Modal>
                 {
                     this.state.useMultipleColors ?
                         <div>
@@ -246,7 +276,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                         </div>
                         : null
                 }
-                <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
+                <button className='menuButton' onClick={this.saveOptions.bind(this) }>Refresh map</button>
             </div >
         );
     }

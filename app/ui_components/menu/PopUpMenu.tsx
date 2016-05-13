@@ -30,7 +30,7 @@ export class PopUpMenu extends React.Component<IPopUpMenuProps, IPopUpMenuStates
                     value={this.state.shownHeaders}
                     />
 
-                <button onClick={this.saveOptions.bind(this) }>Refresh map</button>
+                <button className='menuButton' onClick={this.saveOptions.bind(this) }>Refresh map</button>
             </div >
         );
     }
