@@ -49,6 +49,8 @@
   top: 0;
   height: 100%;
   background: #293c60;
+  overflow-y: auto;
+  overflow-x: visible;;
   -webkit-transition: all 0.4s ease 0s;
   -moz-transition: all 0.4s ease 0s;
   -ms-transition: all 0.4s ease 0s;
@@ -81,7 +83,9 @@
   text-decoration: none;
   color: white;
   background: rgba(255, 255, 255, 0.2); }
-.impromptu-menu-wrapper .sidebar-nav li a:active,
+.impromptu-menu-wrapper .sidebar-nav li a{
+  text-decoration: underline;;
+}
 .impromptu-menu-wrapper .sidebar-nav li a:focus {
   text-decoration: none; }
 .impromptu-menu-wrapper .sidebar-nav > .sidebar-brand {

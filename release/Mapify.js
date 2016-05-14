@@ -56,18 +56,18 @@
 	var React = __webpack_require__(/*! react */ 1);
 	var ReactDOM = __webpack_require__(/*! react-dom */ 158);
 	var LayerImportWizard_1 = __webpack_require__(/*! ./import_wizard/LayerImportWizard */ 159);
-	var Menu_1 = __webpack_require__(/*! ./menu/Menu */ 180);
-	var MapInitModel_1 = __webpack_require__(/*! ../models/MapInitModel */ 249);
+	var Menu_1 = __webpack_require__(/*! ./menu/Menu */ 183);
+	var MapInitModel_1 = __webpack_require__(/*! ../models/MapInitModel */ 272);
 	var common_1 = __webpack_require__(/*! ./common_items/common */ 162);
-	var Filter_1 = __webpack_require__(/*! ./misc/Filter */ 251);
-	var Legend_1 = __webpack_require__(/*! ./misc/Legend */ 254);
-	__webpack_require__(/*! leaflet */ 250);
-	__webpack_require__(/*! drmonty-leaflet-awesome-markers */ 255);
-	var Modal = __webpack_require__(/*! react-modal */ 256);
-	var d3 = __webpack_require__(/*! d3 */ 276);
-	var chroma = __webpack_require__(/*! chroma-js */ 242);
-	var heat = __webpack_require__(/*! leaflet.heat */ 277);
-	var domToImage = __webpack_require__(/*! dom-to-image */ 278);
+	var Filter_1 = __webpack_require__(/*! ./misc/Filter */ 274);
+	var Legend_1 = __webpack_require__(/*! ./misc/Legend */ 277);
+	__webpack_require__(/*! leaflet */ 273);
+	__webpack_require__(/*! drmonty-leaflet-awesome-markers */ 278);
+	var Modal = __webpack_require__(/*! react-modal */ 246);
+	var d3 = __webpack_require__(/*! d3 */ 279);
+	var chroma = __webpack_require__(/*! chroma-js */ 245);
+	var heat = __webpack_require__(/*! leaflet.heat */ 280);
+	var domToImage = __webpack_require__(/*! dom-to-image */ 281);
 	var _mapInitModel = new MapInitModel_1.MapInitModel();
 	var _currentLayerId = 0;
 	var _currentFilterId = 0;
@@ -180,7 +180,7 @@
 	                        var customIcon = L.AwesomeMarkers.icon({
 	                            icon: layerData.visOptions.symbolOptions.iconFA,
 	                            prefix: 'fa',
-	                            markerColor: 'red'
+	                            markerColor: 'blue'
 	                        });
 	                        return L.marker(latlng, { icon: customIcon });
 	                    }
@@ -374,7 +374,7 @@
 	            ;
 	            arr.push(pos);
 	        });
-	        return L.heatLayer(arr, {});
+	        return L.heatLayer(arr, { relative: true });
 	    };
 	    MapMain.prototype.addPopupsToLayer = function (feature, layer) {
 	        var popupContent = '';
@@ -407,6 +407,8 @@
 	        if (layerUpdate === void 0) { layerUpdate = false; }
 	        var layerData = this.state.layers.filter(function (lyr) { return lyr.id === info.layerDataId; })[0];
 	        var filters = this.state.filters;
+	        if (layerData.visOptions.symbolOptions.symbolType === common_1.SymbolTypes.Chart || layerData.visOptions.symbolOptions.symbolType === common_1.SymbolTypes.Icon)
+	            info.remove = true;
 	        var id;
 	        if (info.id != -1) {
 	            id = info.id;
@@ -423,14 +425,24 @@
 	        if (layerData.layerType !== common_1.LayerTypes.HeatMap) {
 	            layerData.layer.eachLayer(function (layer) {
 	                var val = layer.feature.properties[info.fieldToFilter];
-	                console.log(val);
 	                if (filterValues[val])
 	                    filterValues[val].push(layer);
 	                else
 	                    filterValues[val] = [layer];
 	            });
 	        }
-	        filters.push({ id: id, title: info.title, layerDataId: info.layerDataId, filterValues: filterValues, fieldToFilter: info.fieldToFilter, minValue: info.minValue, maxValue: info.maxValue, steps: info.steps });
+	        filters.push({
+	            id: id,
+	            title: info.title,
+	            layerDataId: info.layerDataId,
+	            filterValues: filterValues,
+	            fieldToFilter: info.fieldToFilter,
+	            minValue: info.minValue,
+	            maxValue: info.maxValue,
+	            steps: info.steps,
+	            filteredIndices: [],
+	            remove: info.remove,
+	        });
 	        this.setState({
 	            filters: filters,
 	            importWizardShown: this.state.importWizardShown,
@@ -440,18 +452,31 @@
 	    };
 	    MapMain.prototype.filterLayer = function (filterId, lowerLimit, upperLimit) {
 	        var filter = this.state.filters.filter(function (f) { return f.id === filterId; })[0];
+	        filter.minValue = lowerLimit;
+	        filter.maxValue = upperLimit;
 	        var layerData = this.state.layers.filter(function (lyr) { return lyr.id === filter.layerDataId; })[0];
 	        if (layerData.layerType !== common_1.LayerTypes.HeatMap) {
 	            for (var val in filter.filterValues) {
-	                if (val < lowerLimit || val > upperLimit) {
+	                var filteredIndex = filter.filteredIndices.indexOf(+val);
+	                if (filteredIndex === -1 && (val < lowerLimit || val > upperLimit)) {
 	                    filter.filterValues[val].map(function (lyr) {
-	                        layerData.layer.removeLayer(lyr);
+	                        if (filter.remove)
+	                            layerData.layer.removeLayer(lyr);
+	                        else
+	                            lyr.setStyle({ opacity: 0.2 });
 	                    });
+	                    filter.filteredIndices.push(+val);
 	                }
-	                else {
+	                else if (filteredIndex > -1 && (val >= lowerLimit && val <= upperLimit)) {
 	                    filter.filterValues[val].map(function (lyr) {
-	                        layerData.layer.addLayer(lyr);
-	                    });
+	                        if (shouldLayerBeAdded.call(this, lyr)) {
+	                            if (filter.remove)
+	                                layerData.layer.addLayer(lyr);
+	                            else
+	                                lyr.setStyle({ opacity: 1 });
+	                        }
+	                    }, this);
+	                    filter.filteredIndices.splice(filteredIndex, 1);
 	                }
 	            }
 	        }
@@ -466,6 +491,16 @@
 	                }
 	            });
 	            layerData.layer.setLatLngs(arr_1);
+	        }
+	        function shouldLayerBeAdded(layer) {
+	            var filters = this.state.filters.filter(function (f) { return f.id !== filterId; });
+	            var canUnFilter = true;
+	            for (var i in filters) {
+	                var filter_1 = filters[i];
+	                var val = layer.feature.properties[filter_1.fieldToFilter];
+	                canUnFilter = val <= filter_1.maxValue && val >= filter_1.minValue;
+	            }
+	            return canUnFilter;
 	        }
 	    };
 	    MapMain.prototype.getFilters = function () {
@@ -508,7 +543,6 @@
 	                border: '4px solid #6891e2',
 	                borderRadius: '15px',
 	                padding: '0px',
-	                maxWidth: 800,
 	            }
 	        };
 	        return (React.createElement("div", null, 
@@ -516,7 +550,7 @@
 	            React.createElement(Modal, {isOpen: this.state.importWizardShown, style: modalStyle}, 
 	                React.createElement(LayerImportWizard_1.LayerImportWizard, {submit: this.layerImportSubmit.bind(this), cancel: this.cancelLayerImport.bind(this)})
 	            ), 
-	            React.createElement(Menu_1.MapifyMenu, {layers: this.state.layers, filters: this.state.filters, refreshMap: this.refreshLayer.bind(this), addLayer: this.addNewLayer.bind(this), deleteLayer: this.deleteLayer.bind(this), createFilter: this.saveFilter.bind(this), changeLayerOrder: this.changeLayerOrder.bind(this), legendStatusChanged: this.legendPropsChanged.bind(this), visible: this.state.menuShown, saveImage: this.saveImage}), 
+	            React.createElement(Menu_1.MapifyMenu, {layers: this.state.layers, filters: this.state.filters, refreshMap: this.refreshLayer.bind(this), addLayer: this.addNewLayer.bind(this), deleteLayer: this.deleteLayer.bind(this), saveFilter: this.saveFilter.bind(this), changeLayerOrder: this.changeLayerOrder.bind(this), legendStatusChanged: this.legendPropsChanged.bind(this), visible: this.state.menuShown, saveImage: this.saveImage}), 
 	            this.getFilters(), 
 	            this.showLegend()));
 	    };
@@ -20623,29 +20657,19 @@
 	var React = __webpack_require__(/*! react */ 1);
 	var LayerTypeSelectView_1 = __webpack_require__(/*! ./LayerTypeSelectView */ 160);
 	var FileUploadView_1 = __webpack_require__(/*! ./FileUploadView */ 163);
-	var FileDetailsView_1 = __webpack_require__(/*! ./FileDetailsView */ 171);
+	var FileDetailsView_1 = __webpack_require__(/*! ./FileDetailsView */ 174);
 	var FilePreProcessModel_1 = __webpack_require__(/*! ../../models/FilePreProcessModel */ 165);
-	var FileSamples_1 = __webpack_require__(/*! ./FileSamples */ 179);
+	var FileSamples_1 = __webpack_require__(/*! ./FileSamples */ 182);
 	var common_1 = __webpack_require__(/*! ../common_items/common */ 162);
 	var _fileModel = new FilePreProcessModel_1.FilePreProcessModel();
-	var values = {
-	    layerName: '',
-	    rawContent: '',
-	    geoJSON: null,
-	    layerType: null,
-	    fileExtension: '',
-	    headers: [],
-	    delimiter: '',
-	    latField: '',
-	    lonField: '',
-	    coordinateSystem: '',
-	    heatMapVariable: '',
-	};
 	var LayerImportWizard = (function (_super) {
 	    __extends(LayerImportWizard, _super);
 	    function LayerImportWizard() {
 	        _super.call(this);
-	        this.state = { step: 0 };
+	        this.state = {
+	            step: 0,
+	            uploadDetails: {},
+	        };
 	    }
 	    LayerImportWizard.prototype.nextStep = function () {
 	        this.setState({
@@ -20658,57 +20682,91 @@
 	        });
 	    };
 	    LayerImportWizard.prototype.setLayerType = function (type) {
-	        values.layerType = type;
+	        var details = this.state.uploadDetails;
+	        details.layerType = type;
+	        this.setState({
+	            uploadDetails: details
+	        });
 	        this.nextStep();
 	    };
-	    LayerImportWizard.prototype.setFileInfo = function (fileInfo) {
+	    LayerImportWizard.prototype.setFileInfo = function (fileInfo, loadDemo) {
+	        if (loadDemo === void 0) { loadDemo = false; }
+	        var details = this.state.uploadDetails;
 	        this.setLayerName(fileInfo.layerName);
-	        values.headers = [];
-	        if (fileInfo.fileExtension === 'geojson') {
-	            values.geoJSON = JSON.parse(fileInfo.content);
-	            var props = values.geoJSON.features[0].properties;
-	            for (var _i = 0, _a = Object.keys(props); _i < _a.length; _i++) {
-	                var h = _a[_i];
-	                values.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
-	            }
-	            this.submit();
+	        details.headers = [];
+	        var ext = fileInfo.fileExtension;
+	        if (ext === 'csv') {
+	            details.content = fileInfo.content;
+	            details.headers = fileInfo.headers;
+	            details.delimiter = fileInfo.delimiter;
+	            details.fileExtension = ext;
+	            this.setState({
+	                uploadDetails: details
+	            });
+	            this.nextStep();
 	        }
 	        else {
-	            values.rawContent = fileInfo.content;
-	            values.headers = fileInfo.headers;
-	            values.delimiter = fileInfo.delimiter;
-	            values.fileExtension = fileInfo.fileExtension;
-	            this.nextStep();
+	            details.fileExtension = ext;
+	            if (ext === 'geojson')
+	                details.geoJSON = JSON.parse(fileInfo.content);
+	            else if (ext === 'kml' || ext === 'gpx' || ext === 'wkt')
+	                details.geoJSON = _fileModel.ParseToGeoJSON(fileInfo.content, ext);
+	            var props = details.geoJSON.features ? details.geoJSON.features[0].properties : {};
+	            for (var _i = 0, _a = Object.keys(props); _i < _a.length; _i++) {
+	                var h = _a[_i];
+	                details.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
+	            }
+	            this.setState({
+	                uploadDetails: details
+	            });
+	            if (loadDemo)
+	                this.submit();
+	            else
+	                this.nextStep();
 	        }
 	    };
 	    LayerImportWizard.prototype.setFileDetails = function (fileDetails) {
-	        values.latField = fileDetails.latitudeField;
-	        values.lonField = fileDetails.longitudeField;
-	        values.coordinateSystem = fileDetails.coordinateSystem;
+	        var details = this.state.uploadDetails;
+	        details.latitudeField = fileDetails.latitudeField;
+	        details.longitudeField = fileDetails.longitudeField;
+	        details.coordinateSystem = fileDetails.coordinateSystem;
+	        this.setState({
+	            uploadDetails: details
+	        });
 	        this.submit();
 	    };
 	    LayerImportWizard.prototype.setLayerName = function (name) {
-	        values.layerName = name;
+	        var details = this.state.uploadDetails;
+	        details.layerName = name;
+	        this.setState({
+	            uploadDetails: details,
+	        });
 	    };
 	    LayerImportWizard.prototype.cancel = function () {
 	        this.props.cancel();
 	    };
 	    LayerImportWizard.prototype.submit = function () {
-	        if (!values.geoJSON) {
-	            values.geoJSON = _fileModel.ParseToGeoJSON(values.rawContent, values.latField, values.lonField, values.fileExtension, values.delimiter, values.coordinateSystem, values.headers);
+	        var details = this.state.uploadDetails;
+	        if (!details.geoJSON && details.fileExtension === 'csv') {
+	            details.geoJSON = _fileModel.ParseCSVToGeoJSON(details.content, details.latitudeField, details.longitudeField, details.delimiter, details.coordinateSystem, details.headers);
 	        }
+	        else if (details.coordinateSystem && details.coordinateSystem !== 'WGS84') {
+	            details.geoJSON = _fileModel.ProjectCoords(details.geoJSON, details.coordinateSystem);
+	        }
+	        this.setState({ uploadDetails: details });
 	        var submitData = {
 	            id: -1,
-	            layerName: values.layerName,
-	            geoJSON: values.geoJSON,
-	            layerType: values.layerType,
-	            headers: values.headers,
-	            heatMapVariable: values.heatMapVariable,
+	            layerName: details.layerName,
+	            geoJSON: details.geoJSON,
+	            layerType: details.layerType,
+	            headers: details.headers,
+	            heatMapVariable: details.heatMapVariable,
 	        };
 	        this.props.submit(submitData);
 	    };
 	    LayerImportWizard.prototype.loadDemo = function (type) {
-	        values.layerType = type;
+	        var details = this.state.uploadDetails;
+	        details.layerType = type;
 	        var fileInfo = {
 	            fileExtension: 'geojson',
 	        };
@@ -20723,20 +20781,21 @@
 	        else if (type === common_1.LayerTypes.HeatMap) {
 	            fileInfo.layerName = 'Air Particle Heat Demo';
 	            fileInfo.content = FileSamples_1.symbolSample;
-	            values.heatMapVariable = 'particles';
+	            details.heatMapVariable = 'particles';
 	        }
-	        this.setFileInfo(fileInfo);
+	        this.setState({ uploadDetails: details });
+	        this.setFileInfo(fileInfo, true);
 	    };
 	    LayerImportWizard.prototype.getCurrentView = function () {
 	        switch (this.state.step) {
 	            case 0:
-	                return React.createElement("div", {style: { width: 1000 }}, 
-	                    React.createElement(LayerTypeSelectView_1.LayerTypeSelectView, {loadDemo: this.loadDemo.bind(this), saveValues: this.setLayerType.bind(this), cancel: this.cancel.bind(this)}), 
-	                    ";");
+	                return React.createElement("div", {style: { minWidth: 1000 }}, 
+	                    React.createElement(LayerTypeSelectView_1.LayerTypeSelectView, {loadDemo: this.loadDemo.bind(this), saveValues: this.setLayerType.bind(this), cancel: this.cancel.bind(this)})
+	                );
 	            case 1:
 	                return React.createElement(FileUploadView_1.FileUploadView, {saveValues: this.setFileInfo.bind(this), goBack: this.previousStep.bind(this)});
 	            case 2:
-	                return React.createElement(FileDetailsView_1.FileDetailsView, {headers: values.headers, saveValues: this.setFileDetails.bind(this), goBack: this.previousStep.bind(this)});
+	                return React.createElement(FileDetailsView_1.FileDetailsView, {headers: this.state.uploadDetails.headers, saveValues: this.setFileDetails.bind(this), goBack: this.previousStep.bind(this), isHeatMap: this.state.uploadDetails.layerType === common_1.LayerTypes.HeatMap, isGeoJSON: this.state.uploadDetails.geoJSON ? true : false});
 	        }
 	    };
 	    LayerImportWizard.prototype.render = function () {
@@ -20785,13 +20844,14 @@
 	    };
 	    LayerTypeSelectView.prototype.render = function () {
 	        return (React.createElement("div", null, 
-	            React.createElement("div", {style: { height: '80%' }}, 
+	            React.createElement("div", null, 
 	                React.createElement("div", {className: 'dialogHeader'}, 
 	                    React.createElement("h2", null, "Select a map type to create")
 	                ), 
-	                React.createElement(LayerType_1.LayerType, {name: 'Choropleth', type: common_1.LayerTypes.ChoroplethMap, imageLocation: 'app/images/choropreview.png', description: 'Map type description TODO', onClick: this.selectMapType.bind(this), selected: this.state.selectedType == common_1.LayerTypes.ChoroplethMap, loadDemo: this.props.loadDemo}), 
-	                React.createElement(LayerType_1.LayerType, {name: 'Symbol map', type: common_1.LayerTypes.SymbolMap, imageLocation: 'app/images/symbolpreview.png', description: 'All images are placeholders', onClick: this.selectMapType.bind(this), selected: this.state.selectedType == common_1.LayerTypes.SymbolMap, loadDemo: this.props.loadDemo}), 
-	                React.createElement(LayerType_1.LayerType, {name: 'Heatmap', type: common_1.LayerTypes.HeatMap, imageLocation: 'app/images/heatpreview.png', description: 'In development', onClick: this.selectMapType.bind(this), selected: this.state.selectedType === common_1.LayerTypes.HeatMap, loadDemo: this.props.loadDemo})), 
+	                React.createElement("div", {style: { height: 600 }}, 
+	                    React.createElement(LayerType_1.LayerType, {name: 'Choropleth', type: common_1.LayerTypes.ChoroplethMap, imageLocation: 'app/images/choropreview.png', description: 'Use this type to create clean and easy to read maps from your polygon data. Color the areas by a single value by selecting a predefined color scheme. Use this kind of layer as a base for other layers to create multi-value maps.', onClick: this.selectMapType.bind(this), selected: this.state.selectedType == common_1.LayerTypes.ChoroplethMap, loadDemo: this.props.loadDemo}), 
+	                    React.createElement(LayerType_1.LayerType, {name: 'Symbol map', type: common_1.LayerTypes.SymbolMap, imageLocation: 'app/images/symbolpreview.png', description: 'Use icons and charts to bring your point data to life! Scale symbol size by a value and give them choropleth-style coloring to create multi-value maps.', onClick: this.selectMapType.bind(this), selected: this.state.selectedType == common_1.LayerTypes.SymbolMap, loadDemo: this.props.loadDemo}), 
+	                    React.createElement(LayerType_1.LayerType, {name: 'Heatmap', type: common_1.LayerTypes.HeatMap, imageLocation: 'app/images/heatpreview.png', description: 'Turn your point data into an intensity map with this layer type. In development!', onClick: this.selectMapType.bind(this), selected: this.state.selectedType === common_1.LayerTypes.HeatMap, loadDemo: this.props.loadDemo}))), 
 	            React.createElement("button", {className: 'secondaryButton', style: { position: 'absolute', left: 15, bottom: 15 }, onClick: this.cancel.bind(this)}, "Cancel"), 
 	            React.createElement("button", {className: 'primaryButton', style: { position: 'absolute', right: 15, bottom: 15 }, onClick: this.proceed.bind(this)}, "Continue")));
 	    };
@@ -20824,19 +20884,25 @@
 	    };
 	    LayerType.prototype.render = function () {
 	        var style = {
-	            display: 'inline-block',
+	            float: 'left',
 	            borderRadius: '25px',
 	            border: this.props.selected ? '4px solid #549341' : '2px solid gray',
-	            padding: '20px',
-	            margin: this.props.selected ? '13px' : '15px',
-	            width: '250px',
-	            height: '80%',
+	            padding: 20,
+	            margin: this.props.selected ? 13 : 15,
+	            width: 250,
+	            height: 520,
+	            position: 'relative'
+	        };
+	        var buttonStyle = {
+	            position: 'absolute',
+	            bottom: 5,
+	            left: 79
 	        };
 	        return (React.createElement("div", {style: style, onClick: this.props.onClick.bind(this, this.props.type)}, 
 	            React.createElement("h3", null, this.props.name), 
 	            React.createElement("img", {src: this.props.imageLocation, alt: this.props.name, style: { width: '100%' }}), 
 	            React.createElement("p", null, this.props.description), 
-	            React.createElement("button", {onClick: this.loadDemo.bind(this), className: 'primaryButton'}, "Try demo")));
+	            React.createElement("button", {style: buttonStyle, onClick: this.loadDemo.bind(this), className: 'primaryButton'}, "Try demo")));
 	    };
 	    return LayerType;
 	}(React.Component));
@@ -20897,6 +20963,7 @@
 	var Dropzone = __webpack_require__(/*! react-dropzone */ 164);
 	var FilePreProcessModel_1 = __webpack_require__(/*! ../../models/FilePreProcessModel */ 165);
 	var _fileModel = new FilePreProcessModel_1.FilePreProcessModel();
+	var _allowedFileTypes = ['geojson', 'csv', 'gpx', 'kml', 'wkt'];
 	var FileUploadView = (function (_super) {
 	    __extends(FileUploadView, _super);
 	    function FileUploadView() {
@@ -20923,11 +20990,17 @@
 	        });
 	        function contentUploaded(e) {
 	            var contents = e.target;
-	            this.setState({
-	                content: contents.result,
-	                layerName: fileName,
-	                fileExtension: fileName.split('.').pop()
-	            });
+	            var ext = fileName.split('.').pop().toLowerCase();
+	            if (_allowedFileTypes.indexOf(ext) !== -1) {
+	                this.setState({
+	                    content: contents.result,
+	                    layerName: fileName,
+	                    fileExtension: ext
+	                });
+	            }
+	            else {
+	                alert('File type not yet supported!');
+	            }
 	        }
 	    };
 	    FileUploadView.prototype.layerNameChanged = function (e) {
@@ -20937,10 +21010,10 @@
 	        this.props.goBack();
 	    };
 	    FileUploadView.prototype.proceed = function () {
-	        if (this.state.fileExtension !== 'geojson') {
+	        if (this.state.fileExtension === 'csv') {
 	            var head = void 0, delim = void 0;
 	            var headers = [];
-	            _a = _fileModel.ParseHeaders(this.state.content, this.state.fileExtension), head = _a[0], delim = _a[1];
+	            _a = _fileModel.ParseHeadersFromCSV(this.state.content), head = _a[0], delim = _a[1];
 	            for (var _i = 0, head_1 = head; _i < head_1.length; _i++) {
 	                var i = head_1[_i];
 	                headers.push({ value: i.name, label: i.name, type: i.type });
@@ -20972,6 +21045,8 @@
 	                React.createElement("div", {className: 'dialogHeader'}, 
 	                    React.createElement("h2", null, " Upload the file containing the data ")
 	                ), 
+	                React.createElement("p", null, "Currently supported file types: "), 
+	                React.createElement("p", null, " GeoJSON, CSV(point data with coordinates in two columns), KML, GPX, WKT"), 
 	                React.createElement(Dropzone, {style: dropStyle, onDrop: this.onDrop.bind(this)}, "Drop file or click to open upload menu"), 
 	                React.createElement("label", null, "Give a name to the layer"), 
 	                React.createElement("input", {type: "text", onChange: this.layerNameChanged.bind(this), value: this.state.layerName})), 
@@ -21376,20 +21451,20 @@
 	var Papa = __webpack_require__(/*! papaparse */ 166);
 	var csv2geojson = __webpack_require__(/*! csv2geojson */ 167);
 	var proj4 = __webpack_require__(/*! proj4 */ 170);
+	var togeojson = __webpack_require__(/*! togeojson */ 171);
+	var wkt = __webpack_require__(/*! wellknown */ 173);
 	var FilePreProcessModel = (function () {
 	    function FilePreProcessModel() {
 	    }
-	    FilePreProcessModel.prototype.ParseHeaders = function (input, fileExtension) {
+	    FilePreProcessModel.prototype.ParseHeadersFromCSV = function (input) {
 	        var headers = [];
 	        var delim = '';
-	        if (fileExtension === 'csv') {
-	            var parse = Papa.parse(input, { preview: 1, header: true });
-	            for (var _i = 0, _a = parse.meta.fields; _i < _a.length; _i++) {
-	                var field = _a[_i];
-	                headers.push({ name: field, type: this.guessType(parse.data, field) });
-	            }
-	            delim = parse.meta.delimiter;
+	        var parse = Papa.parse(input, { preview: 1, header: true });
+	        for (var _i = 0, _a = parse.meta.fields; _i < _a.length; _i++) {
+	            var field = _a[_i];
+	            headers.push({ name: field, type: this.guessType(parse.data, field) });
 	        }
+	        delim = parse.meta.delimiter;
 	        return [headers, delim];
 	    };
 	    FilePreProcessModel.prototype.guessType = function (data, fieldName) {
@@ -21399,17 +21474,8 @@
 	        else
 	            return 'string';
 	    };
-	    FilePreProcessModel.prototype.ParseToGeoJSON = function (input, latField, lonField, fileFormat, delim, coordSystem, headers) {
+	    FilePreProcessModel.prototype.ParseCSVToGeoJSON = function (input, latField, lonField, delim, coordSystem, headers) {
 	        var geoJSON = null;
-	        if (fileFormat === 'csv') {
-	            geoJSON = this.parseCSV(input, latField, lonField, delim);
-	        }
-	        geoJSON = this.projectCoords(geoJSON, coordSystem);
-	        geoJSON = this.setGeoJSONTypes(geoJSON, headers);
-	        return geoJSON;
-	    };
-	    FilePreProcessModel.prototype.parseCSV = function (input, latField, lonField, delim) {
-	        var geoJSON;
 	        csv2geojson.csv2geojson(input, {
 	            latfield: latField,
 	            lonfield: lonField,
@@ -21422,9 +21488,30 @@
 	                console.log(err);
 	            }
 	        });
+	        if (coordSystem !== 'WGS84')
+	            geoJSON = this.ProjectCoords(geoJSON, coordSystem);
+	        geoJSON = this.setGeoJSONTypes(geoJSON, headers);
 	        return geoJSON;
 	    };
-	    FilePreProcessModel.prototype.projectCoords = function (geoJSON, fromProj) {
+	    FilePreProcessModel.prototype.ParseToGeoJSON = function (input, fileFormat) {
+	        var geoJSON = null;
+	        if (fileFormat === 'kml') {
+	            var xml = this.stringToXML(input);
+	            geoJSON = togeojson.kml(xml);
+	        }
+	        else if (fileFormat === 'gpx') {
+	            var xml = this.stringToXML(input);
+	            geoJSON = togeojson.gpx(xml);
+	        }
+	        else if (fileFormat === 'wkt') {
+	            geoJSON = wkt(input);
+	        }
+	        return geoJSON;
+	    };
+	    FilePreProcessModel.prototype.stringToXML = function (oString) {
+	        return (new DOMParser()).parseFromString(oString, "text/xml");
+	    };
+	    FilePreProcessModel.prototype.ProjectCoords = function (geoJSON, fromProj) {
 	        geoJSON.features.forEach(function (feature) {
 	            var x = feature.geometry.coordinates[0];
 	            var y = feature.geometry.coordinates[1];
@@ -23357,6 +23444,666 @@
 
 /***/ },
 /* 171 */
+/*!**********************************!*\
+  !*** ./~/togeojson/togeojson.js ***!
+  \**********************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {var toGeoJSON = (function() {
+	    'use strict';
+	
+	    var removeSpace = (/\s*/g),
+	        trimSpace = (/^\s*|\s*$/g),
+	        splitSpace = (/\s+/);
+	    // generate a short, numeric hash of a string
+	    function okhash(x) {
+	        if (!x || !x.length) return 0;
+	        for (var i = 0, h = 0; i < x.length; i++) {
+	            h = ((h << 5) - h) + x.charCodeAt(i) | 0;
+	        } return h;
+	    }
+	    // all Y children of X
+	    function get(x, y) { return x.getElementsByTagName(y); }
+	    function attr(x, y) { return x.getAttribute(y); }
+	    function attrf(x, y) { return parseFloat(attr(x, y)); }
+	    // one Y child of X, if any, otherwise null
+	    function get1(x, y) { var n = get(x, y); return n.length ? n[0] : null; }
+	    // https://developer.mozilla.org/en-US/docs/Web/API/Node.normalize
+	    function norm(el) { if (el.normalize) { el.normalize(); } return el; }
+	    // cast array x into numbers
+	    function numarray(x) {
+	        for (var j = 0, o = []; j < x.length; j++) { o[j] = parseFloat(x[j]); }
+	        return o;
+	    }
+	    function clean(x) {
+	        var o = {};
+	        for (var i in x) { if (x[i]) { o[i] = x[i]; } }
+	        return o;
+	    }
+	    // get the content of a text node, if any
+	    function nodeVal(x) {
+	        if (x) { norm(x); }
+	        return (x && x.textContent) || '';
+	    }
+	    // get one coordinate from a coordinate array, if any
+	    function coord1(v) { return numarray(v.replace(removeSpace, '').split(',')); }
+	    // get all coordinates from a coordinate array as [[],[]]
+	    function coord(v) {
+	        var coords = v.replace(trimSpace, '').split(splitSpace),
+	            o = [];
+	        for (var i = 0; i < coords.length; i++) {
+	            o.push(coord1(coords[i]));
+	        }
+	        return o;
+	    }
+	    function coordPair(x) {
+	        var ll = [attrf(x, 'lon'), attrf(x, 'lat')],
+	            ele = get1(x, 'ele'),
+	            // handle namespaced attribute in browser
+	            heartRate = get1(x, 'gpxtpx:hr') || get1(x, 'hr'),
+	            time = get1(x, 'time'),
+	            e;
+	        if (ele) {
+	            e = parseFloat(nodeVal(ele));
+	            if (!isNaN(e)) {
+	                ll.push(e);
+	            }
+	        }
+	        return {
+	            coordinates: ll,
+	            time: time ? nodeVal(time) : null,
+	            heartRate: heartRate ? parseFloat(nodeVal(heartRate)) : null
+	        };
+	    }
+	
+	    // create a new feature collection parent object
+	    function fc() {
+	        return {
+	            type: 'FeatureCollection',
+	            features: []
+	        };
+	    }
+	
+	    var serializer;
+	    if (typeof XMLSerializer !== 'undefined') {
+	        /* istanbul ignore next */
+	        serializer = new XMLSerializer();
+	    // only require xmldom in a node environment
+	    } else if (typeof exports === 'object' && typeof process === 'object' && !process.browser) {
+	        serializer = new (__webpack_require__(/*! xmldom */ 172).XMLSerializer)();
+	    }
+	    function xml2str(str) {
+	        // IE9 will create a new XMLSerializer but it'll crash immediately.
+	        // This line is ignored because we don't run coverage tests in IE9
+	        /* istanbul ignore next */
+	        if (str.xml !== undefined) return str.xml;
+	        return serializer.serializeToString(str);
+	    }
+	
+	    var t = {
+	        kml: function(doc) {
+	
+	            var gj = fc(),
+	                // styleindex keeps track of hashed styles in order to match features
+	                styleIndex = {},
+	                // atomic geospatial types supported by KML - MultiGeometry is
+	                // handled separately
+	                geotypes = ['Polygon', 'LineString', 'Point', 'Track', 'gx:Track'],
+	                // all root placemarks in the file
+	                placemarks = get(doc, 'Placemark'),
+	                styles = get(doc, 'Style'),
+	                styleMaps = get(doc, 'StyleMap');
+	
+	            for (var k = 0; k < styles.length; k++) {
+	                styleIndex['#' + attr(styles[k], 'id')] = okhash(xml2str(styles[k])).toString(16);
+	            }
+	            for (var l = 0; l < styleMaps.length; l++) {
+	                styleIndex['#' + attr(styleMaps[l], 'id')] = okhash(xml2str(styleMaps[l])).toString(16);
+	            }
+	            for (var j = 0; j < placemarks.length; j++) {
+	                gj.features = gj.features.concat(getPlacemark(placemarks[j]));
+	            }
+	            function kmlColor(v) {
+	                var color, opacity;
+	                v = v || '';
+	                if (v.substr(0, 1) === '#') { v = v.substr(1); }
+	                if (v.length === 6 || v.length === 3) { color = v; }
+	                if (v.length === 8) {
+	                    opacity = parseInt(v.substr(0, 2), 16) / 255;
+	                    color = '#'+v.substr(2);
+	                }
+	                return [color, isNaN(opacity) ? undefined : opacity];
+	            }
+	            function gxCoord(v) { return numarray(v.split(' ')); }
+	            function gxCoords(root) {
+	                var elems = get(root, 'coord', 'gx'), coords = [], times = [];
+	                if (elems.length === 0) elems = get(root, 'gx:coord');
+	                for (var i = 0; i < elems.length; i++) coords.push(gxCoord(nodeVal(elems[i])));
+	                var timeElems = get(root, 'when');
+	                for (var j = 0; j < timeElems.length; j++) times.push(nodeVal(timeElems[j]));
+	                return {
+	                    coords: coords,
+	                    times: times
+	                };
+	            }
+	            function getGeometry(root) {
+	                var geomNode, geomNodes, i, j, k, geoms = [], coordTimes = [];
+	                if (get1(root, 'MultiGeometry')) { return getGeometry(get1(root, 'MultiGeometry')); }
+	                if (get1(root, 'MultiTrack')) { return getGeometry(get1(root, 'MultiTrack')); }
+	                if (get1(root, 'gx:MultiTrack')) { return getGeometry(get1(root, 'gx:MultiTrack')); }
+	                for (i = 0; i < geotypes.length; i++) {
+	                    geomNodes = get(root, geotypes[i]);
+	                    if (geomNodes) {
+	                        for (j = 0; j < geomNodes.length; j++) {
+	                            geomNode = geomNodes[j];
+	                            if (geotypes[i] === 'Point') {
+	                                geoms.push({
+	                                    type: 'Point',
+	                                    coordinates: coord1(nodeVal(get1(geomNode, 'coordinates')))
+	                                });
+	                            } else if (geotypes[i] === 'LineString') {
+	                                geoms.push({
+	                                    type: 'LineString',
+	                                    coordinates: coord(nodeVal(get1(geomNode, 'coordinates')))
+	                                });
+	                            } else if (geotypes[i] === 'Polygon') {
+	                                var rings = get(geomNode, 'LinearRing'),
+	                                    coords = [];
+	                                for (k = 0; k < rings.length; k++) {
+	                                    coords.push(coord(nodeVal(get1(rings[k], 'coordinates'))));
+	                                }
+	                                geoms.push({
+	                                    type: 'Polygon',
+	                                    coordinates: coords
+	                                });
+	                            } else if (geotypes[i] === 'Track' ||
+	                                geotypes[i] === 'gx:Track') {
+	                                var track = gxCoords(geomNode);
+	                                geoms.push({
+	                                    type: 'LineString',
+	                                    coordinates: track.coords
+	                                });
+	                                if (track.times.length) coordTimes.push(track.times);
+	                            }
+	                        }
+	                    }
+	                }
+	                return {
+	                    geoms: geoms,
+	                    coordTimes: coordTimes
+	                };
+	            }
+	            function getPlacemark(root) {
+	                var geomsAndTimes = getGeometry(root), i, properties = {},
+	                    name = nodeVal(get1(root, 'name')),
+	                    styleUrl = nodeVal(get1(root, 'styleUrl')),
+	                    description = nodeVal(get1(root, 'description')),
+	                    timeSpan = get1(root, 'TimeSpan'),
+	                    extendedData = get1(root, 'ExtendedData'),
+	                    lineStyle = get1(root, 'LineStyle'),
+	                    polyStyle = get1(root, 'PolyStyle');
+	
+	                if (!geomsAndTimes.geoms.length) return [];
+	                if (name) properties.name = name;
+	                if (styleUrl[0] !== '#') {
+	                    styleUrl = '#' + styleUrl;
+	                }
+	                if (styleUrl && styleIndex[styleUrl]) {
+	                    properties.styleUrl = styleUrl;
+	                    properties.styleHash = styleIndex[styleUrl];
+	                }
+	                if (description) properties.description = description;
+	                if (timeSpan) {
+	                    var begin = nodeVal(get1(timeSpan, 'begin'));
+	                    var end = nodeVal(get1(timeSpan, 'end'));
+	                    properties.timespan = { begin: begin, end: end };
+	                }
+	                if (lineStyle) {
+	                    var linestyles = kmlColor(nodeVal(get1(lineStyle, 'color'))),
+	                        color = linestyles[0],
+	                        opacity = linestyles[1],
+	                        width = parseFloat(nodeVal(get1(lineStyle, 'width')));
+	                    if (color) properties.stroke = color;
+	                    if (!isNaN(opacity)) properties['stroke-opacity'] = opacity;
+	                    if (!isNaN(width)) properties['stroke-width'] = width;
+	                }
+	                if (polyStyle) {
+	                    var polystyles = kmlColor(nodeVal(get1(polyStyle, 'color'))),
+	                        pcolor = polystyles[0],
+	                        popacity = polystyles[1],
+	                        fill = nodeVal(get1(polyStyle, 'fill')),
+	                        outline = nodeVal(get1(polyStyle, 'outline'));
+	                    if (pcolor) properties.fill = pcolor;
+	                    if (!isNaN(popacity)) properties['fill-opacity'] = popacity;
+	                    if (fill) properties['fill-opacity'] = fill === '1' ? 1 : 0;
+	                    if (outline) properties['stroke-opacity'] = outline === '1' ? 1 : 0;
+	                }
+	                if (extendedData) {
+	                    var datas = get(extendedData, 'Data'),
+	                        simpleDatas = get(extendedData, 'SimpleData');
+	
+	                    for (i = 0; i < datas.length; i++) {
+	                        properties[datas[i].getAttribute('name')] = nodeVal(get1(datas[i], 'value'));
+	                    }
+	                    for (i = 0; i < simpleDatas.length; i++) {
+	                        properties[simpleDatas[i].getAttribute('name')] = nodeVal(simpleDatas[i]);
+	                    }
+	                }
+	                if (geomsAndTimes.coordTimes.length) {
+	                    properties.coordTimes = (geomsAndTimes.coordTimes.length === 1) ?
+	                        geomsAndTimes.coordTimes[0] : geomsAndTimes.coordTimes;
+	                }
+	                var feature = {
+	                    type: 'Feature',
+	                    geometry: (geomsAndTimes.geoms.length === 1) ? geomsAndTimes.geoms[0] : {
+	                        type: 'GeometryCollection',
+	                        geometries: geomsAndTimes.geoms
+	                    },
+	                    properties: properties
+	                };
+	                if (attr(root, 'id')) feature.id = attr(root, 'id');
+	                return [feature];
+	            }
+	            return gj;
+	        },
+	        gpx: function(doc) {
+	            var i,
+	                tracks = get(doc, 'trk'),
+	                routes = get(doc, 'rte'),
+	                waypoints = get(doc, 'wpt'),
+	                // a feature collection
+	                gj = fc(),
+	                feature;
+	            for (i = 0; i < tracks.length; i++) {
+	                feature = getTrack(tracks[i]);
+	                if (feature) gj.features.push(feature);
+	            }
+	            for (i = 0; i < routes.length; i++) {
+	                feature = getRoute(routes[i]);
+	                if (feature) gj.features.push(feature);
+	            }
+	            for (i = 0; i < waypoints.length; i++) {
+	                gj.features.push(getPoint(waypoints[i]));
+	            }
+	            function getPoints(node, pointname) {
+	                var pts = get(node, pointname),
+	                    line = [],
+	                    times = [],
+	                    heartRates = [],
+	                    l = pts.length;
+	                if (l < 2) return {};  // Invalid line in GeoJSON
+	                for (var i = 0; i < l; i++) {
+	                    var c = coordPair(pts[i]);
+	                    line.push(c.coordinates);
+	                    if (c.time) times.push(c.time);
+	                    if (c.heartRate) heartRates.push(c.heartRate);
+	                }
+	                return {
+	                    line: line,
+	                    times: times,
+	                    heartRates: heartRates
+	                };
+	            }
+	            function getTrack(node) {
+	                var segments = get(node, 'trkseg'),
+	                    track = [],
+	                    times = [],
+	                    heartRates = [],
+	                    line;
+	                for (var i = 0; i < segments.length; i++) {
+	                    line = getPoints(segments[i], 'trkpt');
+	                    if (line.line) track.push(line.line);
+	                    if (line.times && line.times.length) times.push(line.times);
+	                    if (line.heartRates && line.heartRates.length) heartRates.push(line.heartRates);
+	                }
+	                if (track.length === 0) return;
+	                var properties = getProperties(node);
+	                if (times.length) properties.coordTimes = track.length === 1 ? times[0] : times;
+	                if (heartRates.length) properties.heartRates = track.length === 1 ? heartRates[0] : heartRates;
+	                return {
+	                    type: 'Feature',
+	                    properties: properties,
+	                    geometry: {
+	                        type: track.length === 1 ? 'LineString' : 'MultiLineString',
+	                        coordinates: track.length === 1 ? track[0] : track
+	                    }
+	                };
+	            }
+	            function getRoute(node) {
+	                var line = getPoints(node, 'rtept');
+	                if (!line.line) return;
+	                var routeObj = {
+	                    type: 'Feature',
+	                    properties: getProperties(node),
+	                    geometry: {
+	                        type: 'LineString',
+	                        coordinates: line.line
+	                    }
+	                };
+	                return routeObj;
+	            }
+	            function getPoint(node) {
+	                var prop = getProperties(node);
+	                prop.sym = nodeVal(get1(node, 'sym'));
+	                return {
+	                    type: 'Feature',
+	                    properties: prop,
+	                    geometry: {
+	                        type: 'Point',
+	                        coordinates: coordPair(node).coordinates
+	                    }
+	                };
+	            }
+	            function getProperties(node) {
+	                var meta = ['name', 'desc', 'author', 'copyright', 'link',
+	                            'time', 'keywords'],
+	                    prop = {},
+	                    k;
+	                for (k = 0; k < meta.length; k++) {
+	                    prop[meta[k]] = nodeVal(get1(node, meta[k]));
+	                }
+	                return clean(prop);
+	            }
+	            return gj;
+	        }
+	    };
+	    return t;
+	})();
+	
+	if (true) module.exports = toGeoJSON;
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! (webpack)/~/node-libs-browser/~/process/browser.js */ 4)))
+
+/***/ },
+/* 172 */
+/*!************************!*\
+  !*** xmldom (ignored) ***!
+  \************************/
+/***/ function(module, exports) {
+
+	/* (ignored) */
+
+/***/ },
+/* 173 */
+/*!******************************!*\
+  !*** ./~/wellknown/index.js ***!
+  \******************************/
+/***/ function(module, exports) {
+
+	/*eslint-disable no-cond-assign */
+	module.exports = parse;
+	module.exports.parse = parse;
+	module.exports.stringify = stringify;
+	
+	var numberRegexp = /[-+]?([0-9]*\.[0-9]+|[0-9]+)([eE][-+]?[0-9]+)?/;
+	// Matches sequences like '100 100' or '100 100 100'.
+	var tuples = new RegExp('^' + numberRegexp.source + '(\\s' + numberRegexp.source + '){1,}');
+	
+	/*
+	 * Parse WKT and return GeoJSON.
+	 *
+	 * @param {string} _ A WKT geometry
+	 * @return {?Object} A GeoJSON geometry object
+	 */
+	function parse (input) {
+	  var parts = input.split(';');
+	  var _ = parts.pop();
+	  var srid = (parts.shift() || '').split('=').pop();
+	
+	  var i = 0;
+	
+	  function $ (re) {
+	    var match = _.substring(i).match(re);
+	    if (!match) return null;
+	    else {
+	      i += match[0].length;
+	      return match[0];
+	    }
+	  }
+	
+	  function crs (obj) {
+	    if (obj && srid.match(/\d+/)) {
+	      obj.crs = {
+	        type: 'name',
+	        properties: {
+	          name: 'urn:ogc:def:crs:EPSG::' + srid
+	        }
+	      };
+	    }
+	
+	    return obj;
+	  }
+	
+	  function white () { $(/^\s*/); }
+	
+	  function multicoords () {
+	    white();
+	    var depth = 0;
+	    var rings = [];
+	    var stack = [rings];
+	    var pointer = rings;
+	    var elem;
+	
+	    while (elem =
+	           $(/^(\()/) ||
+	             $(/^(\))/) ||
+	               $(/^(\,)/) ||
+	                 $(tuples)) {
+	      if (elem === '(') {
+	        stack.push(pointer);
+	        pointer = [];
+	        stack[stack.length - 1].push(pointer);
+	        depth++;
+	      } else if (elem === ')') {
+	        // For the case: Polygon(), ...
+	        if (pointer.length === 0) return null;
+	
+	        pointer = stack.pop();
+	        // the stack was empty, input was malformed
+	        if (!pointer) return null;
+	        depth--;
+	        if (depth === 0) break;
+	      } else if (elem === ',') {
+	        pointer = [];
+	        stack[stack.length - 1].push(pointer);
+	      } else if (!elem.split(/\s/g).some(isNaN)) {
+	        Array.prototype.push.apply(pointer, elem.split(/\s/g).map(parseFloat));
+	      } else {
+	        return null;
+	      }
+	      white();
+	    }
+	
+	    if (depth !== 0) return null;
+	
+	    return rings;
+	  }
+	
+	  function coords () {
+	    var list = [];
+	    var item;
+	    var pt;
+	    while (pt =
+	           $(tuples) ||
+	             $(/^(\,)/)) {
+	      if (pt === ',') {
+	        list.push(item);
+	        item = [];
+	      } else if (!pt.split(/\s/g).some(isNaN)) {
+	        if (!item) item = [];
+	        Array.prototype.push.apply(item, pt.split(/\s/g).map(parseFloat));
+	      }
+	      white();
+	    }
+	
+	    if (item) list.push(item);
+	    else return null;
+	
+	    return list.length ? list : null;
+	  }
+	
+	  function point () {
+	    if (!$(/^(point)/i)) return null;
+	    white();
+	    if (!$(/^(\()/)) return null;
+	    var c = coords();
+	    if (!c) return null;
+	    white();
+	    if (!$(/^(\))/)) return null;
+	    return {
+	      type: 'Point',
+	      coordinates: c[0]
+	    };
+	  }
+	
+	  function multipoint () {
+	    if (!$(/^(multipoint)/i)) return null;
+	    white();
+	    var newCoordsFormat = _
+	      .substring(_.indexOf('(') + 1, _.length - 1)
+	      .replace(/\(/g, '')
+	      .replace(/\)/g, '');
+	    _ = 'MULTIPOINT (' + newCoordsFormat + ')';
+	    var c = multicoords();
+	    if (!c) return null;
+	    white();
+	    return {
+	      type: 'MultiPoint',
+	      coordinates: c
+	    };
+	  }
+	
+	  function multilinestring () {
+	    if (!$(/^(multilinestring)/i)) return null;
+	    white();
+	    var c = multicoords();
+	    if (!c) return null;
+	    white();
+	    return {
+	      type: 'MultiLineString',
+	      coordinates: c
+	    };
+	  }
+	
+	  function linestring () {
+	    if (!$(/^(linestring)/i)) return null;
+	    white();
+	    if (!$(/^(\()/)) return null;
+	    var c = coords();
+	    if (!c) return null;
+	    if (!$(/^(\))/)) return null;
+	    return {
+	      type: 'LineString',
+	      coordinates: c
+	    };
+	  }
+	
+	  function polygon () {
+	    if (!$(/^(polygon)/i)) return null;
+	    white();
+	    var c = multicoords();
+	    if (!c) return null;
+	    return {
+	      type: 'Polygon',
+	      coordinates: c
+	    };
+	  }
+	
+	  function multipolygon () {
+	    if (!$(/^(multipolygon)/i)) return null;
+	    white();
+	    var c = multicoords();
+	    if (!c) return null;
+	    return {
+	      type: 'MultiPolygon',
+	      coordinates: c
+	    };
+	  }
+	
+	  function geometrycollection () {
+	    var geometries = [];
+	    var geometry;
+	
+	    if (!$(/^(geometrycollection)/i)) return null;
+	    white();
+	
+	    if (!$(/^(\()/)) return null;
+	    while (geometry = root()) {
+	      geometries.push(geometry);
+	      white();
+	      $(/^(\,)/);
+	      white();
+	    }
+	    if (!$(/^(\))/)) return null;
+	
+	    return {
+	      type: 'GeometryCollection',
+	      geometries: geometries
+	    };
+	  }
+	
+	  function root () {
+	    return point() ||
+	      linestring() ||
+	      polygon() ||
+	      multipoint() ||
+	      multilinestring() ||
+	      multipolygon() ||
+	      geometrycollection();
+	  }
+	
+	  return crs(root());
+	}
+	
+	/**
+	 * Stringifies a GeoJSON object into WKT
+	 */
+	function stringify (gj) {
+	  if (gj.type === 'Feature') {
+	    gj = gj.geometry;
+	  }
+	
+	  function pairWKT (c) {
+	    return c.join(' ');
+	  }
+	
+	  function ringWKT (r) {
+	    return r.map(pairWKT).join(', ');
+	  }
+	
+	  function ringsWKT (r) {
+	    return r.map(ringWKT).map(wrapParens).join(', ');
+	  }
+	
+	  function multiRingsWKT (r) {
+	    return r.map(ringsWKT).map(wrapParens).join(', ');
+	  }
+	
+	  function wrapParens (s) { return '(' + s + ')'; }
+	
+	  switch (gj.type) {
+	    case 'Point':
+	      return 'POINT (' + pairWKT(gj.coordinates) + ')';
+	    case 'LineString':
+	      return 'LINESTRING (' + ringWKT(gj.coordinates) + ')';
+	    case 'Polygon':
+	      return 'POLYGON (' + ringsWKT(gj.coordinates) + ')';
+	    case 'MultiPoint':
+	      return 'MULTIPOINT (' + ringWKT(gj.coordinates) + ')';
+	    case 'MultiPolygon':
+	      return 'MULTIPOLYGON (' + multiRingsWKT(gj.coordinates) + ')';
+	    case 'MultiLineString':
+	      return 'MULTILINESTRING (' + ringsWKT(gj.coordinates) + ')';
+	    case 'GeometryCollection':
+	      return 'GEOMETRYCOLLECTION (' + gj.geometries.map(stringify).join(', ') + ')';
+	    default:
+	      throw new Error('stringify requires a valid GeoJSON Feature or geometry object as input');
+	  }
+	}
+
+
+/***/ },
+/* 174 */
 /*!************************************************************!*\
   !*** ./app/ui_components/import_wizard/FileDetailsView.js ***!
   \************************************************************/
@@ -23369,7 +24116,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Select = __webpack_require__(/*! react-select */ 172);
+	var Select = __webpack_require__(/*! react-select */ 175);
 	var coords;
 	var common_1 = __webpack_require__(/*! ../common_items/common */ 162);
 	var FileDetailsView = (function (_super) {
@@ -23384,40 +24131,41 @@
 	            coords[i] = { value: val, label: val };
 	        }
 	        this.setState({
-	            latitudeField: this.props.headers.filter(function (val) { return val.type === 'number'; })[0].label,
-	            longitudeField: this.props.headers.filter(function (val) { return val.type === 'number'; })[1].label,
+	            latitudeField: this.props.isGeoJSON ? '' : this.props.headers.filter(function (val) { return val.type === 'number'; })[0].label,
+	            longitudeField: this.props.isGeoJSON ? '' : this.props.headers.filter(function (val) { return val.type === 'number'; })[1].label,
 	            coordinateSystem: 'WGS84',
+	            heatVal: this.props.isHeatMap ? this.props.headers.filter(function (val) { return val.type === 'number'; })[0].label : '',
 	        });
 	    };
 	    FileDetailsView.prototype.latitudeSelectionChanged = function (val) {
 	        this.setState({
 	            latitudeField: val.value,
-	            longitudeField: this.state.longitudeField,
-	            coordinateSystem: this.state.coordinateSystem,
 	        });
 	    };
 	    FileDetailsView.prototype.longitudeSelectionChanged = function (val) {
 	        this.setState({
-	            latitudeField: this.state.latitudeField,
 	            longitudeField: val.value,
-	            coordinateSystem: this.state.coordinateSystem,
 	        });
 	    };
 	    FileDetailsView.prototype.coordinateSystemChanged = function (val) {
 	        this.setState({
-	            latitudeField: this.state.latitudeField,
-	            longitudeField: this.state.longitudeField,
 	            coordinateSystem: val.value,
+	        });
+	    };
+	    FileDetailsView.prototype.heatValueChanged = function (val) {
+	        this.setState({
+	            heatVal: val.value,
 	        });
 	    };
 	    FileDetailsView.prototype.goBack = function () {
 	        this.props.goBack();
 	    };
 	    FileDetailsView.prototype.proceed = function () {
+	        var custom = document.getElementById('customProj').value;
 	        var values = {
 	            latitudeField: this.state.latitudeField,
 	            longitudeField: this.state.longitudeField,
-	            coordinateSystem: this.state.coordinateSystem,
+	            coordinateSystem: custom !== 'Insert custom Proj4-string here' ? custom : this.state.coordinateSystem,
 	        };
 	        this.props.saveValues(values);
 	    };
@@ -23427,12 +24175,25 @@
 	                React.createElement("div", {className: 'dialogHeader'}, 
 	                    React.createElement("h2", null, "Just a few more details")
 	                ), 
-	                React.createElement("label", null, "Select the latitude/Y field name"), 
-	                React.createElement(Select, {options: this.props.headers, onChange: this.latitudeSelectionChanged.bind(this), value: this.state.latitudeField, placeholder: 'Latitude field...'}), 
-	                React.createElement("label", null, "Select the longitude/X field name"), 
-	                React.createElement(Select, {options: this.props.headers, onChange: this.longitudeSelectionChanged.bind(this), value: this.state.longitudeField}), 
+	                this.props.isGeoJSON ?
+	                    null :
+	                    React.createElement("div", null, 
+	                        React.createElement("label", null, "Select the latitude/Y field name"), 
+	                        React.createElement(Select, {options: this.props.headers, onChange: this.latitudeSelectionChanged.bind(this), value: this.state.latitudeField, placeholder: 'Latitude field...'}), 
+	                        React.createElement("label", null, "Select the longitude/X field name"), 
+	                        React.createElement(Select, {options: this.props.headers, onChange: this.longitudeSelectionChanged.bind(this), value: this.state.longitudeField})), 
 	                React.createElement("label", null, "Select the coordinate system"), 
-	                React.createElement(Select, {options: coords, onChange: this.coordinateSystemChanged.bind(this), value: this.state.coordinateSystem})), 
+	                React.createElement(Select, {options: coords, onChange: this.coordinateSystemChanged.bind(this), value: this.state.coordinateSystem}), 
+	                React.createElement("p", null, " Not sure? Try with the default (WGS84) and see if the data lines up."), 
+	                React.createElement("p", null, 
+	                    "Coordinate system missing? Get the Proj4-string for your system from", 
+	                    React.createElement("a", {href: 'http://spatialreference.org/ref/'}, "Spatial Reference")), 
+	                React.createElement("input", {id: 'customProj', defaultValue: 'Insert custom Proj4-string here', style: { width: 400 }}), 
+	                this.props.isHeatMap ?
+	                    React.createElement("div", null, 
+	                        React.createElement("label", null, "Select heat map variable"), 
+	                        React.createElement(Select, {options: this.props.headers, onChange: this.heatValueChanged.bind(this), value: this.state.heatVal}))
+	                    : null), 
 	            React.createElement("button", {className: 'secondaryButton', style: { position: 'absolute', left: 15, bottom: 15 }, onClick: this.goBack.bind(this)}, "Go back"), 
 	            React.createElement("button", {className: 'primaryButton', style: { position: 'absolute', right: 15, bottom: 15 }, onClick: this.proceed.bind(this)}, "Mapify!"));
 	    };
@@ -23442,7 +24203,7 @@
 
 
 /***/ },
-/* 172 */
+/* 175 */
 /*!**************************************!*\
   !*** ./~/react-select/lib/Select.js ***!
   \**************************************/
@@ -23466,27 +24227,27 @@
 	
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 	
-	var _reactInputAutosize = __webpack_require__(/*! react-input-autosize */ 173);
+	var _reactInputAutosize = __webpack_require__(/*! react-input-autosize */ 176);
 	
 	var _reactInputAutosize2 = _interopRequireDefault(_reactInputAutosize);
 	
-	var _classnames = __webpack_require__(/*! classnames */ 174);
+	var _classnames = __webpack_require__(/*! classnames */ 177);
 	
 	var _classnames2 = _interopRequireDefault(_classnames);
 	
-	var _utilsStripDiacritics = __webpack_require__(/*! ./utils/stripDiacritics */ 175);
+	var _utilsStripDiacritics = __webpack_require__(/*! ./utils/stripDiacritics */ 178);
 	
 	var _utilsStripDiacritics2 = _interopRequireDefault(_utilsStripDiacritics);
 	
-	var _Async = __webpack_require__(/*! ./Async */ 176);
+	var _Async = __webpack_require__(/*! ./Async */ 179);
 	
 	var _Async2 = _interopRequireDefault(_Async);
 	
-	var _Option = __webpack_require__(/*! ./Option */ 177);
+	var _Option = __webpack_require__(/*! ./Option */ 180);
 	
 	var _Option2 = _interopRequireDefault(_Option);
 	
-	var _Value = __webpack_require__(/*! ./Value */ 178);
+	var _Value = __webpack_require__(/*! ./Value */ 181);
 	
 	var _Value2 = _interopRequireDefault(_Value);
 	
@@ -24362,7 +25123,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 173 */
+/* 176 */
 /*!********************************************************************!*\
   !*** ./~/react-select/~/react-input-autosize/lib/AutosizeInput.js ***!
   \********************************************************************/
@@ -24496,7 +25257,7 @@
 	module.exports = AutosizeInput;
 
 /***/ },
-/* 174 */
+/* 177 */
 /*!**********************************************!*\
   !*** ./~/react-select/~/classnames/index.js ***!
   \**********************************************/
@@ -24553,7 +25314,7 @@
 
 
 /***/ },
-/* 175 */
+/* 178 */
 /*!*****************************************************!*\
   !*** ./~/react-select/lib/utils/stripDiacritics.js ***!
   \*****************************************************/
@@ -24571,7 +25332,7 @@
 	};
 
 /***/ },
-/* 176 */
+/* 179 */
 /*!*************************************!*\
   !*** ./~/react-select/lib/Async.js ***!
   \*************************************/
@@ -24587,11 +25348,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _Select = __webpack_require__(/*! ./Select */ 172);
+	var _Select = __webpack_require__(/*! ./Select */ 175);
 	
 	var _Select2 = _interopRequireDefault(_Select);
 	
-	var _utilsStripDiacritics = __webpack_require__(/*! ./utils/stripDiacritics */ 175);
+	var _utilsStripDiacritics = __webpack_require__(/*! ./utils/stripDiacritics */ 178);
 	
 	var _utilsStripDiacritics2 = _interopRequireDefault(_utilsStripDiacritics);
 	
@@ -24747,7 +25508,7 @@
 	module.exports = Async;
 
 /***/ },
-/* 177 */
+/* 180 */
 /*!**************************************!*\
   !*** ./~/react-select/lib/Option.js ***!
   \**************************************/
@@ -24761,7 +25522,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _classnames = __webpack_require__(/*! classnames */ 174);
+	var _classnames = __webpack_require__(/*! classnames */ 177);
 	
 	var _classnames2 = _interopRequireDefault(_classnames);
 	
@@ -24859,7 +25620,7 @@
 	module.exports = Option;
 
 /***/ },
-/* 178 */
+/* 181 */
 /*!*************************************!*\
   !*** ./~/react-select/lib/Value.js ***!
   \*************************************/
@@ -24873,7 +25634,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _classnames = __webpack_require__(/*! classnames */ 174);
+	var _classnames = __webpack_require__(/*! classnames */ 177);
 	
 	var _classnames2 = _interopRequireDefault(_classnames);
 	
@@ -24971,7 +25732,7 @@
 	module.exports = Value;
 
 /***/ },
-/* 179 */
+/* 182 */
 /*!********************************************************!*\
   !*** ./app/ui_components/import_wizard/FileSamples.js ***!
   \********************************************************/
@@ -24985,7 +25746,7 @@
 
 
 /***/ },
-/* 180 */
+/* 183 */
 /*!****************************************!*\
   !*** ./app/ui_components/menu/Menu.js ***!
   \****************************************/
@@ -24998,16 +25759,16 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var LayerMenu_1 = __webpack_require__(/*! ./LayerMenu */ 181);
-	var ColorMenu_1 = __webpack_require__(/*! ./ColorMenu */ 184);
-	var SymbolMenu_1 = __webpack_require__(/*! ./SymbolMenu */ 243);
-	var FilterMenu_1 = __webpack_require__(/*! ./FilterMenu */ 244);
-	var LegendMenu_1 = __webpack_require__(/*! ./LegendMenu */ 245);
-	var PopUpMenu_1 = __webpack_require__(/*! ./PopUpMenu */ 246);
-	var ExportMenu_1 = __webpack_require__(/*! ./ExportMenu */ 247);
+	var LayerMenu_1 = __webpack_require__(/*! ./LayerMenu */ 184);
+	var ColorMenu_1 = __webpack_require__(/*! ./ColorMenu */ 187);
+	var SymbolMenu_1 = __webpack_require__(/*! ./SymbolMenu */ 266);
+	var FilterMenu_1 = __webpack_require__(/*! ./FilterMenu */ 267);
+	var LegendMenu_1 = __webpack_require__(/*! ./LegendMenu */ 268);
+	var PopUpMenu_1 = __webpack_require__(/*! ./PopUpMenu */ 269);
+	var ExportMenu_1 = __webpack_require__(/*! ./ExportMenu */ 270);
 	var common_1 = __webpack_require__(/*! ../common_items/common */ 162);
-	var Select = __webpack_require__(/*! react-select */ 172);
-	var Menu = __webpack_require__(/*! impromptu-react-sidemenu */ 248);
+	var Select = __webpack_require__(/*! react-select */ 175);
+	var Menu = __webpack_require__(/*! impromptu-react-sidemenu */ 271);
 	var MapifyMenu = (function (_super) {
 	    __extends(MapifyMenu, _super);
 	    function MapifyMenu() {
@@ -25090,8 +25851,7 @@
 	        return option ? option.layerName : '';
 	    };
 	    MapifyMenu.prototype.addFilterToMap = function (info) {
-	        info.layerDataId = this.state.activeLayer.id;
-	        return this.props.createFilter(info);
+	        return this.props.saveFilter(info);
 	    };
 	    MapifyMenu.prototype.legendStatusChanged = function (info) {
 	        this.props.legendStatusChanged(info);
@@ -25165,7 +25925,7 @@
 
 
 /***/ },
-/* 181 */
+/* 184 */
 /*!*********************************************!*\
   !*** ./app/ui_components/menu/LayerMenu.js ***!
   \*********************************************/
@@ -25178,7 +25938,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Sortable = __webpack_require__(/*! react-sortablejs */ 182);
+	var Sortable = __webpack_require__(/*! react-sortablejs */ 185);
 	var LayerMenu = (function (_super) {
 	    __extends(LayerMenu, _super);
 	    function LayerMenu(props) {
@@ -25271,8 +26031,8 @@
 	                        layer.name, 
 	                        React.createElement("i", {className: "fa fa-times", onClick: this.deleteLayer.bind(this, layer.id)}));
 	                }, this)), 
-	                React.createElement("button", {onClick: this.saveOrder.bind(this)}, "Save"), 
-	                React.createElement("button", {onClick: this.addNewLayer.bind(this)}, "Add new layer")));
+	                React.createElement("button", {className: 'menuButton', onClick: this.saveOrder.bind(this)}, "Save"), 
+	                React.createElement("button", {className: 'menuButton', onClick: this.addNewLayer.bind(this)}, "Add new layer")));
 	    };
 	    return LayerMenu;
 	}(React.Component));
@@ -25280,7 +26040,7 @@
 
 
 /***/ },
-/* 182 */
+/* 185 */
 /*!*****************************************!*\
   !*** ./~/react-sortablejs/lib/index.js ***!
   \*****************************************/
@@ -25302,7 +26062,7 @@
 	
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 	
-	var _sortablejs = __webpack_require__(/*! sortablejs */ 183);
+	var _sortablejs = __webpack_require__(/*! sortablejs */ 186);
 	
 	var _sortablejs2 = _interopRequireDefault(_sortablejs);
 	
@@ -25422,7 +26182,7 @@
 	}, _temp2);
 
 /***/ },
-/* 183 */
+/* 186 */
 /*!**********************************!*\
   !*** ./~/sortablejs/Sortable.js ***!
   \**********************************/
@@ -26680,7 +27440,7 @@
 
 
 /***/ },
-/* 184 */
+/* 187 */
 /*!*********************************************!*\
   !*** ./app/ui_components/menu/ColorMenu.js ***!
   \*********************************************/
@@ -26693,9 +27453,10 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Select = __webpack_require__(/*! react-select */ 172);
-	var ColorPicker = __webpack_require__(/*! react-color */ 185);
-	var ColorScheme_1 = __webpack_require__(/*! ./ColorScheme */ 241);
+	var Select = __webpack_require__(/*! react-select */ 175);
+	var ColorPicker = __webpack_require__(/*! react-color */ 188);
+	var ColorScheme_1 = __webpack_require__(/*! ./ColorScheme */ 244);
+	var Modal = __webpack_require__(/*! react-modal */ 246);
 	var _gradientOptions = [
 	    { value: 'Greys' },
 	    { value: 'Reds' },
@@ -26839,8 +27600,27 @@
 	            color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.borderColor.substr(1), 16)).toString(16))).slice(-6)
 	        };
 	        var colorSelectStyle = {
-	            position: 'absolute',
-	            right: 250,
+	            overlay: {
+	                position: 'fixed',
+	                height: 600,
+	                width: 300,
+	                right: 230,
+	                bottom: '',
+	                top: 20,
+	                left: '',
+	                backgroundColor: ''
+	            },
+	            content: {
+	                border: '4px solid #6891e2',
+	                borderRadius: '15px',
+	                padding: '0px',
+	                height: 650,
+	                width: 300,
+	                right: '',
+	                bottom: '',
+	                top: '',
+	                left: '',
+	            }
 	        };
 	        return (!this.props.isVisible ? null :
 	            React.createElement("div", {className: "mapify-options"}, 
@@ -26855,10 +27635,9 @@
 	                    React.createElement("div", {style: borderColorBlockStyle, onClick: this.toggleColorPick.bind(this, 'borderColor')}, "Border color")), 
 	                React.createElement("label", null, "Opacity"), 
 	                React.createElement("input", {type: 'number', max: 1, min: 0, step: 0.1, onChange: this.opacityChanged.bind(this), value: this.state.opacity}), 
-	                !this.state.colorSelectOpen ? null :
-	                    React.createElement("div", {style: colorSelectStyle}, 
-	                        React.createElement(ColorPicker.SwatchesPicker, {color: this.state.startColor, onChange: this.colorSelect.bind(this)})
-	                    ), 
+	                React.createElement(Modal, {isOpen: this.state.colorSelectOpen, style: colorSelectStyle}, 
+	                    React.createElement(ColorPicker.SwatchesPicker, {width: 300, height: 600, overlowY: 'auto', color: this.state.startColor, onChange: this.colorSelect.bind(this)}), 
+	                    React.createElement("button", {className: 'primaryButton', onClick: this.toggleColorPick.bind(this, this.state.editing), style: { position: 'absolute', left: 80 }}, "OK")), 
 	                this.state.useMultipleColors ?
 	                    React.createElement("div", null, 
 	                        React.createElement("label", null, "Select the variable to color by"), 
@@ -26887,7 +27666,7 @@
 	                                    React.createElement("br", null)))
 	                            : null)
 	                    : null, 
-	                React.createElement("button", {onClick: this.saveOptions.bind(this)}, "Refresh map")));
+	                React.createElement("button", {className: 'menuButton', onClick: this.saveOptions.bind(this)}, "Refresh map")));
 	    };
 	    return ColorMenu;
 	}(React.Component));
@@ -26895,7 +27674,7 @@
 
 
 /***/ },
-/* 185 */
+/* 188 */
 /*!************************************!*\
   !*** ./~/react-color/lib/index.js ***!
   \************************************/
@@ -26908,7 +27687,7 @@
 	});
 	exports.default = exports.CustomPicker = exports.SwatchesPicker = exports.SliderPicker = exports.SketchPicker = exports.PhotoshopPicker = exports.MaterialPicker = exports.CompactPicker = exports.ChromePicker = undefined;
 	
-	var _Chrome = __webpack_require__(/*! ./components/chrome/Chrome */ 186);
+	var _Chrome = __webpack_require__(/*! ./components/chrome/Chrome */ 189);
 	
 	Object.defineProperty(exports, 'ChromePicker', {
 	  enumerable: true,
@@ -26917,7 +27696,7 @@
 	  }
 	});
 	
-	var _Compact = __webpack_require__(/*! ./components/compact/Compact */ 215);
+	var _Compact = __webpack_require__(/*! ./components/compact/Compact */ 218);
 	
 	Object.defineProperty(exports, 'CompactPicker', {
 	  enumerable: true,
@@ -26926,7 +27705,7 @@
 	  }
 	});
 	
-	var _Material = __webpack_require__(/*! ./components/material/Material */ 225);
+	var _Material = __webpack_require__(/*! ./components/material/Material */ 228);
 	
 	Object.defineProperty(exports, 'MaterialPicker', {
 	  enumerable: true,
@@ -26935,7 +27714,7 @@
 	  }
 	});
 	
-	var _Photoshop = __webpack_require__(/*! ./components/photoshop/Photoshop */ 226);
+	var _Photoshop = __webpack_require__(/*! ./components/photoshop/Photoshop */ 229);
 	
 	Object.defineProperty(exports, 'PhotoshopPicker', {
 	  enumerable: true,
@@ -26944,7 +27723,7 @@
 	  }
 	});
 	
-	var _Sketch = __webpack_require__(/*! ./components/sketched/Sketch */ 230);
+	var _Sketch = __webpack_require__(/*! ./components/sketched/Sketch */ 233);
 	
 	Object.defineProperty(exports, 'SketchPicker', {
 	  enumerable: true,
@@ -26953,7 +27732,7 @@
 	  }
 	});
 	
-	var _Slider = __webpack_require__(/*! ./components/slider/Slider */ 233);
+	var _Slider = __webpack_require__(/*! ./components/slider/Slider */ 236);
 	
 	Object.defineProperty(exports, 'SliderPicker', {
 	  enumerable: true,
@@ -26962,7 +27741,7 @@
 	  }
 	});
 	
-	var _Swatches = __webpack_require__(/*! ./components/swatches/Swatches */ 237);
+	var _Swatches = __webpack_require__(/*! ./components/swatches/Swatches */ 240);
 	
 	Object.defineProperty(exports, 'SwatchesPicker', {
 	  enumerable: true,
@@ -26971,7 +27750,7 @@
 	  }
 	});
 	
-	var _ColorWrap = __webpack_require__(/*! ./components/common/ColorWrap */ 208);
+	var _ColorWrap = __webpack_require__(/*! ./components/common/ColorWrap */ 211);
 	
 	Object.defineProperty(exports, 'CustomPicker', {
 	  enumerable: true,
@@ -26987,7 +27766,7 @@
 	exports.default = _Chrome2.default;
 
 /***/ },
-/* 186 */
+/* 189 */
 /*!*******************************************************!*\
   !*** ./~/react-color/lib/components/chrome/Chrome.js ***!
   \*******************************************************/
@@ -27007,25 +27786,25 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
-	var _ChromeFields = __webpack_require__(/*! ./ChromeFields */ 212);
+	var _ChromeFields = __webpack_require__(/*! ./ChromeFields */ 215);
 	
 	var _ChromeFields2 = _interopRequireDefault(_ChromeFields);
 	
-	var _ChromePointer = __webpack_require__(/*! ./ChromePointer */ 213);
+	var _ChromePointer = __webpack_require__(/*! ./ChromePointer */ 216);
 	
 	var _ChromePointer2 = _interopRequireDefault(_ChromePointer);
 	
-	var _ChromePointerCircle = __webpack_require__(/*! ./ChromePointerCircle */ 214);
+	var _ChromePointerCircle = __webpack_require__(/*! ./ChromePointerCircle */ 217);
 	
 	var _ChromePointerCircle2 = _interopRequireDefault(_ChromePointerCircle);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -27178,34 +27957,34 @@
 	exports.default = (0, _common.ColorWrap)(Chrome);
 
 /***/ },
-/* 187 */
+/* 190 */
 /*!***************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/react-css.js ***!
   \***************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";module.exports={Component:__webpack_require__(/*! ./Component */ 188),inline:__webpack_require__(/*! ./inline */ 189),mixin:{css:__webpack_require__(/*! ./inline */ 189)}};
+	"use strict";module.exports={Component:__webpack_require__(/*! ./Component */ 191),inline:__webpack_require__(/*! ./inline */ 192),mixin:{css:__webpack_require__(/*! ./inline */ 192)}};
 
 /***/ },
-/* 188 */
+/* 191 */
 /*!***************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/Component.js ***!
   \***************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";function _classCallCheck(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}function _inherits(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function, not "+typeof t);e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}}),t&&(Object.setPrototypeOf?Object.setPrototypeOf(e,t):e.__proto__=t)}var _createClass=function(){function e(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}return function(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}}(),_get=function(e,t,r){for(var n=!0;n;){var o=e,i=t,c=r;n=!1,null===o&&(o=Function.prototype);var a=Object.getOwnPropertyDescriptor(o,i);if(void 0!==a){if("value"in a)return a.value;var u=a.get;if(void 0===u)return;return u.call(c)}var l=Object.getPrototypeOf(o);if(null===l)return;e=l,t=i,r=c,n=!0,a=l=void 0}},React=__webpack_require__(/*! react */ 1),inline=__webpack_require__(/*! ./inline */ 189),ReactCSSComponent=function(e){function t(){_classCallCheck(this,t),_get(Object.getPrototypeOf(t.prototype),"constructor",this).apply(this,arguments)}return _inherits(t,e),_createClass(t,[{key:"css",value:function(e){return inline.call(this,e)}},{key:"styles",value:function(){return this.css()}}]),t}(React.Component);ReactCSSComponent.contextTypes={mixins:React.PropTypes.object},module.exports=ReactCSSComponent;
+	"use strict";function _classCallCheck(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}function _inherits(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function, not "+typeof t);e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,enumerable:!1,writable:!0,configurable:!0}}),t&&(Object.setPrototypeOf?Object.setPrototypeOf(e,t):e.__proto__=t)}var _createClass=function(){function e(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}return function(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}}(),_get=function(e,t,r){for(var n=!0;n;){var o=e,i=t,c=r;n=!1,null===o&&(o=Function.prototype);var a=Object.getOwnPropertyDescriptor(o,i);if(void 0!==a){if("value"in a)return a.value;var u=a.get;if(void 0===u)return;return u.call(c)}var l=Object.getPrototypeOf(o);if(null===l)return;e=l,t=i,r=c,n=!0,a=l=void 0}},React=__webpack_require__(/*! react */ 1),inline=__webpack_require__(/*! ./inline */ 192),ReactCSSComponent=function(e){function t(){_classCallCheck(this,t),_get(Object.getPrototypeOf(t.prototype),"constructor",this).apply(this,arguments)}return _inherits(t,e),_createClass(t,[{key:"css",value:function(e){return inline.call(this,e)}},{key:"styles",value:function(){return this.css()}}]),t}(React.Component);ReactCSSComponent.contextTypes={mixins:React.PropTypes.object},module.exports=ReactCSSComponent;
 
 /***/ },
-/* 189 */
+/* 192 */
 /*!************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/inline.js ***!
   \************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";var isObject=__webpack_require__(/*! lodash.isobject */ 190),checkClassStructure=__webpack_require__(/*! ./check-class-structure */ 191),combine=__webpack_require__(/*! ./combine */ 192);module.exports=function(s){var e=this;combine=__webpack_require__(/*! ./combine */ 192);var r=[];if(!this.classes)throw console.warn("Define this.classes on `"+this.constructor.name+"`");checkClassStructure(this.classes());var t=function(s,t){e.classes()[s]?r.push(e.classes()[s]):s&&t&&t.warn===!0&&console.warn("The `"+s+"` css class does not exist on `"+e.constructor.name+"`")};t("default");for(var i in this.props){var c=this.props[i];isObject(c)||(c===!0?(t(i),t(i+"-true")):t(c?i+"-"+c:i+"-false"))}if(this.props&&this.props.activeBounds)for(var o=0;o<this.props.activeBounds.length;o++){var n=this.props.activeBounds[o];t(n)}for(var a in s){var u=s[a];u===!0&&t(a,{warn:!0})}var h={};return this.context&&this.context.mixins&&(h=this.context.mixins),combine(r,h)};
+	"use strict";var isObject=__webpack_require__(/*! lodash.isobject */ 193),checkClassStructure=__webpack_require__(/*! ./check-class-structure */ 194),combine=__webpack_require__(/*! ./combine */ 195);module.exports=function(s){var e=this;combine=__webpack_require__(/*! ./combine */ 195);var r=[];if(!this.classes)throw console.warn("Define this.classes on `"+this.constructor.name+"`");checkClassStructure(this.classes());var t=function(s,t){e.classes()[s]?r.push(e.classes()[s]):s&&t&&t.warn===!0&&console.warn("The `"+s+"` css class does not exist on `"+e.constructor.name+"`")};t("default");for(var i in this.props){var c=this.props[i];isObject(c)||(c===!0?(t(i),t(i+"-true")):t(c?i+"-"+c:i+"-false"))}if(this.props&&this.props.activeBounds)for(var o=0;o<this.props.activeBounds.length;o++){var n=this.props.activeBounds[o];t(n)}for(var a in s){var u=s[a];u===!0&&t(a,{warn:!0})}var h={};return this.context&&this.context.mixins&&(h=this.context.mixins),combine(r,h)};
 
 /***/ },
-/* 190 */
+/* 193 */
 /*!*************************************************************!*\
   !*** ./~/react-color/~/reactcss/~/lodash.isobject/index.js ***!
   \*************************************************************/
@@ -27251,34 +28030,34 @@
 
 
 /***/ },
-/* 191 */
+/* 194 */
 /*!***************************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/check-class-structure.js ***!
   \***************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";var isObject=__webpack_require__(/*! lodash.isobject */ 190);module.exports=function(e){for(var s in e){var o=e[s];if(isObject(o))for(var t in o){var a=o[t];isObject(a)||console.warn("Make sure the value of the element `"+s+"` is an object of css. You passed it `"+o+"`")}else console.warn("Make sure the value of `"+s+"` is an object of html elements. You passed it `"+o+"`")}};
+	"use strict";var isObject=__webpack_require__(/*! lodash.isobject */ 193);module.exports=function(e){for(var s in e){var o=e[s];if(isObject(o))for(var t in o){var a=o[t];isObject(a)||console.warn("Make sure the value of the element `"+s+"` is an object of css. You passed it `"+o+"`")}else console.warn("Make sure the value of `"+s+"` is an object of html elements. You passed it `"+o+"`")}};
 
 /***/ },
-/* 192 */
+/* 195 */
 /*!*************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/combine.js ***!
   \*************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";var merge=__webpack_require__(/*! ./merge-classes */ 193),mixins=__webpack_require__(/*! ./transform-mixins */ 197);module.exports=function(e,r){var i=merge(e);return mixins(i,r)};
+	"use strict";var merge=__webpack_require__(/*! ./merge-classes */ 196),mixins=__webpack_require__(/*! ./transform-mixins */ 200);module.exports=function(e,r){var i=merge(e);return mixins(i,r)};
 
 /***/ },
-/* 193 */
+/* 196 */
 /*!*******************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/merge-classes.js ***!
   \*******************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";var merge=__webpack_require__(/*! merge */ 194),isObject=__webpack_require__(/*! lodash.isobject */ 190),isArray=__webpack_require__(/*! lodash.isarray */ 196);module.exports=function(e){return isObject(e)&&!isArray(e)?e:1===e.length?e[0]:merge.recursive.apply(void 0,e)};
+	"use strict";var merge=__webpack_require__(/*! merge */ 197),isObject=__webpack_require__(/*! lodash.isobject */ 193),isArray=__webpack_require__(/*! lodash.isarray */ 199);module.exports=function(e){return isObject(e)&&!isArray(e)?e:1===e.length?e[0]:merge.recursive.apply(void 0,e)};
 
 /***/ },
-/* 194 */
+/* 197 */
 /*!****************************************!*\
   !*** ./~/react-color/~/merge/merge.js ***!
   \****************************************/
@@ -27459,10 +28238,10 @@
 		}
 	
 	})(typeof module === 'object' && module && typeof module.exports === 'object' && module.exports);
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! ./../../../webpack/buildin/module.js */ 195)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! ./../../../webpack/buildin/module.js */ 198)(module)))
 
 /***/ },
-/* 195 */
+/* 198 */
 /*!***********************************!*\
   !*** (webpack)/buildin/module.js ***!
   \***********************************/
@@ -27481,7 +28260,7 @@
 
 
 /***/ },
-/* 196 */
+/* 199 */
 /*!************************************************************!*\
   !*** ./~/react-color/~/reactcss/~/lodash.isarray/index.js ***!
   \************************************************************/
@@ -27525,16 +28304,16 @@
 
 
 /***/ },
-/* 197 */
+/* 200 */
 /*!**********************************************************!*\
   !*** ./~/react-color/~/reactcss/lib/transform-mixins.js ***!
   \**********************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";var isObject=__webpack_require__(/*! lodash.isobject */ 190),isArray=__webpack_require__(/*! lodash.isarray */ 196),merge=__webpack_require__(/*! merge */ 194),localProps={borderRadius:function(r){return null!==r?{msBorderRadius:r,MozBorderRadius:r,OBorderRadius:r,WebkitBorderRadius:r,borderRadius:r}:void 0},boxShadow:function(r){return null!==r?{msBoxShadow:r,MozBoxShadow:r,OBoxShadow:r,WebkitBoxShadow:r,boxShadow:r}:void 0},userSelect:function(r){return null!==r?{WebkitTouchCallout:r,KhtmlUserSelect:r,MozUserSelect:r,msUserSelect:r,WebkitUserSelect:r,userSelect:r}:void 0},flex:function(r){return null!==r?{WebkitBoxFlex:r,MozBoxFlex:r,WebkitFlex:r,msFlex:r,flex:r}:void 0},flexBasis:function(r){return null!==r?{WebkitFlexBasis:r,flexBasis:r}:void 0},justifyContent:function(r){return null!==r?{WebkitJustifyContent:r,justifyContent:r}:void 0},transition:function(r){return null!==r?{msTransition:r,MozTransition:r,OTransition:r,WebkitTransition:r,transition:r}:void 0},transform:function(r){return null!==r?{msTransform:r,MozTransform:r,OTransform:r,WebkitTransform:r,transform:r}:void 0},Absolute:function(r){if(null!==r){var e=r.split(" ");return{position:"absolute",top:e[0],right:e[1],bottom:e[2],left:e[3]}}},Extend:function(r,e){var o=e[r];return o?o:void 0}},transform=function r(e,o,t){var n=merge(o,localProps),i={};for(var s in e){var u=e[s];if(isObject(u)&&!isArray(u))i[s]=r(u,o,e);else if(n[s]){var l=n[s](u,t);for(var a in l){var f=l[a];i[a]=f}}else i[s]=u}return i};module.exports=function(r,e,o){return transform(r,e,o)};
+	"use strict";var isObject=__webpack_require__(/*! lodash.isobject */ 193),isArray=__webpack_require__(/*! lodash.isarray */ 199),merge=__webpack_require__(/*! merge */ 197),localProps={borderRadius:function(r){return null!==r?{msBorderRadius:r,MozBorderRadius:r,OBorderRadius:r,WebkitBorderRadius:r,borderRadius:r}:void 0},boxShadow:function(r){return null!==r?{msBoxShadow:r,MozBoxShadow:r,OBoxShadow:r,WebkitBoxShadow:r,boxShadow:r}:void 0},userSelect:function(r){return null!==r?{WebkitTouchCallout:r,KhtmlUserSelect:r,MozUserSelect:r,msUserSelect:r,WebkitUserSelect:r,userSelect:r}:void 0},flex:function(r){return null!==r?{WebkitBoxFlex:r,MozBoxFlex:r,WebkitFlex:r,msFlex:r,flex:r}:void 0},flexBasis:function(r){return null!==r?{WebkitFlexBasis:r,flexBasis:r}:void 0},justifyContent:function(r){return null!==r?{WebkitJustifyContent:r,justifyContent:r}:void 0},transition:function(r){return null!==r?{msTransition:r,MozTransition:r,OTransition:r,WebkitTransition:r,transition:r}:void 0},transform:function(r){return null!==r?{msTransform:r,MozTransform:r,OTransform:r,WebkitTransform:r,transform:r}:void 0},Absolute:function(r){if(null!==r){var e=r.split(" ");return{position:"absolute",top:e[0],right:e[1],bottom:e[2],left:e[3]}}},Extend:function(r,e){var o=e[r];return o?o:void 0}},transform=function r(e,o,t){var n=merge(o,localProps),i={};for(var s in e){var u=e[s];if(isObject(u)&&!isArray(u))i[s]=r(u,o,e);else if(n[s]){var l=n[s](u,t);for(var a in l){var f=l[a];i[a]=f}}else i[s]=u}return i};module.exports=function(r,e,o){return transform(r,e,o)};
 
 /***/ },
-/* 198 */
+/* 201 */
 /*!******************************************************!*\
   !*** ./~/react-color/lib/components/common/index.js ***!
   \******************************************************/
@@ -27546,7 +28325,7 @@
 	  value: true
 	});
 	
-	var _Alpha = __webpack_require__(/*! ./Alpha */ 199);
+	var _Alpha = __webpack_require__(/*! ./Alpha */ 202);
 	
 	Object.defineProperty(exports, 'Alpha', {
 	  enumerable: true,
@@ -27555,7 +28334,7 @@
 	  }
 	});
 	
-	var _Checkboard = __webpack_require__(/*! ./Checkboard */ 202);
+	var _Checkboard = __webpack_require__(/*! ./Checkboard */ 205);
 	
 	Object.defineProperty(exports, 'Checkboard', {
 	  enumerable: true,
@@ -27564,7 +28343,7 @@
 	  }
 	});
 	
-	var _EditableInput = __webpack_require__(/*! ./EditableInput */ 203);
+	var _EditableInput = __webpack_require__(/*! ./EditableInput */ 206);
 	
 	Object.defineProperty(exports, 'EditableInput', {
 	  enumerable: true,
@@ -27573,7 +28352,7 @@
 	  }
 	});
 	
-	var _Hue = __webpack_require__(/*! ./Hue */ 204);
+	var _Hue = __webpack_require__(/*! ./Hue */ 207);
 	
 	Object.defineProperty(exports, 'Hue', {
 	  enumerable: true,
@@ -27582,7 +28361,7 @@
 	  }
 	});
 	
-	var _Saturation = __webpack_require__(/*! ./Saturation */ 205);
+	var _Saturation = __webpack_require__(/*! ./Saturation */ 208);
 	
 	Object.defineProperty(exports, 'Saturation', {
 	  enumerable: true,
@@ -27591,7 +28370,7 @@
 	  }
 	});
 	
-	var _ColorWrap = __webpack_require__(/*! ./ColorWrap */ 208);
+	var _ColorWrap = __webpack_require__(/*! ./ColorWrap */ 211);
 	
 	Object.defineProperty(exports, 'ColorWrap', {
 	  enumerable: true,
@@ -27603,7 +28382,7 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /***/ },
-/* 199 */
+/* 202 */
 /*!******************************************************!*\
   !*** ./~/react-color/lib/components/common/Alpha.js ***!
   \******************************************************/
@@ -27621,15 +28400,15 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _Checkboard = __webpack_require__(/*! ./Checkboard */ 202);
+	var _Checkboard = __webpack_require__(/*! ./Checkboard */ 205);
 	
 	var _Checkboard2 = _interopRequireDefault(_Checkboard);
 	
@@ -27771,16 +28550,16 @@
 	exports.default = Alpha;
 
 /***/ },
-/* 200 */
+/* 203 */
 /*!***************************************************************!*\
   !*** ./~/react-color/~/react-addons-shallow-compare/index.js ***!
   \***************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(/*! react/lib/shallowCompare */ 201);
+	module.exports = __webpack_require__(/*! react/lib/shallowCompare */ 204);
 
 /***/ },
-/* 201 */
+/* 204 */
 /*!***************************************!*\
   !*** ./~/react/lib/shallowCompare.js ***!
   \***************************************/
@@ -27812,7 +28591,7 @@
 	module.exports = shallowCompare;
 
 /***/ },
-/* 202 */
+/* 205 */
 /*!***********************************************************!*\
   !*** ./~/react-color/lib/components/common/Checkboard.js ***!
   \***********************************************************/
@@ -27830,11 +28609,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -27924,7 +28703,7 @@
 	exports.default = Checkboard;
 
 /***/ },
-/* 203 */
+/* 206 */
 /*!**************************************************************!*\
   !*** ./~/react-color/lib/components/common/EditableInput.js ***!
   \**************************************************************/
@@ -27942,11 +28721,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -28122,7 +28901,7 @@
 	exports.default = EditableInput;
 
 /***/ },
-/* 204 */
+/* 207 */
 /*!****************************************************!*\
   !*** ./~/react-color/lib/components/common/Hue.js ***!
   \****************************************************/
@@ -28140,11 +28919,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -28302,7 +29081,7 @@
 	exports.default = Hue;
 
 /***/ },
-/* 205 */
+/* 208 */
 /*!***********************************************************!*\
   !*** ./~/react-color/lib/components/common/Saturation.js ***!
   \***********************************************************/
@@ -28320,15 +29099,15 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _lodash = __webpack_require__(/*! lodash.throttle */ 206);
+	var _lodash = __webpack_require__(/*! lodash.throttle */ 209);
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -28471,7 +29250,7 @@
 	exports.default = Saturation;
 
 /***/ },
-/* 206 */
+/* 209 */
 /*!**************************************************!*\
   !*** ./~/react-color/~/lodash.throttle/index.js ***!
   \**************************************************/
@@ -28485,7 +29264,7 @@
 	 * Copyright 2009-2016 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var debounce = __webpack_require__(/*! lodash.debounce */ 207);
+	var debounce = __webpack_require__(/*! lodash.debounce */ 210);
 	
 	/** Used as the `TypeError` message for "Functions" methods. */
 	var FUNC_ERROR_TEXT = 'Expected a function';
@@ -28580,7 +29359,7 @@
 
 
 /***/ },
-/* 207 */
+/* 210 */
 /*!**************************************************!*\
   !*** ./~/react-color/~/lodash.debounce/index.js ***!
   \**************************************************/
@@ -28983,7 +29762,7 @@
 
 
 /***/ },
-/* 208 */
+/* 211 */
 /*!**********************************************************!*\
   !*** ./~/react-color/lib/components/common/ColorWrap.js ***!
   \**********************************************************/
@@ -29003,23 +29782,23 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _merge = __webpack_require__(/*! merge */ 194);
+	var _merge = __webpack_require__(/*! merge */ 197);
 	
 	var _merge2 = _interopRequireDefault(_merge);
 	
-	var _lodash = __webpack_require__(/*! lodash.isplainobject */ 209);
+	var _lodash = __webpack_require__(/*! lodash.isplainobject */ 212);
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
-	var _lodash3 = __webpack_require__(/*! lodash.debounce */ 207);
+	var _lodash3 = __webpack_require__(/*! lodash.debounce */ 210);
 	
 	var _lodash4 = _interopRequireDefault(_lodash3);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -29094,7 +29873,7 @@
 	exports.default = ColorWrap;
 
 /***/ },
-/* 209 */
+/* 212 */
 /*!*******************************************************!*\
   !*** ./~/react-color/~/lodash.isplainobject/index.js ***!
   \*******************************************************/
@@ -29238,7 +30017,7 @@
 
 
 /***/ },
-/* 210 */
+/* 213 */
 /*!********************************************!*\
   !*** ./~/react-color/lib/helpers/color.js ***!
   \********************************************/
@@ -29249,7 +30028,7 @@
 	  value: true
 	});
 	
-	var _tinycolor = __webpack_require__(/*! ../../modules/tinycolor2 */ 211);
+	var _tinycolor = __webpack_require__(/*! ../../modules/tinycolor2 */ 214);
 	
 	var _tinycolor2 = _interopRequireDefault(_tinycolor);
 	
@@ -29301,7 +30080,7 @@
 	};
 
 /***/ },
-/* 211 */
+/* 214 */
 /*!***************************************************!*\
   !*** ./~/react-color/modules/tinycolor2/index.js ***!
   \***************************************************/
@@ -30476,7 +31255,7 @@
 
 
 /***/ },
-/* 212 */
+/* 215 */
 /*!*************************************************************!*\
   !*** ./~/react-color/lib/components/chrome/ChromeFields.js ***!
   \*************************************************************/
@@ -30496,19 +31275,19 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -30761,7 +31540,7 @@
 	exports.default = ChromeFields;
 
 /***/ },
-/* 213 */
+/* 216 */
 /*!**************************************************************!*\
   !*** ./~/react-color/lib/components/chrome/ChromePointer.js ***!
   \**************************************************************/
@@ -30779,11 +31558,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -30841,7 +31620,7 @@
 	exports.default = ChromePointer;
 
 /***/ },
-/* 214 */
+/* 217 */
 /*!********************************************************************!*\
   !*** ./~/react-color/lib/components/chrome/ChromePointerCircle.js ***!
   \********************************************************************/
@@ -30859,11 +31638,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -30920,7 +31699,7 @@
 	exports.default = ChromePointerCircle;
 
 /***/ },
-/* 215 */
+/* 218 */
 /*!*********************************************************!*\
   !*** ./~/react-color/lib/components/compact/Compact.js ***!
   \*********************************************************/
@@ -30940,27 +31719,27 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _reactMaterialDesign = __webpack_require__(/*! ../../../modules/react-material-design */ 216);
+	var _reactMaterialDesign = __webpack_require__(/*! ../../../modules/react-material-design */ 219);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
-	var _CompactColor = __webpack_require__(/*! ./CompactColor */ 223);
+	var _CompactColor = __webpack_require__(/*! ./CompactColor */ 226);
 	
 	var _CompactColor2 = _interopRequireDefault(_CompactColor);
 	
-	var _CompactFields = __webpack_require__(/*! ./CompactFields */ 224);
+	var _CompactFields = __webpack_require__(/*! ./CompactFields */ 227);
 	
 	var _CompactFields2 = _interopRequireDefault(_CompactFields);
 	
@@ -31056,7 +31835,7 @@
 	exports.default = (0, _common.ColorWrap)(Compact);
 
 /***/ },
-/* 216 */
+/* 219 */
 /*!**************************************************************!*\
   !*** ./~/react-color/modules/react-material-design/index.js ***!
   \**************************************************************/
@@ -31070,15 +31849,15 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var _libComponentsRaised = __webpack_require__(/*! ./lib/components/Raised */ 217);
+	var _libComponentsRaised = __webpack_require__(/*! ./lib/components/Raised */ 220);
 	
 	var _libComponentsRaised2 = _interopRequireDefault(_libComponentsRaised);
 	
-	var _libComponentsTile = __webpack_require__(/*! ./lib/components/Tile */ 218);
+	var _libComponentsTile = __webpack_require__(/*! ./lib/components/Tile */ 221);
 	
 	var _libComponentsTile2 = _interopRequireDefault(_libComponentsTile);
 	
-	var _libComponentsTabs = __webpack_require__(/*! ./lib/components/Tabs */ 219);
+	var _libComponentsTabs = __webpack_require__(/*! ./lib/components/Tabs */ 222);
 	
 	var _libComponentsTabs2 = _interopRequireDefault(_libComponentsTabs);
 	
@@ -31088,7 +31867,7 @@
 
 
 /***/ },
-/* 217 */
+/* 220 */
 /*!******************************************************************************!*\
   !*** ./~/react-color/modules/react-material-design/lib/components/Raised.js ***!
   \******************************************************************************/
@@ -31107,7 +31886,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
@@ -31223,7 +32002,7 @@
 	exports.default = Raised;
 
 /***/ },
-/* 218 */
+/* 221 */
 /*!****************************************************************************!*\
   !*** ./~/react-color/modules/react-material-design/lib/components/Tile.js ***!
   \****************************************************************************/
@@ -31244,7 +32023,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
@@ -31364,7 +32143,7 @@
 
 
 /***/ },
-/* 219 */
+/* 222 */
 /*!****************************************************************************!*\
   !*** ./~/react-color/modules/react-material-design/lib/components/Tabs.js ***!
   \****************************************************************************/
@@ -31384,19 +32163,19 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _lodash = __webpack_require__(/*! lodash */ 220);
+	var _lodash = __webpack_require__(/*! lodash */ 223);
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
-	var _Tab = __webpack_require__(/*! ./Tab */ 221);
+	var _Tab = __webpack_require__(/*! ./Tab */ 224);
 	
 	var _Tab2 = _interopRequireDefault(_Tab);
 	
-	var _Link = __webpack_require__(/*! ./Link */ 222);
+	var _Link = __webpack_require__(/*! ./Link */ 225);
 	
 	var _Link2 = _interopRequireDefault(_Link);
 	
@@ -31643,7 +32422,7 @@
 	exports.default = Tabs;
 
 /***/ },
-/* 220 */
+/* 223 */
 /*!******************************************!*\
   !*** ./~/react-color/~/lodash/lodash.js ***!
   \******************************************/
@@ -47677,10 +48456,10 @@
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! ./../../../webpack/buildin/module.js */ 195)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! ./../../../webpack/buildin/module.js */ 198)(module), (function() { return this; }())))
 
 /***/ },
-/* 221 */
+/* 224 */
 /*!***************************************************************************!*\
   !*** ./~/react-color/modules/react-material-design/lib/components/Tab.js ***!
   \***************************************************************************/
@@ -47698,7 +48477,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
@@ -47784,7 +48563,7 @@
 	exports.default = Tab;
 
 /***/ },
-/* 222 */
+/* 225 */
 /*!****************************************************************************!*\
   !*** ./~/react-color/modules/react-material-design/lib/components/Link.js ***!
   \****************************************************************************/
@@ -47802,7 +48581,7 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _lodash = __webpack_require__(/*! lodash */ 220);
+	var _lodash = __webpack_require__(/*! lodash */ 223);
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
@@ -47872,7 +48651,7 @@
 	exports.default = Link;
 
 /***/ },
-/* 223 */
+/* 226 */
 /*!**************************************************************!*\
   !*** ./~/react-color/lib/components/compact/CompactColor.js ***!
   \**************************************************************/
@@ -47890,11 +48669,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -47979,7 +48758,7 @@
 	exports.default = CompactColor;
 
 /***/ },
-/* 224 */
+/* 227 */
 /*!***************************************************************!*\
   !*** ./~/react-color/lib/components/compact/CompactFields.js ***!
   \***************************************************************/
@@ -47999,15 +48778,15 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -48137,7 +48916,7 @@
 	exports.default = CompactColor;
 
 /***/ },
-/* 225 */
+/* 228 */
 /*!***********************************************************!*\
   !*** ./~/react-color/lib/components/material/Material.js ***!
   \***********************************************************/
@@ -48157,21 +48936,21 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _reactMaterialDesign = __webpack_require__(/*! ../../../modules/react-material-design */ 216);
+	var _reactMaterialDesign = __webpack_require__(/*! ../../../modules/react-material-design */ 219);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -48323,7 +49102,7 @@
 	exports.default = (0, _common.ColorWrap)(Material);
 
 /***/ },
-/* 226 */
+/* 229 */
 /*!*************************************************************!*\
   !*** ./~/react-color/lib/components/photoshop/Photoshop.js ***!
   \*************************************************************/
@@ -48343,25 +49122,25 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
-	var _PhotoshopFields = __webpack_require__(/*! ./PhotoshopFields */ 227);
+	var _PhotoshopFields = __webpack_require__(/*! ./PhotoshopFields */ 230);
 	
 	var _PhotoshopFields2 = _interopRequireDefault(_PhotoshopFields);
 	
-	var _PhotoshopPointerCircle = __webpack_require__(/*! ./PhotoshopPointerCircle */ 228);
+	var _PhotoshopPointerCircle = __webpack_require__(/*! ./PhotoshopPointerCircle */ 231);
 	
 	var _PhotoshopPointerCircle2 = _interopRequireDefault(_PhotoshopPointerCircle);
 	
-	var _PhotoshopPointer = __webpack_require__(/*! ./PhotoshopPointer */ 229);
+	var _PhotoshopPointer = __webpack_require__(/*! ./PhotoshopPointer */ 232);
 	
 	var _PhotoshopPointer2 = _interopRequireDefault(_PhotoshopPointer);
 	
@@ -48590,7 +49369,7 @@
 	exports.default = (0, _common.ColorWrap)(Photoshop);
 
 /***/ },
-/* 227 */
+/* 230 */
 /*!*******************************************************************!*\
   !*** ./~/react-color/lib/components/photoshop/PhotoshopFields.js ***!
   \*******************************************************************/
@@ -48610,19 +49389,19 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -48791,7 +49570,7 @@
 	exports.default = PhotoshopPicker;
 
 /***/ },
-/* 228 */
+/* 231 */
 /*!**************************************************************************!*\
   !*** ./~/react-color/lib/components/photoshop/PhotoshopPointerCircle.js ***!
   \**************************************************************************/
@@ -48809,11 +49588,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -48882,7 +49661,7 @@
 	exports.default = PhotoshopPointerCircle;
 
 /***/ },
-/* 229 */
+/* 232 */
 /*!********************************************************************!*\
   !*** ./~/react-color/lib/components/photoshop/PhotoshopPointer.js ***!
   \********************************************************************/
@@ -48900,11 +49679,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -49002,7 +49781,7 @@
 	exports.default = PhotoshopPointerCircle;
 
 /***/ },
-/* 230 */
+/* 233 */
 /*!*********************************************************!*\
   !*** ./~/react-color/lib/components/sketched/Sketch.js ***!
   \*********************************************************/
@@ -49022,21 +49801,21 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
-	var _SketchFields = __webpack_require__(/*! ./SketchFields */ 231);
+	var _SketchFields = __webpack_require__(/*! ./SketchFields */ 234);
 	
 	var _SketchFields2 = _interopRequireDefault(_SketchFields);
 	
-	var _SketchPresetColors = __webpack_require__(/*! ./SketchPresetColors */ 232);
+	var _SketchPresetColors = __webpack_require__(/*! ./SketchPresetColors */ 235);
 	
 	var _SketchPresetColors2 = _interopRequireDefault(_SketchPresetColors);
 	
@@ -49195,7 +49974,7 @@
 	exports.default = (0, _common.ColorWrap)(Sketch);
 
 /***/ },
-/* 231 */
+/* 234 */
 /*!***************************************************************!*\
   !*** ./~/react-color/lib/components/sketched/SketchFields.js ***!
   \***************************************************************/
@@ -49215,19 +49994,19 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -49359,7 +50138,7 @@
 	exports.default = ShetchFields;
 
 /***/ },
-/* 232 */
+/* 235 */
 /*!*********************************************************************!*\
   !*** ./~/react-color/lib/components/sketched/SketchPresetColors.js ***!
   \*********************************************************************/
@@ -49377,11 +50156,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -49489,7 +50268,7 @@
 	exports.default = SketchPresetColors;
 
 /***/ },
-/* 233 */
+/* 236 */
 /*!*******************************************************!*\
   !*** ./~/react-color/lib/components/slider/Slider.js ***!
   \*******************************************************/
@@ -49509,21 +50288,21 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
-	var _SliderSwatches = __webpack_require__(/*! ./SliderSwatches */ 234);
+	var _SliderSwatches = __webpack_require__(/*! ./SliderSwatches */ 237);
 	
 	var _SliderSwatches2 = _interopRequireDefault(_SliderSwatches);
 	
-	var _SliderPointer = __webpack_require__(/*! ./SliderPointer */ 236);
+	var _SliderPointer = __webpack_require__(/*! ./SliderPointer */ 239);
 	
 	var _SliderPointer2 = _interopRequireDefault(_SliderPointer);
 	
@@ -49596,7 +50375,7 @@
 	exports.default = (0, _common.ColorWrap)(Slider);
 
 /***/ },
-/* 234 */
+/* 237 */
 /*!***************************************************************!*\
   !*** ./~/react-color/lib/components/slider/SliderSwatches.js ***!
   \***************************************************************/
@@ -49616,15 +50395,15 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _SliderSwatch = __webpack_require__(/*! ./SliderSwatch */ 235);
+	var _SliderSwatch = __webpack_require__(/*! ./SliderSwatch */ 238);
 	
 	var _SliderSwatch2 = _interopRequireDefault(_SliderSwatch);
 	
@@ -49717,7 +50496,7 @@
 	exports.default = SliderSwatches;
 
 /***/ },
-/* 235 */
+/* 238 */
 /*!*************************************************************!*\
   !*** ./~/react-color/lib/components/slider/SliderSwatch.js ***!
   \*************************************************************/
@@ -49735,11 +50514,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -49812,7 +50591,7 @@
 	exports.default = SliderSwatch;
 
 /***/ },
-/* 236 */
+/* 239 */
 /*!**************************************************************!*\
   !*** ./~/react-color/lib/components/slider/SliderPointer.js ***!
   \**************************************************************/
@@ -49830,11 +50609,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -49892,7 +50671,7 @@
 	exports.default = SliderPointer;
 
 /***/ },
-/* 237 */
+/* 240 */
 /*!***********************************************************!*\
   !*** ./~/react-color/lib/components/swatches/Swatches.js ***!
   \***********************************************************/
@@ -49910,27 +50689,27 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _color = __webpack_require__(/*! ../../helpers/color */ 210);
+	var _color = __webpack_require__(/*! ../../helpers/color */ 213);
 	
 	var _color2 = _interopRequireDefault(_color);
 	
-	var _materialColors = __webpack_require__(/*! material-colors */ 238);
+	var _materialColors = __webpack_require__(/*! material-colors */ 241);
 	
 	var _materialColors2 = _interopRequireDefault(_materialColors);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _common = __webpack_require__(/*! ../common */ 198);
+	var _common = __webpack_require__(/*! ../common */ 201);
 	
-	var _reactMaterialDesign = __webpack_require__(/*! ../../../modules/react-material-design */ 216);
+	var _reactMaterialDesign = __webpack_require__(/*! ../../../modules/react-material-design */ 219);
 	
-	var _SwatchesGroup = __webpack_require__(/*! ./SwatchesGroup */ 239);
+	var _SwatchesGroup = __webpack_require__(/*! ./SwatchesGroup */ 242);
 	
 	var _SwatchesGroup2 = _interopRequireDefault(_SwatchesGroup);
 	
@@ -50028,7 +50807,7 @@
 	exports.default = (0, _common.ColorWrap)(Swatches);
 
 /***/ },
-/* 238 */
+/* 241 */
 /*!********************************************************!*\
   !*** ./~/react-color/~/material-colors/dist/colors.js ***!
   \********************************************************/
@@ -50048,7 +50827,7 @@
 
 
 /***/ },
-/* 239 */
+/* 242 */
 /*!****************************************************************!*\
   !*** ./~/react-color/lib/components/swatches/SwatchesGroup.js ***!
   \****************************************************************/
@@ -50066,15 +50845,15 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
-	var _SwatchesColor = __webpack_require__(/*! ./SwatchesColor */ 240);
+	var _SwatchesColor = __webpack_require__(/*! ./SwatchesColor */ 243);
 	
 	var _SwatchesColor2 = _interopRequireDefault(_SwatchesColor);
 	
@@ -50143,7 +50922,7 @@
 	exports.default = SwatchesGroup;
 
 /***/ },
-/* 240 */
+/* 243 */
 /*!****************************************************************!*\
   !*** ./~/react-color/lib/components/swatches/SwatchesColor.js ***!
   \****************************************************************/
@@ -50161,11 +50940,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _reactcss = __webpack_require__(/*! reactcss */ 187);
+	var _reactcss = __webpack_require__(/*! reactcss */ 190);
 	
 	var _reactcss2 = _interopRequireDefault(_reactcss);
 	
-	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 200);
+	var _reactAddonsShallowCompare = __webpack_require__(/*! react-addons-shallow-compare */ 203);
 	
 	var _reactAddonsShallowCompare2 = _interopRequireDefault(_reactAddonsShallowCompare);
 	
@@ -50258,7 +51037,7 @@
 	exports.default = SwatchesColor;
 
 /***/ },
-/* 241 */
+/* 244 */
 /*!***********************************************!*\
   !*** ./app/ui_components/menu/ColorScheme.js ***!
   \***********************************************/
@@ -50271,7 +51050,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var chroma = __webpack_require__(/*! chroma-js */ 242);
+	var chroma = __webpack_require__(/*! chroma-js */ 245);
 	var ColorScheme = (function (_super) {
 	    __extends(ColorScheme, _super);
 	    function ColorScheme() {
@@ -50310,7 +51089,7 @@
 
 
 /***/ },
-/* 242 */
+/* 245 */
 /*!*******************************!*\
   !*** ./~/chroma-js/chroma.js ***!
   \*******************************/
@@ -52782,10 +53561,1994 @@
 	
 	}).call(this);
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! ./../webpack/buildin/module.js */ 195)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! ./../webpack/buildin/module.js */ 198)(module)))
 
 /***/ },
-/* 243 */
+/* 246 */
+/*!************************************!*\
+  !*** ./~/react-modal/lib/index.js ***!
+  \************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(/*! ./components/Modal */ 247);
+	
+
+
+/***/ },
+/* 247 */
+/*!***********************************************!*\
+  !*** ./~/react-modal/lib/components/Modal.js ***!
+  \***********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {var React = __webpack_require__(/*! react */ 1);
+	var ReactDOM = __webpack_require__(/*! react-dom */ 158);
+	var ExecutionEnvironment = __webpack_require__(/*! exenv */ 248);
+	var ModalPortal = React.createFactory(__webpack_require__(/*! ./ModalPortal */ 249));
+	var ariaAppHider = __webpack_require__(/*! ../helpers/ariaAppHider */ 264);
+	var elementClass = __webpack_require__(/*! element-class */ 265);
+	var renderSubtreeIntoContainer = __webpack_require__(/*! react-dom */ 158).unstable_renderSubtreeIntoContainer;
+	
+	var SafeHTMLElement = ExecutionEnvironment.canUseDOM ? window.HTMLElement : {};
+	
+	var Modal = module.exports = React.createClass({
+	
+	  displayName: 'Modal',
+	  statics: {
+	    setAppElement: ariaAppHider.setElement,
+	    injectCSS: function() {
+	      "production" !== process.env.NODE_ENV
+	        && console.warn('React-Modal: injectCSS has been deprecated ' +
+	                        'and no longer has any effect. It will be removed in a later version');
+	    }
+	  },
+	
+	  propTypes: {
+	    isOpen: React.PropTypes.bool.isRequired,
+	    style: React.PropTypes.shape({
+	      content: React.PropTypes.object,
+	      overlay: React.PropTypes.object
+	    }),
+	    appElement: React.PropTypes.instanceOf(SafeHTMLElement),
+	    onRequestClose: React.PropTypes.func,
+	    closeTimeoutMS: React.PropTypes.number,
+	    ariaHideApp: React.PropTypes.bool
+	  },
+	
+	  getDefaultProps: function () {
+	    return {
+	      isOpen: false,
+	      ariaHideApp: true,
+	      closeTimeoutMS: 0
+	    };
+	  },
+	
+	  componentDidMount: function() {
+	    this.node = document.createElement('div');
+	    this.node.className = 'ReactModalPortal';
+	    document.body.appendChild(this.node);
+	    this.renderPortal(this.props);
+	  },
+	
+	  componentWillReceiveProps: function(newProps) {
+	    this.renderPortal(newProps);
+	  },
+	
+	  componentWillUnmount: function() {
+	    ReactDOM.unmountComponentAtNode(this.node);
+	    document.body.removeChild(this.node);
+	  },
+	
+	  renderPortal: function(props) {
+	    if (props.isOpen) {
+	      elementClass(document.body).add('ReactModal__Body--open');
+	    } else {
+	      elementClass(document.body).remove('ReactModal__Body--open');
+	    }
+	
+	    if (props.ariaHideApp) {
+	      ariaAppHider.toggle(props.isOpen, props.appElement);
+	    }
+	    sanitizeProps(props);
+	    this.portal = renderSubtreeIntoContainer(this, ModalPortal(props), this.node);
+	  },
+	
+	  render: function () {
+	    return React.DOM.noscript();
+	  }
+	});
+	
+	function sanitizeProps(props) {
+	  delete props.ref;
+	}
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! (webpack)/~/node-libs-browser/~/process/browser.js */ 4)))
+
+/***/ },
+/* 248 */
+/*!****************************************!*\
+  !*** ./~/react-modal/~/exenv/index.js ***!
+  \****************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	  Copyright (c) 2015 Jed Watson.
+	  Based on code that is Copyright 2013-2015, Facebook, Inc.
+	  All rights reserved.
+	*/
+	
+	(function () {
+		'use strict';
+	
+		var canUseDOM = !!(
+			typeof window !== 'undefined' &&
+			window.document &&
+			window.document.createElement
+		);
+	
+		var ExecutionEnvironment = {
+	
+			canUseDOM: canUseDOM,
+	
+			canUseWorkers: typeof Worker !== 'undefined',
+	
+			canUseEventListeners:
+				canUseDOM && !!(window.addEventListener || window.attachEvent),
+	
+			canUseViewport: canUseDOM && !!window.screen
+	
+		};
+	
+		if (true) {
+			!(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
+				return ExecutionEnvironment;
+			}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+		} else if (typeof module !== 'undefined' && module.exports) {
+			module.exports = ExecutionEnvironment;
+		} else {
+			window.ExecutionEnvironment = ExecutionEnvironment;
+		}
+	
+	}());
+
+
+/***/ },
+/* 249 */
+/*!*****************************************************!*\
+  !*** ./~/react-modal/lib/components/ModalPortal.js ***!
+  \*****************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(/*! react */ 1);
+	var div = React.DOM.div;
+	var focusManager = __webpack_require__(/*! ../helpers/focusManager */ 250);
+	var scopeTab = __webpack_require__(/*! ../helpers/scopeTab */ 252);
+	var Assign = __webpack_require__(/*! lodash.assign */ 253);
+	
+	
+	// so that our CSS is statically analyzable
+	var CLASS_NAMES = {
+	  overlay: {
+	    base: 'ReactModal__Overlay',
+	    afterOpen: 'ReactModal__Overlay--after-open',
+	    beforeClose: 'ReactModal__Overlay--before-close'
+	  },
+	  content: {
+	    base: 'ReactModal__Content',
+	    afterOpen: 'ReactModal__Content--after-open',
+	    beforeClose: 'ReactModal__Content--before-close'
+	  }
+	};
+	
+	var defaultStyles = {
+	  overlay: {
+	    position        : 'fixed',
+	    top             : 0,
+	    left            : 0,
+	    right           : 0,
+	    bottom          : 0,
+	    backgroundColor : 'rgba(255, 255, 255, 0.75)'
+	  },
+	  content: {
+	    position                : 'absolute',
+	    top                     : '40px',
+	    left                    : '40px',
+	    right                   : '40px',
+	    bottom                  : '40px',
+	    border                  : '1px solid #ccc',
+	    background              : '#fff',
+	    overflow                : 'auto',
+	    WebkitOverflowScrolling : 'touch',
+	    borderRadius            : '4px',
+	    outline                 : 'none',
+	    padding                 : '20px'
+	  }
+	};
+	
+	function stopPropagation(event) {
+	  event.stopPropagation();
+	}
+	
+	var ModalPortal = module.exports = React.createClass({
+	
+	  displayName: 'ModalPortal',
+	
+	  getDefaultProps: function() {
+	    return {
+	      style: {
+	        overlay: {},
+	        content: {}
+	      }
+	    };
+	  },
+	
+	  getInitialState: function() {
+	    return {
+	      afterOpen: false,
+	      beforeClose: false
+	    };
+	  },
+	
+	  componentDidMount: function() {
+	    // Focus needs to be set when mounting and already open
+	    if (this.props.isOpen) {
+	      this.setFocusAfterRender(true);
+	      this.open();
+	    }
+	  },
+	
+	  componentWillUnmount: function() {
+	    clearTimeout(this.closeTimer);
+	  },
+	
+	  componentWillReceiveProps: function(newProps) {
+	    // Focus only needs to be set once when the modal is being opened
+	    if (!this.props.isOpen && newProps.isOpen) {
+	      this.setFocusAfterRender(true);
+	      this.open();
+	    } else if (this.props.isOpen && !newProps.isOpen) {
+	      this.close();
+	    }
+	  },
+	
+	  componentDidUpdate: function () {
+	    if (this.focusAfterRender) {
+	      this.focusContent();
+	      this.setFocusAfterRender(false);
+	    }
+	  },
+	
+	  setFocusAfterRender: function (focus) {
+	    this.focusAfterRender = focus;
+	  },
+	
+	  open: function() {
+	    focusManager.setupScopedFocus(this.node);
+	    focusManager.markForFocusLater();
+	    this.setState({isOpen: true}, function() {
+	      this.setState({afterOpen: true});
+	    }.bind(this));
+	  },
+	
+	  close: function() {
+	    if (!this.ownerHandlesClose())
+	      return;
+	    if (this.props.closeTimeoutMS > 0)
+	      this.closeWithTimeout();
+	    else
+	      this.closeWithoutTimeout();
+	  },
+	
+	  focusContent: function() {
+	    this.refs.content.focus();
+	  },
+	
+	  closeWithTimeout: function() {
+	    this.setState({beforeClose: true}, function() {
+	      this.closeTimer = setTimeout(this.closeWithoutTimeout, this.props.closeTimeoutMS);
+	    }.bind(this));
+	  },
+	
+	  closeWithoutTimeout: function() {
+	    this.setState({
+	      afterOpen: false,
+	      beforeClose: false
+	    }, this.afterClose);
+	  },
+	
+	  afterClose: function() {
+	    focusManager.returnFocus();
+	    focusManager.teardownScopedFocus();
+	  },
+	
+	  handleKeyDown: function(event) {
+	    if (event.keyCode == 9 /*tab*/) scopeTab(this.refs.content, event);
+	    if (event.keyCode == 27 /*esc*/) this.requestClose();
+	  },
+	
+	  handleOverlayClick: function() {
+	    if (this.ownerHandlesClose())
+	      this.requestClose();
+	    else
+	      this.focusContent();
+	  },
+	
+	  requestClose: function() {
+	    if (this.ownerHandlesClose())
+	      this.props.onRequestClose();
+	  },
+	
+	  ownerHandlesClose: function() {
+	    return this.props.onRequestClose;
+	  },
+	
+	  shouldBeClosed: function() {
+	    return !this.props.isOpen && !this.state.beforeClose;
+	  },
+	
+	  buildClassName: function(which, additional) {
+	    var className = CLASS_NAMES[which].base;
+	    if (this.state.afterOpen)
+	      className += ' '+CLASS_NAMES[which].afterOpen;
+	    if (this.state.beforeClose)
+	      className += ' '+CLASS_NAMES[which].beforeClose;
+	    return additional ? className + ' ' + additional : className;
+	  },
+	
+	  render: function() {
+	    return this.shouldBeClosed() ? div() : (
+	      div({
+	        ref: "overlay",
+	        className: this.buildClassName('overlay', this.props.overlayClassName),
+	        style: Assign({}, defaultStyles.overlay, this.props.style.overlay || {}),
+	        onClick: this.handleOverlayClick
+	      },
+	        div({
+	          ref: "content",
+	          style: Assign({}, defaultStyles.content, this.props.style.content || {}),
+	          className: this.buildClassName('content', this.props.className),
+	          tabIndex: "-1",
+	          onClick: stopPropagation,
+	          onKeyDown: this.handleKeyDown
+	        },
+	          this.props.children
+	        )
+	      )
+	    );
+	  }
+	});
+
+
+/***/ },
+/* 250 */
+/*!***************************************************!*\
+  !*** ./~/react-modal/lib/helpers/focusManager.js ***!
+  \***************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var findTabbable = __webpack_require__(/*! ../helpers/tabbable */ 251);
+	var modalElement = null;
+	var focusLaterElement = null;
+	var needToFocus = false;
+	
+	function handleBlur(event) {
+	  needToFocus = true;
+	}
+	
+	function handleFocus(event) {
+	  if (needToFocus) {
+	    needToFocus = false;
+	    if (!modalElement) {
+	      return;
+	    }
+	    // need to see how jQuery shims document.on('focusin') so we don't need the
+	    // setTimeout, firefox doesn't support focusin, if it did, we could focus
+	    // the element outside of a setTimeout. Side-effect of this implementation 
+	    // is that the document.body gets focus, and then we focus our element right 
+	    // after, seems fine.
+	    setTimeout(function() {
+	      if (modalElement.contains(document.activeElement))
+	        return;
+	      var el = (findTabbable(modalElement)[0] || modalElement);
+	      el.focus();
+	    }, 0);
+	  }
+	}
+	
+	exports.markForFocusLater = function() {
+	  focusLaterElement = document.activeElement;
+	};
+	
+	exports.returnFocus = function() {
+	  try {
+	    focusLaterElement.focus();
+	  }
+	  catch (e) {
+	    console.warn('You tried to return focus to '+focusLaterElement+' but it is not in the DOM anymore');
+	  }
+	  focusLaterElement = null;
+	};
+	
+	exports.setupScopedFocus = function(element) {
+	  modalElement = element;
+	
+	  if (window.addEventListener) {
+	    window.addEventListener('blur', handleBlur, false);
+	    document.addEventListener('focus', handleFocus, true);
+	  } else {
+	    window.attachEvent('onBlur', handleBlur);
+	    document.attachEvent('onFocus', handleFocus);
+	  }
+	};
+	
+	exports.teardownScopedFocus = function() {
+	  modalElement = null;
+	
+	  if (window.addEventListener) {
+	    window.removeEventListener('blur', handleBlur);
+	    document.removeEventListener('focus', handleFocus);
+	  } else {
+	    window.detachEvent('onBlur', handleBlur);
+	    document.detachEvent('onFocus', handleFocus);
+	  }
+	};
+	
+	
+
+
+/***/ },
+/* 251 */
+/*!***********************************************!*\
+  !*** ./~/react-modal/lib/helpers/tabbable.js ***!
+  \***********************************************/
+/***/ function(module, exports) {
+
+	/*!
+	 * Adapted from jQuery UI core
+	 *
+	 * http://jqueryui.com
+	 *
+	 * Copyright 2014 jQuery Foundation and other contributors
+	 * Released under the MIT license.
+	 * http://jquery.org/license
+	 *
+	 * http://api.jqueryui.com/category/ui-core/
+	 */
+	
+	function focusable(element, isTabIndexNotNaN) {
+	  var nodeName = element.nodeName.toLowerCase();
+	  return (/input|select|textarea|button|object/.test(nodeName) ?
+	    !element.disabled :
+	    "a" === nodeName ?
+	      element.href || isTabIndexNotNaN :
+	      isTabIndexNotNaN) && visible(element);
+	}
+	
+	function hidden(el) {
+	  return (el.offsetWidth <= 0 && el.offsetHeight <= 0) ||
+	    el.style.display === 'none';
+	}
+	
+	function visible(element) {
+	  while (element) {
+	    if (element === document.body) break;
+	    if (hidden(element)) return false;
+	    element = element.parentNode;
+	  }
+	  return true;
+	}
+	
+	function tabbable(element) {
+	  var tabIndex = element.getAttribute('tabindex');
+	  if (tabIndex === null) tabIndex = undefined;
+	  var isTabIndexNaN = isNaN(tabIndex);
+	  return (isTabIndexNaN || tabIndex >= 0) && focusable(element, !isTabIndexNaN);
+	}
+	
+	function findTabbableDescendants(element) {
+	  return [].slice.call(element.querySelectorAll('*'), 0).filter(function(el) {
+	    return tabbable(el);
+	  });
+	}
+	
+	module.exports = findTabbableDescendants;
+	
+
+
+/***/ },
+/* 252 */
+/*!***********************************************!*\
+  !*** ./~/react-modal/lib/helpers/scopeTab.js ***!
+  \***********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	var findTabbable = __webpack_require__(/*! ../helpers/tabbable */ 251);
+	
+	module.exports = function(node, event) {
+	  var tabbable = findTabbable(node);
+	  var finalTabbable = tabbable[event.shiftKey ? 0 : tabbable.length - 1];
+	  var leavingFinalTabbable = (
+	    finalTabbable === document.activeElement ||
+	    // handle immediate shift+tab after opening with mouse
+	    node === document.activeElement
+	  );
+	  if (!leavingFinalTabbable) return;
+	  event.preventDefault();
+	  var target = tabbable[event.shiftKey ? tabbable.length - 1 : 0];
+	  target.focus();
+	};
+
+
+/***/ },
+/* 253 */
+/*!************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/index.js ***!
+  \************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseAssign = __webpack_require__(/*! lodash._baseassign */ 254),
+	    createAssigner = __webpack_require__(/*! lodash._createassigner */ 260),
+	    keys = __webpack_require__(/*! lodash.keys */ 256);
+	
+	/**
+	 * A specialized version of `_.assign` for customizing assigned values without
+	 * support for argument juggling, multiple sources, and `this` binding `customizer`
+	 * functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} customizer The function to customize assigned values.
+	 * @returns {Object} Returns `object`.
+	 */
+	function assignWith(object, source, customizer) {
+	  var index = -1,
+	      props = keys(source),
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? (result !== value) : (value === value)) ||
+	        (value === undefined && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	/**
+	 * Assigns own enumerable properties of source object(s) to the destination
+	 * object. Subsequent sources overwrite property assignments of previous sources.
+	 * If `customizer` is provided it is invoked to produce the assigned values.
+	 * The `customizer` is bound to `thisArg` and invoked with five arguments:
+	 * (objectValue, sourceValue, key, object, source).
+	 *
+	 * **Note:** This method mutates `object` and is based on
+	 * [`Object.assign`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.assign).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @alias extend
+	 * @category Object
+	 * @param {Object} object The destination object.
+	 * @param {...Object} [sources] The source objects.
+	 * @param {Function} [customizer] The function to customize assigned values.
+	 * @param {*} [thisArg] The `this` binding of `customizer`.
+	 * @returns {Object} Returns `object`.
+	 * @example
+	 *
+	 * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
+	 * // => { 'user': 'fred', 'age': 40 }
+	 *
+	 * // using a customizer callback
+	 * var defaults = _.partialRight(_.assign, function(value, other) {
+	 *   return _.isUndefined(value) ? other : value;
+	 * });
+	 *
+	 * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
+	 * // => { 'user': 'barney', 'age': 36 }
+	 */
+	var assign = createAssigner(function(object, source, customizer) {
+	  return customizer
+	    ? assignWith(object, source, customizer)
+	    : baseAssign(object, source);
+	});
+	
+	module.exports = assign;
+
+
+/***/ },
+/* 254 */
+/*!*********************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash._baseassign/index.js ***!
+  \*********************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseCopy = __webpack_require__(/*! lodash._basecopy */ 255),
+	    keys = __webpack_require__(/*! lodash.keys */ 256);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseAssign(object, source) {
+	  return source == null
+	    ? object
+	    : baseCopy(source, keys(source), object);
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
+/* 255 */
+/*!****************************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash._baseassign/~/lodash._basecopy/index.js ***!
+  \****************************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * Copies properties of `source` to `object`.
+	 *
+	 * @private
+	 * @param {Object} source The object to copy properties from.
+	 * @param {Array} props The property names to copy.
+	 * @param {Object} [object={}] The object to copy properties to.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseCopy(source, props, object) {
+	  object || (object = {});
+	
+	  var index = -1,
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    object[key] = source[key];
+	  }
+	  return object;
+	}
+	
+	module.exports = baseCopy;
+
+
+/***/ },
+/* 256 */
+/*!**************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/index.js ***!
+  \**************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.2 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var getNative = __webpack_require__(/*! lodash._getnative */ 257),
+	    isArguments = __webpack_require__(/*! lodash.isarguments */ 258),
+	    isArray = __webpack_require__(/*! lodash.isarray */ 259);
+	
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = getNative(Object, 'keys');
+	
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = !!length && isLength(length) &&
+	    (isArray(object) || isArguments(object));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Creates an array of the own enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
+	 * for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
+	 */
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  var Ctor = object == null ? undefined : object.constructor;
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	      (typeof object != 'function' && isArrayLike(object))) {
+	    return shimKeys(object);
+	  }
+	  return isObject(object) ? nativeKeys(object) : [];
+	};
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || isArguments(object)) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keys;
+
+
+/***/ },
+/* 257 */
+/*!**********************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/~/lodash._getnative/index.js ***!
+  \**********************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.9.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+	
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 equivalents which return 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
+	
+	module.exports = getNative;
+
+
+/***/ },
+/* 258 */
+/*!***********************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/~/lodash.isarguments/index.js ***!
+  \***********************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.8 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modularize exports="npm" -o ./`
+	 * Copyright 2012-2016 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2016 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used as references for various `Number` constants. */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]',
+	    funcTag = '[object Function]',
+	    genTag = '[object GeneratorFunction]';
+	
+	/** Used for built-in method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objectToString = objectProto.toString;
+	
+	/** Built-in value references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	/**
+	 * Checks if `value` is likely an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  // Safari 8.1 incorrectly makes `arguments.callee` enumerable in strict mode.
+	  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
+	    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
+	}
+	
+	/**
+	 * Checks if `value` is array-like. A value is considered array-like if it's
+	 * not a function and has a `value.length` that's an integer greater than or
+	 * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 * @example
+	 *
+	 * _.isArrayLike([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArrayLike(document.body.children);
+	 * // => true
+	 *
+	 * _.isArrayLike('abc');
+	 * // => true
+	 *
+	 * _.isArrayLike(_.noop);
+	 * // => false
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value)) && !isFunction(value);
+	}
+	
+	/**
+	 * This method is like `_.isArrayLike` except that it also checks if `value`
+	 * is an object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an array-like object, else `false`.
+	 * @example
+	 *
+	 * _.isArrayLikeObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArrayLikeObject(document.body.children);
+	 * // => true
+	 *
+	 * _.isArrayLikeObject('abc');
+	 * // => false
+	 *
+	 * _.isArrayLikeObject(_.noop);
+	 * // => false
+	 */
+	function isArrayLikeObject(value) {
+	  return isObjectLike(value) && isArrayLike(value);
+	}
+	
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in Safari 8 which returns 'object' for typed array and weak map constructors,
+	  // and PhantomJS 1.9 which returns 'function' for `NodeList` instances.
+	  var tag = isObject(value) ? objectToString.call(value) : '';
+	  return tag == funcTag || tag == genTag;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is loosely based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 * @example
+	 *
+	 * _.isLength(3);
+	 * // => true
+	 *
+	 * _.isLength(Number.MIN_VALUE);
+	 * // => false
+	 *
+	 * _.isLength(Infinity);
+	 * // => false
+	 *
+	 * _.isLength('3');
+	 * // => false
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' &&
+	    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(_.noop);
+	 * // => true
+	 *
+	 * _.isObject(null);
+	 * // => false
+	 */
+	function isObject(value) {
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Checks if `value` is object-like. A value is object-like if it's not `null`
+	 * and has a `typeof` result of "object".
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 * @example
+	 *
+	 * _.isObjectLike({});
+	 * // => true
+	 *
+	 * _.isObjectLike([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObjectLike(_.noop);
+	 * // => false
+	 *
+	 * _.isObjectLike(null);
+	 * // => false
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 259 */
+/*!*******************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/~/lodash.isarray/index.js ***!
+  \*******************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]',
+	    funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reIsHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reIsNative = RegExp('^' +
+	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = getNative(Array, 'isArray');
+	
+	/**
+	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * Gets the native function at `key` of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @param {string} key The key of the method to get.
+	 * @returns {*} Returns the function if it's native, else `undefined`.
+	 */
+	function getNative(object, key) {
+	  var value = object == null ? undefined : object[key];
+	  return isNative(value) ? value : undefined;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isArray(function() { return arguments; }());
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
+	};
+	
+	/**
+	 * Checks if `value` is classified as a `Function` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isFunction(_);
+	 * // => true
+	 *
+	 * _.isFunction(/abc/);
+	 * // => false
+	 */
+	function isFunction(value) {
+	  // The use of `Object#toString` avoids issues with the `typeof` operator
+	  // in older versions of Chrome and Safari which return 'function' for regexes
+	  // and Safari 8 equivalents which return 'object' for typed array constructors.
+	  return isObject(value) && objToString.call(value) == funcTag;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (isFunction(value)) {
+	    return reIsNative.test(fnToString.call(value));
+	  }
+	  return isObjectLike(value) && reIsHostCtor.test(value);
+	}
+	
+	module.exports = isArray;
+
+
+/***/ },
+/* 260 */
+/*!*************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/index.js ***!
+  \*************************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var bindCallback = __webpack_require__(/*! lodash._bindcallback */ 261),
+	    isIterateeCall = __webpack_require__(/*! lodash._isiterateecall */ 262),
+	    restParam = __webpack_require__(/*! lodash.restparam */ 263);
+	
+	/**
+	 * Creates a function that assigns properties of source object(s) to a given
+	 * destination object.
+	 *
+	 * **Note:** This function is used to create `_.assign`, `_.defaults`, and `_.merge`.
+	 *
+	 * @private
+	 * @param {Function} assigner The function to assign values.
+	 * @returns {Function} Returns the new assigner function.
+	 */
+	function createAssigner(assigner) {
+	  return restParam(function(object, sources) {
+	    var index = -1,
+	        length = object == null ? 0 : sources.length,
+	        customizer = length > 2 ? sources[length - 2] : undefined,
+	        guard = length > 2 ? sources[2] : undefined,
+	        thisArg = length > 1 ? sources[length - 1] : undefined;
+	
+	    if (typeof customizer == 'function') {
+	      customizer = bindCallback(customizer, thisArg, 5);
+	      length -= 2;
+	    } else {
+	      customizer = typeof thisArg == 'function' ? thisArg : undefined;
+	      length -= (customizer ? 1 : 0);
+	    }
+	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+	      customizer = length < 3 ? undefined : customizer;
+	      length = 1;
+	    }
+	    while (++index < length) {
+	      var source = sources[index];
+	      if (source) {
+	        assigner(object, source, customizer);
+	      }
+	    }
+	    return object;
+	  });
+	}
+	
+	module.exports = createAssigner;
+
+
+/***/ },
+/* 261 */
+/*!************************************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/~/lodash._bindcallback/index.js ***!
+  \************************************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (thisArg === undefined) {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 *
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 262 */
+/*!**************************************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/~/lodash._isiterateecall/index.js ***!
+  \**************************************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.0.9 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used to detect unsigned integer values. */
+	var reIsUint = /^\d+$/;
+	
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = 9007199254740991;
+	
+	/**
+	 * The base implementation of `_.property` without support for deep paths.
+	 *
+	 * @private
+	 * @param {string} key The key of the property to get.
+	 * @returns {Function} Returns the new function.
+	 */
+	function baseProperty(key) {
+	  return function(object) {
+	    return object == null ? undefined : object[key];
+	  };
+	}
+	
+	/**
+	 * Gets the "length" property value of `object`.
+	 *
+	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
+	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {*} Returns the "length" value.
+	 */
+	var getLength = baseProperty('length');
+	
+	/**
+	 * Checks if `value` is array-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
+	 */
+	function isArrayLike(value) {
+	  return value != null && isLength(getLength(value));
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if the provided arguments are from an iteratee call.
+	 *
+	 * @private
+	 * @param {*} value The potential iteratee value argument.
+	 * @param {*} index The potential iteratee index or key argument.
+	 * @param {*} object The potential iteratee object argument.
+	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
+	 */
+	function isIterateeCall(value, index, object) {
+	  if (!isObject(object)) {
+	    return false;
+	  }
+	  var type = typeof index;
+	  if (type == 'number'
+	      ? (isArrayLike(object) && isIndex(index, object.length))
+	      : (type == 'string' && index in object)) {
+	    var other = object[index];
+	    return value === value ? (value === other) : (other !== other);
+	  }
+	  return false;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return !!value && (type == 'object' || type == 'function');
+	}
+	
+	module.exports = isIterateeCall;
+
+
+/***/ },
+/* 263 */
+/*!********************************************************************************************!*\
+  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/~/lodash.restparam/index.js ***!
+  \********************************************************************************************/
+/***/ function(module, exports) {
+
+	/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+	
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+	
+	module.exports = restParam;
+
+
+/***/ },
+/* 264 */
+/*!***************************************************!*\
+  !*** ./~/react-modal/lib/helpers/ariaAppHider.js ***!
+  \***************************************************/
+/***/ function(module, exports) {
+
+	var _element = typeof document !== 'undefined' ? document.body : null;
+	
+	function setElement(element) {
+	  if (typeof element === 'string') {
+	    var el = document.querySelectorAll(element);
+	    element = 'length' in el ? el[0] : el;
+	  }
+	  _element = element || _element;
+	}
+	
+	function hide(appElement) {
+	  validateElement(appElement);
+	  (appElement || _element).setAttribute('aria-hidden', 'true');
+	}
+	
+	function show(appElement) {
+	  validateElement(appElement);
+	  (appElement || _element).removeAttribute('aria-hidden');
+	}
+	
+	function toggle(shouldHide, appElement) {
+	  if (shouldHide)
+	    hide(appElement);
+	  else
+	    show(appElement);
+	}
+	
+	function validateElement(appElement) {
+	  if (!appElement && !_element)
+	    throw new Error('react-modal: You must set an element with `Modal.setAppElement(el)` to make this accessible');
+	}
+	
+	function resetForTesting() {
+	  _element = document.body;
+	}
+	
+	exports.toggle = toggle;
+	exports.setElement = setElement;
+	exports.show = show;
+	exports.hide = hide;
+	exports.resetForTesting = resetForTesting;
+
+
+/***/ },
+/* 265 */
+/*!************************************************!*\
+  !*** ./~/react-modal/~/element-class/index.js ***!
+  \************************************************/
+/***/ function(module, exports) {
+
+	module.exports = function(opts) {
+	  return new ElementClass(opts)
+	}
+	
+	function indexOf(arr, prop) {
+	  if (arr.indexOf) return arr.indexOf(prop)
+	  for (var i = 0, len = arr.length; i < len; i++)
+	    if (arr[i] === prop) return i
+	  return -1
+	}
+	
+	function ElementClass(opts) {
+	  if (!(this instanceof ElementClass)) return new ElementClass(opts)
+	  var self = this
+	  if (!opts) opts = {}
+	
+	  // similar doing instanceof HTMLElement but works in IE8
+	  if (opts.nodeType) opts = {el: opts}
+	
+	  this.opts = opts
+	  this.el = opts.el || document.body
+	  if (typeof this.el !== 'object') this.el = document.querySelector(this.el)
+	}
+	
+	ElementClass.prototype.add = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (el.className === "") return el.className = className
+	  var classes = el.className.split(' ')
+	  if (indexOf(classes, className) > -1) return classes
+	  classes.push(className)
+	  el.className = classes.join(' ')
+	  return classes
+	}
+	
+	ElementClass.prototype.remove = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (el.className === "") return
+	  var classes = el.className.split(' ')
+	  var idx = indexOf(classes, className)
+	  if (idx > -1) classes.splice(idx, 1)
+	  el.className = classes.join(' ')
+	  return classes
+	}
+	
+	ElementClass.prototype.has = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  var classes = el.className.split(' ')
+	  return indexOf(classes, className) > -1
+	}
+	
+	ElementClass.prototype.toggle = function(className) {
+	  var el = this.el
+	  if (!el) return
+	  if (this.has(className)) this.remove(className)
+	  else this.add(className)
+	}
+
+
+/***/ },
+/* 266 */
 /*!**********************************************!*\
   !*** ./app/ui_components/menu/SymbolMenu.js ***!
   \**********************************************/
@@ -52798,7 +55561,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Select = __webpack_require__(/*! react-select */ 172);
+	var Select = __webpack_require__(/*! react-select */ 175);
 	var common_1 = __webpack_require__(/*! ./../common_items/common */ 162);
 	var SymbolMenu = (function (_super) {
 	    __extends(SymbolMenu, _super);
@@ -52841,6 +55604,9 @@
 	        });
 	    };
 	    SymbolMenu.prototype.faIconChanged = function (icon) {
+	        if (icon.currentTarget) {
+	            icon = icon.currentTarget.value;
+	        }
 	        this.setState({
 	            iconFA: icon,
 	        });
@@ -52879,7 +55645,7 @@
 	                    lineHeight: '30px',
 	                    textAlign: 'center'
 	                };
-	                columns.push(React.createElement("td", {style: style, key: i + c, className: 'fa ' + faIcons[i + c], onClick: this.faIconChanged.bind(this, faIcons[i + c])}));
+	                columns.push(React.createElement("td", {style: style, key: i + c, className: 'symbolIcon fa ' + faIcons[i + c], onClick: this.faIconChanged.bind(this, faIcons[i + c])}));
 	            }
 	            return columns;
 	        }
@@ -52932,7 +55698,16 @@
 	                            : null)
 	                    : null, 
 	                this.state.symbolType === common_1.SymbolTypes.Icon ?
-	                    React.createElement("div", null, this.getIcons.call(this))
+	                    React.createElement("div", null, 
+	                        "Select an icon", 
+	                        this.getIcons.call(this), 
+	                        "Or", 
+	                        React.createElement("br", null), 
+	                        React.createElement("label", null, 
+	                            "Use another ", 
+	                            React.createElement("a", {href: 'http://fontawesome.io/icons/'}, "Font Awesome"), 
+	                            " icon"), 
+	                        React.createElement("input", {type: "text", onChange: this.faIconChanged.bind(this), value: this.state.iconFA}))
 	                    : null, 
 	                this.state.symbolType === common_1.SymbolTypes.Rectangle ?
 	                    React.createElement("div", null)
@@ -52943,7 +55718,7 @@
 	                        React.createElement(Select, {options: this.props.headers, multi: true, onChange: this.chartFieldsChanged.bind(this), value: this.state.chartFields}), 
 	                        React.createElement("i", null, "TIP: hover over symbol segments to see corresponding value"))
 	                    : null, 
-	                React.createElement("button", {onClick: this.saveOptions.bind(this)}, "Refresh map")));
+	                React.createElement("button", {className: 'menuButton', onClick: this.saveOptions.bind(this)}, "Refresh map")));
 	    };
 	    return SymbolMenu;
 	}(React.Component));
@@ -53009,7 +55784,7 @@
 
 
 /***/ },
-/* 244 */
+/* 267 */
 /*!**********************************************!*\
   !*** ./app/ui_components/menu/FilterMenu.js ***!
   \**********************************************/
@@ -53022,7 +55797,8 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Select = __webpack_require__(/*! react-select */ 172);
+	var common_1 = __webpack_require__(/*! ./../common_items/common */ 162);
+	var Select = __webpack_require__(/*! react-select */ 175);
 	var FilterMenu = (function (_super) {
 	    __extends(FilterMenu, _super);
 	    function FilterMenu(props) {
@@ -53033,8 +55809,10 @@
 	                filterTitle: '',
 	                selectedField: '',
 	                useCustomSteps: false,
+	                useDistinctValues: false,
 	                customSteps: [],
 	                customStepCount: 5,
+	                remove: true,
 	            };
 	    }
 	    FilterMenu.prototype.filterVariableChanged = function (val) {
@@ -53047,12 +55825,18 @@
 	    FilterMenu.prototype.useStepsChanged = function (e) {
 	        this.setState({ useCustomSteps: e.target.checked });
 	    };
+	    FilterMenu.prototype.useDistinctValuesChanged = function (e) {
+	        this.setState({
+	            useDistinctValues: e.target.checked,
+	            customStepCount: this.getDistinctValues(this.state.selectedField).length - 1,
+	        });
+	    };
 	    FilterMenu.prototype.getMinMax = function (field) {
 	        var minVal;
 	        var maxVal;
 	        this.props.layer.geoJSON.features.map(function (feat) {
 	            var val = feat.properties[field];
-	            if (!minVal && !maxVal) {
+	            if (minVal === undefined && maxVal === undefined) {
 	                minVal = val;
 	                maxVal = val;
 	            }
@@ -53068,6 +55852,15 @@
 	            maxVal: maxVal,
 	        });
 	    };
+	    FilterMenu.prototype.getDistinctValues = function (field) {
+	        var values = [];
+	        this.props.layer.geoJSON.features.map(function (feat) {
+	            var val = feat.properties[field];
+	            if (values.indexOf(val) === -1)
+	                values.push(val);
+	        });
+	        return values.sort(function (a, b) { return a - b; });
+	    };
 	    FilterMenu.prototype.changeStepsCount = function (amount) {
 	        var newVal = this.state.customStepCount + amount;
 	        if (newVal > 0) {
@@ -53082,34 +55875,43 @@
 	            display: 'inline',
 	            width: 100
 	        };
-	        if (this.state.customSteps.length == 0) {
+	        if (this.state.customSteps.length === 0) {
 	            var steps = [];
-	            for (var i = this.state.minVal; i < this.state.maxVal; i += (this.state.maxVal - this.state.minVal) / this.state.customStepCount) {
-	                var step = [i, i + (this.state.maxVal - this.state.minVal) / this.state.customStepCount];
-	                steps.push(step);
+	            if (!this.state.useDistinctValues) {
+	                for (var i = this.state.minVal; i < this.state.maxVal; i += (this.state.maxVal - this.state.minVal) / this.state.customStepCount) {
+	                    var step = [i, i + (this.state.maxVal - this.state.minVal) / this.state.customStepCount - 1];
+	                    steps.push(step);
+	                }
+	            }
+	            else {
+	                var values = this.getDistinctValues(this.state.selectedField);
+	                for (var i = 0; i < values.length - 1; i++) {
+	                    var step = [values[i], values[i + 1] - 1];
+	                    steps.push(step);
+	                }
 	            }
 	            var row = 0;
 	            for (var _i = 0, steps_1 = steps; _i < steps_1.length; _i++) {
 	                var i = steps_1[_i];
 	                rows.push(React.createElement("li", {key: i}, 
-	                    React.createElement("input", {id: row + 'min', type: 'number', defaultValue: i[0].toFixed(2), style: inputStyle}), 
+	                    React.createElement("input", {id: row + 'min', type: 'number', defaultValue: i[0].toFixed(2), style: inputStyle, step: 'any'}), 
 	                    "-", 
-	                    React.createElement("input", {id: row + 'max', type: 'number', defaultValue: i[1].toFixed(2), style: inputStyle})));
+	                    React.createElement("input", {id: row + 'max', type: 'number', defaultValue: i[1].toFixed(2), style: inputStyle, step: 'any'})));
 	                row++;
 	            }
 	        }
 	        return React.createElement("div", null, 
 	            React.createElement("button", {onClick: this.changeStepsCount.bind(this, -1)}, "-"), 
 	            React.createElement("button", {onClick: this.changeStepsCount.bind(this, 1)}, "+"), 
-	            React.createElement("ul", {id: 'customSteps', style: { listStyle: 'none' }}, rows.map(function (r) { return r; })));
+	            React.createElement("ul", {id: 'customSteps', style: { listStyle: 'none', padding: 0 }}, rows.map(function (r) { return r; })));
 	    };
 	    FilterMenu.prototype.filterTitleChanged = function (e) {
 	        this.setState({ filterTitle: e.target.value });
 	    };
-	    FilterMenu.prototype.filterChanged = function (id) {
+	    FilterMenu.prototype.filterSelectChanged = function (id) {
 	        this.setState({
-	            selectedFilterId: id,
-	            filterTitle: this.props.filters.filter(function (f) { return f.id = id; })[0].title
+	            selectedFilterId: id.value,
+	            filterTitle: this.props.filters.filter(function (f) { return f.id === id.value; })[0].title
 	        });
 	    };
 	    FilterMenu.prototype.createNewFilter = function () {
@@ -53123,20 +55925,33 @@
 	        if (this.state.useCustomSteps) {
 	            steps = this.getStepValues();
 	        }
-	        var id = this.props.addFilterToMap({ id: this.state.selectedFilterId, title: this.state.filterTitle, fieldToFilter: this.state.selectedField, minValue: this.state.minVal, maxValue: this.state.maxVal, steps: steps });
+	        var id = this.props.addFilterToMap({
+	            id: this.state.selectedFilterId,
+	            title: this.state.filterTitle,
+	            fieldToFilter: this.state.selectedField,
+	            minValue: this.state.minVal,
+	            maxValue: this.state.maxVal,
+	            steps: steps,
+	            remove: this.state.remove,
+	            layerDataId: this.props.layer.id,
+	        });
 	        this.setState({
 	            selectedFilterId: id,
 	        });
 	    };
 	    FilterMenu.prototype.getStepValues = function () {
 	        var steps = [];
-	        var list = document.getElementById('customSteps');
 	        for (var i = 0; i < this.state.customStepCount; i++) {
-	            var step = [+list.childNodes[i].childNodes.item(0).attributes['value'].nodeValue,
-	                +list.childNodes[i].childNodes.item(2).attributes['value'].nodeValue];
+	            var step = [+document.getElementById(i + 'min').value,
+	                +document.getElementById(i + 'max').value];
 	            steps.push(step);
 	        }
 	        return steps;
+	    };
+	    FilterMenu.prototype.changeFilterMethod = function (remove) {
+	        this.setState({
+	            remove: remove
+	        });
 	    };
 	    FilterMenu.prototype.render = function () {
 	        var filters = [];
@@ -53145,11 +55960,13 @@
 	        }
 	        return !this.props.isVisible ? null :
 	            React.createElement("div", {className: "mapify-options"}, 
+	                React.createElement("label", null, "Give a name to the filter"), 
+	                React.createElement("input", {type: "text", onChange: this.filterTitleChanged.bind(this), value: this.state.filterTitle}), 
 	                filters.length > 0 && this.state.selectedFilterId !== -1 ?
 	                    React.createElement("div", null, 
 	                        React.createElement("label", null, "Select the filter to update"), 
-	                        React.createElement(Select, {options: filters, onChange: this.filterChanged.bind(this), value: this.state.selectedFilterId}), 
-	                        React.createElement("p", null, "Or"), 
+	                        React.createElement(Select, {options: filters, onChange: this.filterSelectChanged.bind(this), value: this.state.selectedFilterId}), 
+	                        "Or", 
 	                        React.createElement("button", {onClick: this.createNewFilter.bind(this)}, "Create new filter"))
 	                    : null, 
 	                this.state.selectedFilterId === -1 ?
@@ -53161,12 +55978,28 @@
 	                    "Use predefined steps", 
 	                    React.createElement("input", {type: 'checkbox', onChange: this.useStepsChanged.bind(this), checked: this.state.useCustomSteps, id: 'steps'}), 
 	                    React.createElement("br", null)), 
-	                this.state.useCustomSteps && this.state.minVal && this.state.maxVal ?
-	                    React.createElement("div", null, this.renderSteps())
+	                this.state.useCustomSteps && this.state.minVal !== undefined && this.state.maxVal !== undefined ?
+	                    React.createElement("div", null, 
+	                        React.createElement("label", {forHTML: 'dist'}, 
+	                            "Use distinct values", 
+	                            React.createElement("input", {type: 'checkbox', onChange: this.useDistinctValuesChanged.bind(this), checked: this.state.useDistinctValues, id: 'dist'}), 
+	                            React.createElement("br", null)), 
+	                        this.renderSteps())
 	                    : null, 
-	                React.createElement("label", null, "Give a name to the filter"), 
-	                React.createElement("input", {type: "text", onChange: this.filterTitleChanged.bind(this), value: this.state.filterTitle}), 
-	                React.createElement("button", {onClick: this.saveFilter.bind(this)}, "Create filter"));
+	                this.props.layer.layerType === common_1.LayerTypes.HeatMap ||
+	                    (this.props.layer.visOptions.symbolOptions.symbolType === common_1.SymbolTypes.Icon ||
+	                        this.props.layer.visOptions.symbolOptions.symbolType === common_1.SymbolTypes.Chart) ? null :
+	                    React.createElement("div", null, 
+	                        React.createElement("label", {forHTML: 'remove'}, 
+	                            "Remove filtered items", 
+	                            React.createElement("input", {type: 'radio', onChange: this.changeFilterMethod.bind(this, true), checked: this.state.remove, name: 'filterMethod', id: 'remove'})), 
+	                        React.createElement("br", null), 
+	                        "Or", 
+	                        React.createElement("br", null), 
+	                        React.createElement("label", {forHTML: 'opacity'}, 
+	                            "Change opacity", 
+	                            React.createElement("input", {type: 'radio', onChange: this.changeFilterMethod.bind(this, false), checked: !this.state.remove, name: 'filterMethod', id: 'opacity'}))), 
+	                React.createElement("button", {className: 'menuButton', onClick: this.saveFilter.bind(this)}, "Create filter"));
 	    };
 	    return FilterMenu;
 	}(React.Component));
@@ -53174,7 +56007,7 @@
 
 
 /***/ },
-/* 245 */
+/* 268 */
 /*!**********************************************!*\
   !*** ./app/ui_components/menu/LegendMenu.js ***!
   \**********************************************/
@@ -53249,7 +56082,7 @@
 
 
 /***/ },
-/* 246 */
+/* 269 */
 /*!*********************************************!*\
   !*** ./app/ui_components/menu/PopUpMenu.js ***!
   \*********************************************/
@@ -53262,7 +56095,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Select = __webpack_require__(/*! react-select */ 172);
+	var Select = __webpack_require__(/*! react-select */ 175);
 	var PopUpMenu = (function (_super) {
 	    __extends(PopUpMenu, _super);
 	    function PopUpMenu(props) {
@@ -53287,7 +56120,7 @@
 	            React.createElement("div", {className: "mapify-options"}, 
 	                React.createElement("label", null, "Select the variables to show"), 
 	                React.createElement(Select, {options: this.props.headers, multi: true, onChange: this.variableChanged.bind(this), value: this.state.shownHeaders}), 
-	                React.createElement("button", {onClick: this.saveOptions.bind(this)}, "Refresh map")));
+	                React.createElement("button", {className: 'menuButton', onClick: this.saveOptions.bind(this)}, "Refresh map")));
 	    };
 	    return PopUpMenu;
 	}(React.Component));
@@ -53295,7 +56128,7 @@
 
 
 /***/ },
-/* 247 */
+/* 270 */
 /*!**********************************************!*\
   !*** ./app/ui_components/menu/ExportMenu.js ***!
   \**********************************************/
@@ -53340,7 +56173,7 @@
 	                React.createElement("label", {htmlFor: 'showFilters'}, "Show filters on the image"), 
 	                React.createElement("input", {id: 'showFilters', type: 'checkbox', checked: this.state.showFilters, onChange: this.showFiltersChanged.bind(this)}), 
 	                React.createElement("br", null), 
-	                React.createElement("button", {onClick: this.saveImage.bind(this)}, "Export map as image"))
+	                React.createElement("button", {className: 'menuButton', onClick: this.saveImage.bind(this)}, "Export map as image"))
 	            : null);
 	    };
 	    return ExportMenu;
@@ -53349,7 +56182,7 @@
 
 
 /***/ },
-/* 248 */
+/* 271 */
 /*!***********************************************************!*\
   !*** ./~/impromptu-react-sidemenu/dist/impromptu-menu.js ***!
   \***********************************************************/
@@ -53478,14 +56311,14 @@
 	//# sourceMappingURL=impromptu-menu.js.map
 
 /***/ },
-/* 249 */
+/* 272 */
 /*!************************************!*\
   !*** ./app/models/MapInitModel.js ***!
   \************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	__webpack_require__(/*! leaflet */ 250);
+	__webpack_require__(/*! leaflet */ 273);
 	var proj4 = __webpack_require__(/*! proj4 */ 170);
 	var MapInitModel = (function () {
 	    function MapInitModel() {
@@ -53509,7 +56342,7 @@
 
 
 /***/ },
-/* 250 */
+/* 273 */
 /*!***************************************!*\
   !*** ./~/leaflet/dist/leaflet-src.js ***!
   \***************************************/
@@ -62685,7 +65518,7 @@
 	}(window, document));
 
 /***/ },
-/* 251 */
+/* 274 */
 /*!******************************************!*\
   !*** ./app/ui_components/misc/Filter.js ***!
   \******************************************/
@@ -62698,8 +65531,8 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Slider = __webpack_require__(/*! react-slider */ 252);
-	var Draggable = __webpack_require__(/*! react-draggable */ 253);
+	var Slider = __webpack_require__(/*! react-slider */ 275);
+	var Draggable = __webpack_require__(/*! react-draggable */ 276);
 	var Filter = (function (_super) {
 	    __extends(Filter, _super);
 	    function Filter(props) {
@@ -62774,11 +65607,6 @@
 	            }
 	        }
 	    };
-	    Filter.prototype.stepChanged = function (e) {
-	        this.setState({
-	            step: e.currentTarget.valueAsNumber
-	        });
-	    };
 	    Filter.prototype.lockDistanceChanged = function (e) {
 	        this.setState({
 	            lockDistance: e.currentTarget.checked,
@@ -62790,27 +65618,40 @@
 	        this.setState({
 	            lowerLimit: minVal,
 	            upperLimit: maxVal,
+	            step: i,
 	        });
 	    };
 	    Filter.prototype.renderSteps = function () {
 	        var rows = [];
-	        var style = {
-	            border: '1px solid #6891e2',
-	            borderRadius: '5',
-	            textAlign: 'center',
-	            cursor: 'pointer'
-	        };
 	        if (this.props.steps) {
 	            var index_1 = 0;
 	            this.props.steps.forEach(function (step) {
-	                rows.push(React.createElement("div", {style: style, key: step, onClick: this.customStepClicked.bind(this, index_1)}, step[0] + '-' + step[1]));
+	                rows.push(React.createElement("div", {style: {
+	                    borderBottom: '1px solid #6891e2',
+	                    textAlign: 'center',
+	                    cursor: 'pointer',
+	                    borderLeft: this.state.step === index_1 ? '6px solid #6891e2' : '',
+	                    borderRight: this.state.step === index_1 ? '6px solid #6891e2' : ''
+	                }, key: step, onClick: this.customStepClicked.bind(this, index_1)}, step[0] + '-' + step[1]));
 	                index_1++;
 	            }, this);
 	        }
 	        return React.createElement("div", null, 
+	            " ", 
 	            rows.map(function (e) { return e; }), 
 	            " ");
-	        function getRows(step) {
+	    };
+	    Filter.prototype.onKeyDown = function (e) {
+	        console.log(e);
+	        if (e.keyCode == '38') {
+	            if (this.state.step) {
+	                this.setState({ step: this.state.step - 1 });
+	            }
+	        }
+	        else if (e.keyCode == '40') {
+	            if (this.state.step !== undefined) {
+	                this.setState({ step: this.state.step + 1 });
+	            }
 	        }
 	    };
 	    Filter.prototype.render = function () {
@@ -62825,8 +65666,7 @@
 	                    React.createElement("input", {type: 'number', style: { float: 'right', width: '60px' }, value: this.state.upperLimit.toFixed(0), onChange: this.upperLimitChanged.bind(this)})), 
 	                React.createElement(Slider, {className: 'horizontal-slider', onChange: this.filterScaleChanged.bind(this), value: [this.state.lowerLimit, this.state.upperLimit], min: this.props.minValue - 1, max: this.props.maxValue + 1, step: this.state.step, withBars: true}, 
 	                    React.createElement("div", {className: 'minHandle'}), 
-	                    React.createElement("div", {className: 'maxHandle'})), 
-	                React.createElement("div", null))
+	                    React.createElement("div", {className: 'maxHandle'})))
 	        );
 	    };
 	    return Filter;
@@ -62835,7 +65675,7 @@
 
 
 /***/ },
-/* 252 */
+/* 275 */
 /*!****************************************!*\
   !*** ./~/react-slider/react-slider.js ***!
   \****************************************/
@@ -63636,7 +66476,7 @@
 
 
 /***/ },
-/* 253 */
+/* 276 */
 /*!***************************************************!*\
   !*** ./~/react-draggable/dist/react-draggable.js ***!
   \***************************************************/
@@ -64977,7 +67817,7 @@
 	//# sourceMappingURL=react-draggable.js.map
 
 /***/ },
-/* 254 */
+/* 277 */
 /*!******************************************!*\
   !*** ./app/ui_components/misc/Legend.js ***!
   \******************************************/
@@ -64990,7 +67830,7 @@
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var React = __webpack_require__(/*! react */ 1);
-	var Draggable = __webpack_require__(/*! react-draggable */ 253);
+	var Draggable = __webpack_require__(/*! react-draggable */ 276);
 	var common_1 = __webpack_require__(/*! ../common_items/common */ 162);
 	var Legend = (function (_super) {
 	    __extends(Legend, _super);
@@ -65117,7 +67957,7 @@
 
 
 /***/ },
-/* 255 */
+/* 278 */
 /*!*************************************************************************!*\
   !*** ./~/drmonty-leaflet-awesome-markers/js/leaflet.awesome-markers.js ***!
   \*************************************************************************/
@@ -65251,1991 +68091,7 @@
 
 
 /***/ },
-/* 256 */
-/*!************************************!*\
-  !*** ./~/react-modal/lib/index.js ***!
-  \************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__(/*! ./components/Modal */ 257);
-	
-
-
-/***/ },
-/* 257 */
-/*!***********************************************!*\
-  !*** ./~/react-modal/lib/components/Modal.js ***!
-  \***********************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {var React = __webpack_require__(/*! react */ 1);
-	var ReactDOM = __webpack_require__(/*! react-dom */ 158);
-	var ExecutionEnvironment = __webpack_require__(/*! exenv */ 258);
-	var ModalPortal = React.createFactory(__webpack_require__(/*! ./ModalPortal */ 259));
-	var ariaAppHider = __webpack_require__(/*! ../helpers/ariaAppHider */ 274);
-	var elementClass = __webpack_require__(/*! element-class */ 275);
-	var renderSubtreeIntoContainer = __webpack_require__(/*! react-dom */ 158).unstable_renderSubtreeIntoContainer;
-	
-	var SafeHTMLElement = ExecutionEnvironment.canUseDOM ? window.HTMLElement : {};
-	
-	var Modal = module.exports = React.createClass({
-	
-	  displayName: 'Modal',
-	  statics: {
-	    setAppElement: ariaAppHider.setElement,
-	    injectCSS: function() {
-	      "production" !== process.env.NODE_ENV
-	        && console.warn('React-Modal: injectCSS has been deprecated ' +
-	                        'and no longer has any effect. It will be removed in a later version');
-	    }
-	  },
-	
-	  propTypes: {
-	    isOpen: React.PropTypes.bool.isRequired,
-	    style: React.PropTypes.shape({
-	      content: React.PropTypes.object,
-	      overlay: React.PropTypes.object
-	    }),
-	    appElement: React.PropTypes.instanceOf(SafeHTMLElement),
-	    onRequestClose: React.PropTypes.func,
-	    closeTimeoutMS: React.PropTypes.number,
-	    ariaHideApp: React.PropTypes.bool
-	  },
-	
-	  getDefaultProps: function () {
-	    return {
-	      isOpen: false,
-	      ariaHideApp: true,
-	      closeTimeoutMS: 0
-	    };
-	  },
-	
-	  componentDidMount: function() {
-	    this.node = document.createElement('div');
-	    this.node.className = 'ReactModalPortal';
-	    document.body.appendChild(this.node);
-	    this.renderPortal(this.props);
-	  },
-	
-	  componentWillReceiveProps: function(newProps) {
-	    this.renderPortal(newProps);
-	  },
-	
-	  componentWillUnmount: function() {
-	    ReactDOM.unmountComponentAtNode(this.node);
-	    document.body.removeChild(this.node);
-	  },
-	
-	  renderPortal: function(props) {
-	    if (props.isOpen) {
-	      elementClass(document.body).add('ReactModal__Body--open');
-	    } else {
-	      elementClass(document.body).remove('ReactModal__Body--open');
-	    }
-	
-	    if (props.ariaHideApp) {
-	      ariaAppHider.toggle(props.isOpen, props.appElement);
-	    }
-	    sanitizeProps(props);
-	    this.portal = renderSubtreeIntoContainer(this, ModalPortal(props), this.node);
-	  },
-	
-	  render: function () {
-	    return React.DOM.noscript();
-	  }
-	});
-	
-	function sanitizeProps(props) {
-	  delete props.ref;
-	}
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(/*! (webpack)/~/node-libs-browser/~/process/browser.js */ 4)))
-
-/***/ },
-/* 258 */
-/*!****************************************!*\
-  !*** ./~/react-modal/~/exenv/index.js ***!
-  \****************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	  Copyright (c) 2015 Jed Watson.
-	  Based on code that is Copyright 2013-2015, Facebook, Inc.
-	  All rights reserved.
-	*/
-	
-	(function () {
-		'use strict';
-	
-		var canUseDOM = !!(
-			typeof window !== 'undefined' &&
-			window.document &&
-			window.document.createElement
-		);
-	
-		var ExecutionEnvironment = {
-	
-			canUseDOM: canUseDOM,
-	
-			canUseWorkers: typeof Worker !== 'undefined',
-	
-			canUseEventListeners:
-				canUseDOM && !!(window.addEventListener || window.attachEvent),
-	
-			canUseViewport: canUseDOM && !!window.screen
-	
-		};
-	
-		if (true) {
-			!(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
-				return ExecutionEnvironment;
-			}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-		} else if (typeof module !== 'undefined' && module.exports) {
-			module.exports = ExecutionEnvironment;
-		} else {
-			window.ExecutionEnvironment = ExecutionEnvironment;
-		}
-	
-	}());
-
-
-/***/ },
-/* 259 */
-/*!*****************************************************!*\
-  !*** ./~/react-modal/lib/components/ModalPortal.js ***!
-  \*****************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var React = __webpack_require__(/*! react */ 1);
-	var div = React.DOM.div;
-	var focusManager = __webpack_require__(/*! ../helpers/focusManager */ 260);
-	var scopeTab = __webpack_require__(/*! ../helpers/scopeTab */ 262);
-	var Assign = __webpack_require__(/*! lodash.assign */ 263);
-	
-	
-	// so that our CSS is statically analyzable
-	var CLASS_NAMES = {
-	  overlay: {
-	    base: 'ReactModal__Overlay',
-	    afterOpen: 'ReactModal__Overlay--after-open',
-	    beforeClose: 'ReactModal__Overlay--before-close'
-	  },
-	  content: {
-	    base: 'ReactModal__Content',
-	    afterOpen: 'ReactModal__Content--after-open',
-	    beforeClose: 'ReactModal__Content--before-close'
-	  }
-	};
-	
-	var defaultStyles = {
-	  overlay: {
-	    position        : 'fixed',
-	    top             : 0,
-	    left            : 0,
-	    right           : 0,
-	    bottom          : 0,
-	    backgroundColor : 'rgba(255, 255, 255, 0.75)'
-	  },
-	  content: {
-	    position                : 'absolute',
-	    top                     : '40px',
-	    left                    : '40px',
-	    right                   : '40px',
-	    bottom                  : '40px',
-	    border                  : '1px solid #ccc',
-	    background              : '#fff',
-	    overflow                : 'auto',
-	    WebkitOverflowScrolling : 'touch',
-	    borderRadius            : '4px',
-	    outline                 : 'none',
-	    padding                 : '20px'
-	  }
-	};
-	
-	function stopPropagation(event) {
-	  event.stopPropagation();
-	}
-	
-	var ModalPortal = module.exports = React.createClass({
-	
-	  displayName: 'ModalPortal',
-	
-	  getDefaultProps: function() {
-	    return {
-	      style: {
-	        overlay: {},
-	        content: {}
-	      }
-	    };
-	  },
-	
-	  getInitialState: function() {
-	    return {
-	      afterOpen: false,
-	      beforeClose: false
-	    };
-	  },
-	
-	  componentDidMount: function() {
-	    // Focus needs to be set when mounting and already open
-	    if (this.props.isOpen) {
-	      this.setFocusAfterRender(true);
-	      this.open();
-	    }
-	  },
-	
-	  componentWillUnmount: function() {
-	    clearTimeout(this.closeTimer);
-	  },
-	
-	  componentWillReceiveProps: function(newProps) {
-	    // Focus only needs to be set once when the modal is being opened
-	    if (!this.props.isOpen && newProps.isOpen) {
-	      this.setFocusAfterRender(true);
-	      this.open();
-	    } else if (this.props.isOpen && !newProps.isOpen) {
-	      this.close();
-	    }
-	  },
-	
-	  componentDidUpdate: function () {
-	    if (this.focusAfterRender) {
-	      this.focusContent();
-	      this.setFocusAfterRender(false);
-	    }
-	  },
-	
-	  setFocusAfterRender: function (focus) {
-	    this.focusAfterRender = focus;
-	  },
-	
-	  open: function() {
-	    focusManager.setupScopedFocus(this.node);
-	    focusManager.markForFocusLater();
-	    this.setState({isOpen: true}, function() {
-	      this.setState({afterOpen: true});
-	    }.bind(this));
-	  },
-	
-	  close: function() {
-	    if (!this.ownerHandlesClose())
-	      return;
-	    if (this.props.closeTimeoutMS > 0)
-	      this.closeWithTimeout();
-	    else
-	      this.closeWithoutTimeout();
-	  },
-	
-	  focusContent: function() {
-	    this.refs.content.focus();
-	  },
-	
-	  closeWithTimeout: function() {
-	    this.setState({beforeClose: true}, function() {
-	      this.closeTimer = setTimeout(this.closeWithoutTimeout, this.props.closeTimeoutMS);
-	    }.bind(this));
-	  },
-	
-	  closeWithoutTimeout: function() {
-	    this.setState({
-	      afterOpen: false,
-	      beforeClose: false
-	    }, this.afterClose);
-	  },
-	
-	  afterClose: function() {
-	    focusManager.returnFocus();
-	    focusManager.teardownScopedFocus();
-	  },
-	
-	  handleKeyDown: function(event) {
-	    if (event.keyCode == 9 /*tab*/) scopeTab(this.refs.content, event);
-	    if (event.keyCode == 27 /*esc*/) this.requestClose();
-	  },
-	
-	  handleOverlayClick: function() {
-	    if (this.ownerHandlesClose())
-	      this.requestClose();
-	    else
-	      this.focusContent();
-	  },
-	
-	  requestClose: function() {
-	    if (this.ownerHandlesClose())
-	      this.props.onRequestClose();
-	  },
-	
-	  ownerHandlesClose: function() {
-	    return this.props.onRequestClose;
-	  },
-	
-	  shouldBeClosed: function() {
-	    return !this.props.isOpen && !this.state.beforeClose;
-	  },
-	
-	  buildClassName: function(which, additional) {
-	    var className = CLASS_NAMES[which].base;
-	    if (this.state.afterOpen)
-	      className += ' '+CLASS_NAMES[which].afterOpen;
-	    if (this.state.beforeClose)
-	      className += ' '+CLASS_NAMES[which].beforeClose;
-	    return additional ? className + ' ' + additional : className;
-	  },
-	
-	  render: function() {
-	    return this.shouldBeClosed() ? div() : (
-	      div({
-	        ref: "overlay",
-	        className: this.buildClassName('overlay', this.props.overlayClassName),
-	        style: Assign({}, defaultStyles.overlay, this.props.style.overlay || {}),
-	        onClick: this.handleOverlayClick
-	      },
-	        div({
-	          ref: "content",
-	          style: Assign({}, defaultStyles.content, this.props.style.content || {}),
-	          className: this.buildClassName('content', this.props.className),
-	          tabIndex: "-1",
-	          onClick: stopPropagation,
-	          onKeyDown: this.handleKeyDown
-	        },
-	          this.props.children
-	        )
-	      )
-	    );
-	  }
-	});
-
-
-/***/ },
-/* 260 */
-/*!***************************************************!*\
-  !*** ./~/react-modal/lib/helpers/focusManager.js ***!
-  \***************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var findTabbable = __webpack_require__(/*! ../helpers/tabbable */ 261);
-	var modalElement = null;
-	var focusLaterElement = null;
-	var needToFocus = false;
-	
-	function handleBlur(event) {
-	  needToFocus = true;
-	}
-	
-	function handleFocus(event) {
-	  if (needToFocus) {
-	    needToFocus = false;
-	    if (!modalElement) {
-	      return;
-	    }
-	    // need to see how jQuery shims document.on('focusin') so we don't need the
-	    // setTimeout, firefox doesn't support focusin, if it did, we could focus
-	    // the element outside of a setTimeout. Side-effect of this implementation 
-	    // is that the document.body gets focus, and then we focus our element right 
-	    // after, seems fine.
-	    setTimeout(function() {
-	      if (modalElement.contains(document.activeElement))
-	        return;
-	      var el = (findTabbable(modalElement)[0] || modalElement);
-	      el.focus();
-	    }, 0);
-	  }
-	}
-	
-	exports.markForFocusLater = function() {
-	  focusLaterElement = document.activeElement;
-	};
-	
-	exports.returnFocus = function() {
-	  try {
-	    focusLaterElement.focus();
-	  }
-	  catch (e) {
-	    console.warn('You tried to return focus to '+focusLaterElement+' but it is not in the DOM anymore');
-	  }
-	  focusLaterElement = null;
-	};
-	
-	exports.setupScopedFocus = function(element) {
-	  modalElement = element;
-	
-	  if (window.addEventListener) {
-	    window.addEventListener('blur', handleBlur, false);
-	    document.addEventListener('focus', handleFocus, true);
-	  } else {
-	    window.attachEvent('onBlur', handleBlur);
-	    document.attachEvent('onFocus', handleFocus);
-	  }
-	};
-	
-	exports.teardownScopedFocus = function() {
-	  modalElement = null;
-	
-	  if (window.addEventListener) {
-	    window.removeEventListener('blur', handleBlur);
-	    document.removeEventListener('focus', handleFocus);
-	  } else {
-	    window.detachEvent('onBlur', handleBlur);
-	    document.detachEvent('onFocus', handleFocus);
-	  }
-	};
-	
-	
-
-
-/***/ },
-/* 261 */
-/*!***********************************************!*\
-  !*** ./~/react-modal/lib/helpers/tabbable.js ***!
-  \***********************************************/
-/***/ function(module, exports) {
-
-	/*!
-	 * Adapted from jQuery UI core
-	 *
-	 * http://jqueryui.com
-	 *
-	 * Copyright 2014 jQuery Foundation and other contributors
-	 * Released under the MIT license.
-	 * http://jquery.org/license
-	 *
-	 * http://api.jqueryui.com/category/ui-core/
-	 */
-	
-	function focusable(element, isTabIndexNotNaN) {
-	  var nodeName = element.nodeName.toLowerCase();
-	  return (/input|select|textarea|button|object/.test(nodeName) ?
-	    !element.disabled :
-	    "a" === nodeName ?
-	      element.href || isTabIndexNotNaN :
-	      isTabIndexNotNaN) && visible(element);
-	}
-	
-	function hidden(el) {
-	  return (el.offsetWidth <= 0 && el.offsetHeight <= 0) ||
-	    el.style.display === 'none';
-	}
-	
-	function visible(element) {
-	  while (element) {
-	    if (element === document.body) break;
-	    if (hidden(element)) return false;
-	    element = element.parentNode;
-	  }
-	  return true;
-	}
-	
-	function tabbable(element) {
-	  var tabIndex = element.getAttribute('tabindex');
-	  if (tabIndex === null) tabIndex = undefined;
-	  var isTabIndexNaN = isNaN(tabIndex);
-	  return (isTabIndexNaN || tabIndex >= 0) && focusable(element, !isTabIndexNaN);
-	}
-	
-	function findTabbableDescendants(element) {
-	  return [].slice.call(element.querySelectorAll('*'), 0).filter(function(el) {
-	    return tabbable(el);
-	  });
-	}
-	
-	module.exports = findTabbableDescendants;
-	
-
-
-/***/ },
-/* 262 */
-/*!***********************************************!*\
-  !*** ./~/react-modal/lib/helpers/scopeTab.js ***!
-  \***********************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	var findTabbable = __webpack_require__(/*! ../helpers/tabbable */ 261);
-	
-	module.exports = function(node, event) {
-	  var tabbable = findTabbable(node);
-	  var finalTabbable = tabbable[event.shiftKey ? 0 : tabbable.length - 1];
-	  var leavingFinalTabbable = (
-	    finalTabbable === document.activeElement ||
-	    // handle immediate shift+tab after opening with mouse
-	    node === document.activeElement
-	  );
-	  if (!leavingFinalTabbable) return;
-	  event.preventDefault();
-	  var target = tabbable[event.shiftKey ? tabbable.length - 1 : 0];
-	  target.focus();
-	};
-
-
-/***/ },
-/* 263 */
-/*!************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/index.js ***!
-  \************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseAssign = __webpack_require__(/*! lodash._baseassign */ 264),
-	    createAssigner = __webpack_require__(/*! lodash._createassigner */ 270),
-	    keys = __webpack_require__(/*! lodash.keys */ 266);
-	
-	/**
-	 * A specialized version of `_.assign` for customizing assigned values without
-	 * support for argument juggling, multiple sources, and `this` binding `customizer`
-	 * functions.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {Function} customizer The function to customize assigned values.
-	 * @returns {Object} Returns `object`.
-	 */
-	function assignWith(object, source, customizer) {
-	  var index = -1,
-	      props = keys(source),
-	      length = props.length;
-	
-	  while (++index < length) {
-	    var key = props[index],
-	        value = object[key],
-	        result = customizer(value, source[key], key, object, source);
-	
-	    if ((result === result ? (result !== value) : (value === value)) ||
-	        (value === undefined && !(key in object))) {
-	      object[key] = result;
-	    }
-	  }
-	  return object;
-	}
-	
-	/**
-	 * Assigns own enumerable properties of source object(s) to the destination
-	 * object. Subsequent sources overwrite property assignments of previous sources.
-	 * If `customizer` is provided it is invoked to produce the assigned values.
-	 * The `customizer` is bound to `thisArg` and invoked with five arguments:
-	 * (objectValue, sourceValue, key, object, source).
-	 *
-	 * **Note:** This method mutates `object` and is based on
-	 * [`Object.assign`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.assign).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @alias extend
-	 * @category Object
-	 * @param {Object} object The destination object.
-	 * @param {...Object} [sources] The source objects.
-	 * @param {Function} [customizer] The function to customize assigned values.
-	 * @param {*} [thisArg] The `this` binding of `customizer`.
-	 * @returns {Object} Returns `object`.
-	 * @example
-	 *
-	 * _.assign({ 'user': 'barney' }, { 'age': 40 }, { 'user': 'fred' });
-	 * // => { 'user': 'fred', 'age': 40 }
-	 *
-	 * // using a customizer callback
-	 * var defaults = _.partialRight(_.assign, function(value, other) {
-	 *   return _.isUndefined(value) ? other : value;
-	 * });
-	 *
-	 * defaults({ 'user': 'barney' }, { 'age': 36 }, { 'user': 'fred' });
-	 * // => { 'user': 'barney', 'age': 36 }
-	 */
-	var assign = createAssigner(function(object, source, customizer) {
-	  return customizer
-	    ? assignWith(object, source, customizer)
-	    : baseAssign(object, source);
-	});
-	
-	module.exports = assign;
-
-
-/***/ },
-/* 264 */
-/*!*********************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash._baseassign/index.js ***!
-  \*********************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.2.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseCopy = __webpack_require__(/*! lodash._basecopy */ 265),
-	    keys = __webpack_require__(/*! lodash.keys */ 266);
-	
-	/**
-	 * The base implementation of `_.assign` without support for argument juggling,
-	 * multiple sources, and `customizer` functions.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseAssign(object, source) {
-	  return source == null
-	    ? object
-	    : baseCopy(source, keys(source), object);
-	}
-	
-	module.exports = baseAssign;
-
-
-/***/ },
-/* 265 */
-/*!****************************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash._baseassign/~/lodash._basecopy/index.js ***!
-  \****************************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * Copies properties of `source` to `object`.
-	 *
-	 * @private
-	 * @param {Object} source The object to copy properties from.
-	 * @param {Array} props The property names to copy.
-	 * @param {Object} [object={}] The object to copy properties to.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseCopy(source, props, object) {
-	  object || (object = {});
-	
-	  var index = -1,
-	      length = props.length;
-	
-	  while (++index < length) {
-	    var key = props[index];
-	    object[key] = source[key];
-	  }
-	  return object;
-	}
-	
-	module.exports = baseCopy;
-
-
-/***/ },
-/* 266 */
-/*!**************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/index.js ***!
-  \**************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.1.2 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var getNative = __webpack_require__(/*! lodash._getnative */ 267),
-	    isArguments = __webpack_require__(/*! lodash.isarguments */ 268),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 269);
-	
-	/** Used to detect unsigned integer values. */
-	var reIsUint = /^\d+$/;
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeKeys = getNative(Object, 'keys');
-	
-	/**
-	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-	
-	/**
-	 * The base implementation of `_.property` without support for deep paths.
-	 *
-	 * @private
-	 * @param {string} key The key of the property to get.
-	 * @returns {Function} Returns the new function.
-	 */
-	function baseProperty(key) {
-	  return function(object) {
-	    return object == null ? undefined : object[key];
-	  };
-	}
-	
-	/**
-	 * Gets the "length" property value of `object`.
-	 *
-	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
-	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {*} Returns the "length" value.
-	 */
-	var getLength = baseProperty('length');
-	
-	/**
-	 * Checks if `value` is array-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
-	 */
-	function isArrayLike(value) {
-	  return value != null && isLength(getLength(value));
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * A fallback implementation of `Object.keys` which creates an array of the
-	 * own enumerable property names of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {Array} Returns the array of property names.
-	 */
-	function shimKeys(object) {
-	  var props = keysIn(object),
-	      propsLength = props.length,
-	      length = propsLength && object.length;
-	
-	  var allowIndexes = !!length && isLength(length) &&
-	    (isArray(object) || isArguments(object));
-	
-	  var index = -1,
-	      result = [];
-	
-	  while (++index < propsLength) {
-	    var key = props[index];
-	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return !!value && (type == 'object' || type == 'function');
-	}
-	
-	/**
-	 * Creates an array of the own enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects. See the
-	 * [ES spec](http://ecma-international.org/ecma-262/6.0/#sec-object.keys)
-	 * for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to query.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keys(new Foo);
-	 * // => ['a', 'b'] (iteration order is not guaranteed)
-	 *
-	 * _.keys('hi');
-	 * // => ['0', '1']
-	 */
-	var keys = !nativeKeys ? shimKeys : function(object) {
-	  var Ctor = object == null ? undefined : object.constructor;
-	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-	      (typeof object != 'function' && isArrayLike(object))) {
-	    return shimKeys(object);
-	  }
-	  return isObject(object) ? nativeKeys(object) : [];
-	};
-	
-	/**
-	 * Creates an array of the own and inherited enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to query.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keysIn(new Foo);
-	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
-	 */
-	function keysIn(object) {
-	  if (object == null) {
-	    return [];
-	  }
-	  if (!isObject(object)) {
-	    object = Object(object);
-	  }
-	  var length = object.length;
-	  length = (length && isLength(length) &&
-	    (isArray(object) || isArguments(object)) && length) || 0;
-	
-	  var Ctor = object.constructor,
-	      index = -1,
-	      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
-	      result = Array(length),
-	      skipIndexes = length > 0;
-	
-	  while (++index < length) {
-	    result[index] = (index + '');
-	  }
-	  for (var key in object) {
-	    if (!(skipIndexes && isIndex(key, length)) &&
-	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	module.exports = keys;
-
-
-/***/ },
-/* 267 */
-/*!**********************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/~/lodash._getnative/index.js ***!
-  \**********************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.9.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reIsHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/**
-	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reIsNative = RegExp('^' +
-	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
-	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/**
-	 * Gets the native function at `key` of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @param {string} key The key of the method to get.
-	 * @returns {*} Returns the function if it's native, else `undefined`.
-	 */
-	function getNative(object, key) {
-	  var value = object == null ? undefined : object[key];
-	  return isNative(value) ? value : undefined;
-	}
-	
-	/**
-	 * Checks if `value` is classified as a `Function` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isFunction(_);
-	 * // => true
-	 *
-	 * _.isFunction(/abc/);
-	 * // => false
-	 */
-	function isFunction(value) {
-	  // The use of `Object#toString` avoids issues with the `typeof` operator
-	  // in older versions of Chrome and Safari which return 'function' for regexes
-	  // and Safari 8 equivalents which return 'object' for typed array constructors.
-	  return isObject(value) && objToString.call(value) == funcTag;
-	}
-	
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return !!value && (type == 'object' || type == 'function');
-	}
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (isFunction(value)) {
-	    return reIsNative.test(fnToString.call(value));
-	  }
-	  return isObjectLike(value) && reIsHostCtor.test(value);
-	}
-	
-	module.exports = getNative;
-
-
-/***/ },
-/* 268 */
-/*!***********************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/~/lodash.isarguments/index.js ***!
-  \***********************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.8 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modularize exports="npm" -o ./`
-	 * Copyright 2012-2016 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2016 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** Used as references for various `Number` constants. */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]',
-	    funcTag = '[object Function]',
-	    genTag = '[object GeneratorFunction]';
-	
-	/** Used for built-in method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/**
-	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objectToString = objectProto.toString;
-	
-	/** Built-in value references. */
-	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-	
-	/**
-	 * The base implementation of `_.property` without support for deep paths.
-	 *
-	 * @private
-	 * @param {string} key The key of the property to get.
-	 * @returns {Function} Returns the new function.
-	 */
-	function baseProperty(key) {
-	  return function(object) {
-	    return object == null ? undefined : object[key];
-	  };
-	}
-	
-	/**
-	 * Gets the "length" property value of `object`.
-	 *
-	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
-	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {*} Returns the "length" value.
-	 */
-	var getLength = baseProperty('length');
-	
-	/**
-	 * Checks if `value` is likely an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArguments(function() { return arguments; }());
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  // Safari 8.1 incorrectly makes `arguments.callee` enumerable in strict mode.
-	  return isArrayLikeObject(value) && hasOwnProperty.call(value, 'callee') &&
-	    (!propertyIsEnumerable.call(value, 'callee') || objectToString.call(value) == argsTag);
-	}
-	
-	/**
-	 * Checks if `value` is array-like. A value is considered array-like if it's
-	 * not a function and has a `value.length` that's an integer greater than or
-	 * equal to `0` and less than or equal to `Number.MAX_SAFE_INTEGER`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
-	 * @example
-	 *
-	 * _.isArrayLike([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isArrayLike(document.body.children);
-	 * // => true
-	 *
-	 * _.isArrayLike('abc');
-	 * // => true
-	 *
-	 * _.isArrayLike(_.noop);
-	 * // => false
-	 */
-	function isArrayLike(value) {
-	  return value != null && isLength(getLength(value)) && !isFunction(value);
-	}
-	
-	/**
-	 * This method is like `_.isArrayLike` except that it also checks if `value`
-	 * is an object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an array-like object, else `false`.
-	 * @example
-	 *
-	 * _.isArrayLikeObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isArrayLikeObject(document.body.children);
-	 * // => true
-	 *
-	 * _.isArrayLikeObject('abc');
-	 * // => false
-	 *
-	 * _.isArrayLikeObject(_.noop);
-	 * // => false
-	 */
-	function isArrayLikeObject(value) {
-	  return isObjectLike(value) && isArrayLike(value);
-	}
-	
-	/**
-	 * Checks if `value` is classified as a `Function` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isFunction(_);
-	 * // => true
-	 *
-	 * _.isFunction(/abc/);
-	 * // => false
-	 */
-	function isFunction(value) {
-	  // The use of `Object#toString` avoids issues with the `typeof` operator
-	  // in Safari 8 which returns 'object' for typed array and weak map constructors,
-	  // and PhantomJS 1.9 which returns 'function' for `NodeList` instances.
-	  var tag = isObject(value) ? objectToString.call(value) : '';
-	  return tag == funcTag || tag == genTag;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is loosely based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 * @example
-	 *
-	 * _.isLength(3);
-	 * // => true
-	 *
-	 * _.isLength(Number.MIN_VALUE);
-	 * // => false
-	 *
-	 * _.isLength(Infinity);
-	 * // => false
-	 *
-	 * _.isLength('3');
-	 * // => false
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' &&
-	    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(_.noop);
-	 * // => true
-	 *
-	 * _.isObject(null);
-	 * // => false
-	 */
-	function isObject(value) {
-	  var type = typeof value;
-	  return !!value && (type == 'object' || type == 'function');
-	}
-	
-	/**
-	 * Checks if `value` is object-like. A value is object-like if it's not `null`
-	 * and has a `typeof` result of "object".
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 * @example
-	 *
-	 * _.isObjectLike({});
-	 * // => true
-	 *
-	 * _.isObjectLike([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObjectLike(_.noop);
-	 * // => false
-	 *
-	 * _.isObjectLike(null);
-	 * // => false
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-	
-	module.exports = isArguments;
-
-
-/***/ },
-/* 269 */
-/*!*******************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash.keys/~/lodash.isarray/index.js ***!
-  \*******************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.4 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var arrayTag = '[object Array]',
-	    funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reIsHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/**
-	 * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reIsNative = RegExp('^' +
-	  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
-	  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeIsArray = getNative(Array, 'isArray');
-	
-	/**
-	 * Used as the [maximum length](http://ecma-international.org/ecma-262/6.0/#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-	
-	/**
-	 * Gets the native function at `key` of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @param {string} key The key of the method to get.
-	 * @returns {*} Returns the function if it's native, else `undefined`.
-	 */
-	function getNative(object, key) {
-	  var value = object == null ? undefined : object[key];
-	  return isNative(value) ? value : undefined;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](http://ecma-international.org/ecma-262/6.0/#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `Array` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArray([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isArray(function() { return arguments; }());
-	 * // => false
-	 */
-	var isArray = nativeIsArray || function(value) {
-	  return isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag;
-	};
-	
-	/**
-	 * Checks if `value` is classified as a `Function` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isFunction(_);
-	 * // => true
-	 *
-	 * _.isFunction(/abc/);
-	 * // => false
-	 */
-	function isFunction(value) {
-	  // The use of `Object#toString` avoids issues with the `typeof` operator
-	  // in older versions of Chrome and Safari which return 'function' for regexes
-	  // and Safari 8 equivalents which return 'object' for typed array constructors.
-	  return isObject(value) && objToString.call(value) == funcTag;
-	}
-	
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return !!value && (type == 'object' || type == 'function');
-	}
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (isFunction(value)) {
-	    return reIsNative.test(fnToString.call(value));
-	  }
-	  return isObjectLike(value) && reIsHostCtor.test(value);
-	}
-	
-	module.exports = isArray;
-
-
-/***/ },
-/* 270 */
-/*!*************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/index.js ***!
-  \*************************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.1.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var bindCallback = __webpack_require__(/*! lodash._bindcallback */ 271),
-	    isIterateeCall = __webpack_require__(/*! lodash._isiterateecall */ 272),
-	    restParam = __webpack_require__(/*! lodash.restparam */ 273);
-	
-	/**
-	 * Creates a function that assigns properties of source object(s) to a given
-	 * destination object.
-	 *
-	 * **Note:** This function is used to create `_.assign`, `_.defaults`, and `_.merge`.
-	 *
-	 * @private
-	 * @param {Function} assigner The function to assign values.
-	 * @returns {Function} Returns the new assigner function.
-	 */
-	function createAssigner(assigner) {
-	  return restParam(function(object, sources) {
-	    var index = -1,
-	        length = object == null ? 0 : sources.length,
-	        customizer = length > 2 ? sources[length - 2] : undefined,
-	        guard = length > 2 ? sources[2] : undefined,
-	        thisArg = length > 1 ? sources[length - 1] : undefined;
-	
-	    if (typeof customizer == 'function') {
-	      customizer = bindCallback(customizer, thisArg, 5);
-	      length -= 2;
-	    } else {
-	      customizer = typeof thisArg == 'function' ? thisArg : undefined;
-	      length -= (customizer ? 1 : 0);
-	    }
-	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-	      customizer = length < 3 ? undefined : customizer;
-	      length = 1;
-	    }
-	    while (++index < length) {
-	      var source = sources[index];
-	      if (source) {
-	        assigner(object, source, customizer);
-	      }
-	    }
-	    return object;
-	  });
-	}
-	
-	module.exports = createAssigner;
-
-
-/***/ },
-/* 271 */
-/*!************************************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/~/lodash._bindcallback/index.js ***!
-  \************************************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (thisArg === undefined) {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
-	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 *
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
-
-
-/***/ },
-/* 272 */
-/*!**************************************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/~/lodash._isiterateecall/index.js ***!
-  \**************************************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.0.9 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** Used to detect unsigned integer values. */
-	var reIsUint = /^\d+$/;
-	
-	/**
-	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = 9007199254740991;
-	
-	/**
-	 * The base implementation of `_.property` without support for deep paths.
-	 *
-	 * @private
-	 * @param {string} key The key of the property to get.
-	 * @returns {Function} Returns the new function.
-	 */
-	function baseProperty(key) {
-	  return function(object) {
-	    return object == null ? undefined : object[key];
-	  };
-	}
-	
-	/**
-	 * Gets the "length" property value of `object`.
-	 *
-	 * **Note:** This function is used to avoid a [JIT bug](https://bugs.webkit.org/show_bug.cgi?id=142792)
-	 * that affects Safari on at least iOS 8.1-8.3 ARM64.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {*} Returns the "length" value.
-	 */
-	var getLength = baseProperty('length');
-	
-	/**
-	 * Checks if `value` is array-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is array-like, else `false`.
-	 */
-	function isArrayLike(value) {
-	  return value != null && isLength(getLength(value));
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = (typeof value == 'number' || reIsUint.test(value)) ? +value : -1;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if the provided arguments are from an iteratee call.
-	 *
-	 * @private
-	 * @param {*} value The potential iteratee value argument.
-	 * @param {*} index The potential iteratee index or key argument.
-	 * @param {*} object The potential iteratee object argument.
-	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
-	 */
-	function isIterateeCall(value, index, object) {
-	  if (!isObject(object)) {
-	    return false;
-	  }
-	  var type = typeof index;
-	  if (type == 'number'
-	      ? (isArrayLike(object) && isIndex(index, object.length))
-	      : (type == 'string' && index in object)) {
-	    var other = object[index];
-	    return value === value ? (value === other) : (other !== other);
-	  }
-	  return false;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return !!value && (type == 'object' || type == 'function');
-	}
-	
-	module.exports = isIterateeCall;
-
-
-/***/ },
-/* 273 */
-/*!********************************************************************************************!*\
-  !*** ./~/react-modal/~/lodash.assign/~/lodash._createassigner/~/lodash.restparam/index.js ***!
-  \********************************************************************************************/
-/***/ function(module, exports) {
-
-	/**
-	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** Used as the `TypeError` message for "Functions" methods. */
-	var FUNC_ERROR_TEXT = 'Expected a function';
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
-	
-	/**
-	 * Creates a function that invokes `func` with the `this` binding of the
-	 * created function and arguments from `start` and beyond provided as an array.
-	 *
-	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Function
-	 * @param {Function} func The function to apply a rest parameter to.
-	 * @param {number} [start=func.length-1] The start position of the rest parameter.
-	 * @returns {Function} Returns the new function.
-	 * @example
-	 *
-	 * var say = _.restParam(function(what, names) {
-	 *   return what + ' ' + _.initial(names).join(', ') +
-	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
-	 * });
-	 *
-	 * say('hello', 'fred', 'barney', 'pebbles');
-	 * // => 'hello fred, barney, & pebbles'
-	 */
-	function restParam(func, start) {
-	  if (typeof func != 'function') {
-	    throw new TypeError(FUNC_ERROR_TEXT);
-	  }
-	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
-	  return function() {
-	    var args = arguments,
-	        index = -1,
-	        length = nativeMax(args.length - start, 0),
-	        rest = Array(length);
-	
-	    while (++index < length) {
-	      rest[index] = args[start + index];
-	    }
-	    switch (start) {
-	      case 0: return func.call(this, rest);
-	      case 1: return func.call(this, args[0], rest);
-	      case 2: return func.call(this, args[0], args[1], rest);
-	    }
-	    var otherArgs = Array(start + 1);
-	    index = -1;
-	    while (++index < start) {
-	      otherArgs[index] = args[index];
-	    }
-	    otherArgs[start] = rest;
-	    return func.apply(this, otherArgs);
-	  };
-	}
-	
-	module.exports = restParam;
-
-
-/***/ },
-/* 274 */
-/*!***************************************************!*\
-  !*** ./~/react-modal/lib/helpers/ariaAppHider.js ***!
-  \***************************************************/
-/***/ function(module, exports) {
-
-	var _element = typeof document !== 'undefined' ? document.body : null;
-	
-	function setElement(element) {
-	  if (typeof element === 'string') {
-	    var el = document.querySelectorAll(element);
-	    element = 'length' in el ? el[0] : el;
-	  }
-	  _element = element || _element;
-	}
-	
-	function hide(appElement) {
-	  validateElement(appElement);
-	  (appElement || _element).setAttribute('aria-hidden', 'true');
-	}
-	
-	function show(appElement) {
-	  validateElement(appElement);
-	  (appElement || _element).removeAttribute('aria-hidden');
-	}
-	
-	function toggle(shouldHide, appElement) {
-	  if (shouldHide)
-	    hide(appElement);
-	  else
-	    show(appElement);
-	}
-	
-	function validateElement(appElement) {
-	  if (!appElement && !_element)
-	    throw new Error('react-modal: You must set an element with `Modal.setAppElement(el)` to make this accessible');
-	}
-	
-	function resetForTesting() {
-	  _element = document.body;
-	}
-	
-	exports.toggle = toggle;
-	exports.setElement = setElement;
-	exports.show = show;
-	exports.hide = hide;
-	exports.resetForTesting = resetForTesting;
-
-
-/***/ },
-/* 275 */
-/*!************************************************!*\
-  !*** ./~/react-modal/~/element-class/index.js ***!
-  \************************************************/
-/***/ function(module, exports) {
-
-	module.exports = function(opts) {
-	  return new ElementClass(opts)
-	}
-	
-	function indexOf(arr, prop) {
-	  if (arr.indexOf) return arr.indexOf(prop)
-	  for (var i = 0, len = arr.length; i < len; i++)
-	    if (arr[i] === prop) return i
-	  return -1
-	}
-	
-	function ElementClass(opts) {
-	  if (!(this instanceof ElementClass)) return new ElementClass(opts)
-	  var self = this
-	  if (!opts) opts = {}
-	
-	  // similar doing instanceof HTMLElement but works in IE8
-	  if (opts.nodeType) opts = {el: opts}
-	
-	  this.opts = opts
-	  this.el = opts.el || document.body
-	  if (typeof this.el !== 'object') this.el = document.querySelector(this.el)
-	}
-	
-	ElementClass.prototype.add = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  if (el.className === "") return el.className = className
-	  var classes = el.className.split(' ')
-	  if (indexOf(classes, className) > -1) return classes
-	  classes.push(className)
-	  el.className = classes.join(' ')
-	  return classes
-	}
-	
-	ElementClass.prototype.remove = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  if (el.className === "") return
-	  var classes = el.className.split(' ')
-	  var idx = indexOf(classes, className)
-	  if (idx > -1) classes.splice(idx, 1)
-	  el.className = classes.join(' ')
-	  return classes
-	}
-	
-	ElementClass.prototype.has = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  var classes = el.className.split(' ')
-	  return indexOf(classes, className) > -1
-	}
-	
-	ElementClass.prototype.toggle = function(className) {
-	  var el = this.el
-	  if (!el) return
-	  if (this.has(className)) this.remove(className)
-	  else this.add(className)
-	}
-
-
-/***/ },
-/* 276 */
+/* 279 */
 /*!********************!*\
   !*** ./~/d3/d3.js ***!
   \********************/
@@ -76797,7 +77653,7 @@
 	}();
 
 /***/ },
-/* 277 */
+/* 280 */
 /*!*********************************************!*\
   !*** ./~/leaflet.heat/dist/leaflet-heat.js ***!
   \*********************************************/
@@ -76816,7 +77672,7 @@
 	L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._latlngs=t,L.setOptions(this,i)},setLatLngs:function(t){return this._latlngs=t,this.redraw()},addLatLng:function(t){return this._latlngs.push(t),this.redraw()},setOptions:function(t){return L.setOptions(this,t),this._heat&&this._updateOptions(),this.redraw()},redraw:function(){return!this._heat||this._frame||this._map._animating||(this._frame=L.Util.requestAnimFrame(this._redraw,this)),this},onAdd:function(t){this._map=t,this._canvas||this._initCanvas(),t._panes.overlayPane.appendChild(this._canvas),t.on("moveend",this._reset,this),t.options.zoomAnimation&&L.Browser.any3d&&t.on("zoomanim",this._animateZoom,this),this._reset()},onRemove:function(t){t.getPanes().overlayPane.removeChild(this._canvas),t.off("moveend",this._reset,this),t.options.zoomAnimation&&t.off("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},_initCanvas:function(){var t=this._canvas=L.DomUtil.create("canvas","leaflet-heatmap-layer leaflet-layer"),i=L.DomUtil.testProp(["transformOrigin","WebkitTransformOrigin","msTransformOrigin"]);t.style[i]="50% 50%";var a=this._map.getSize();t.width=a.x,t.height=a.y;var s=this._map.options.zoomAnimation&&L.Browser.any3d;L.DomUtil.addClass(t,"leaflet-zoom-"+(s?"animated":"hide")),this._heat=simpleheat(t),this._updateOptions()},_updateOptions:function(){this._heat.radius(this.options.radius||this._heat.defaultRadius,this.options.blur),this.options.gradient&&this._heat.gradient(this.options.gradient),this.options.max&&this._heat.max(this.options.max)},_reset:function(){var t=this._map.containerPointToLayerPoint([0,0]);L.DomUtil.setPosition(this._canvas,t);var i=this._map.getSize();this._heat._width!==i.x&&(this._canvas.width=this._heat._width=i.x),this._heat._height!==i.y&&(this._canvas.height=this._heat._height=i.y),this._redraw()},_redraw:function(){var t,i,a,s,e,n,h,o,r,d=[],_=this._heat._r,l=this._map.getSize(),m=new L.Bounds(L.point([-_,-_]),l.add([_,_])),c=void 0===this.options.max?1:this.options.max,u=void 0===this.options.maxZoom?this._map.getMaxZoom():this.options.maxZoom,f=1/Math.pow(2,Math.max(0,Math.min(u-this._map.getZoom(),12))),g=_/2,p=[],v=this._map._getMapPanePos(),w=v.x%g,y=v.y%g;for(t=0,i=this._latlngs.length;i>t;t++)if(a=this._map.latLngToContainerPoint(this._latlngs[t]),m.contains(a)){e=Math.floor((a.x-w)/g)+2,n=Math.floor((a.y-y)/g)+2;var x=void 0!==this._latlngs[t].alt?this._latlngs[t].alt:void 0!==this._latlngs[t][2]?+this._latlngs[t][2]:1;r=x*f,p[n]=p[n]||[],s=p[n][e],s?(s[0]=(s[0]*s[2]+a.x*r)/(s[2]+r),s[1]=(s[1]*s[2]+a.y*r)/(s[2]+r),s[2]+=r):p[n][e]=[a.x,a.y,r]}for(t=0,i=p.length;i>t;t++)if(p[t])for(h=0,o=p[t].length;o>h;h++)s=p[t][h],s&&d.push([Math.round(s[0]),Math.round(s[1]),Math.min(s[2],c)]);this._heat.data(d).draw(this.options.minOpacity),this._frame=null},_animateZoom:function(t){var i=this._map.getZoomScale(t.zoom),a=this._map._getCenterOffset(t.center)._multiplyBy(-i).subtract(this._map._getMapPanePos());L.DomUtil.setTransform?L.DomUtil.setTransform(this._canvas,a,i):this._canvas.style[L.DomUtil.TRANSFORM]=L.DomUtil.getTranslateString(a)+" scale("+i+")"}}),L.heatLayer=function(t,i){return new L.HeatLayer(t,i)};
 
 /***/ },
-/* 278 */
+/* 281 */
 /*!********************************************!*\
   !*** ./~/dom-to-image/src/dom-to-image.js ***!
   \********************************************/
