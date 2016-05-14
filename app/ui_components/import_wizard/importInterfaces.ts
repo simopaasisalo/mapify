@@ -8,7 +8,15 @@ interface ILayerImportProps {
 /** The React states of the layer import wizard */
 interface ILayerImportStates {
     /** The currently active step of the wizard */
-    step: number,
+    step?: number,
+    /** The upload status*/
+    uploadDetails?: IUploadDetails,
+}
+
+interface IUploadDetails extends IFileUploadStates, IFileDetailsStates {
+    geoJSON?: any,
+    layerType?: LayerTypes,
+    heatMapVariable?: string,
 }
 
 /** The property interface for MapType-components (shown when the user selects the type of a new layer) */
@@ -69,11 +77,13 @@ interface IFileUploadStates {
 /** The file details object interface */
 interface IFileDetails {
     /** The name of the latitude field */
-    latitudeField: string,
+    latitudeField?: string,
     /** The name of the longitude field */
-    longitudeField: string,
+    longitudeField?: string,
     /** The name of the coordinate system */
-    coordinateSystem: string,
+    coordinateSystem?: string,
+    /** The heatmap value field */
+    heatVal?: string,
 }
 /** The property interface for the FileDetails-view (the last view of the import wizard) */
 interface IFileDetailsProps {
@@ -83,7 +93,11 @@ interface IFileDetailsProps {
     /** Saves the lat- and lon- field names and the coordinate system name to the import wizard*/
     saveValues: (IFileDetails) => void,
     /** Go to the previous step of the wizard */
-    goBack: () => void
+    goBack: () => void,
+    /** Is the file in GeoJSON? If so, don't show lat-lon-selection*/
+    isGeoJSON: boolean,
+    /** Is the layer going to be a heatmap?*/
+    isHeatMap: boolean,
 }
 
 /** The React states of the file details view */

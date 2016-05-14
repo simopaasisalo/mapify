@@ -27,6 +27,8 @@ declare namespace L {
          * Color gradient config, e.g. {0.4: 'blue', 0.65: 'lime', 1: 'red'}
          */
         gradient?: any,
+
+        relative?: boolean,
     }
 
     export interface HeatLayer {

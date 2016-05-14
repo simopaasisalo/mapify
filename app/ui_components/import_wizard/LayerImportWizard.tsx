@@ -9,24 +9,14 @@ import {LayerTypes} from "../common_items/common";
 
 let _fileModel = new FilePreProcessModel();
 
-var values = {
-    layerName: '',
-    rawContent: '',
-    geoJSON: null,
-    layerType: null,
-    fileExtension: '',
-    headers: [],
-    delimiter: '',
-    latField: '',
-    lonField: '',
-    coordinateSystem: '',
-    heatMapVariable: '',
-}
 
 export class LayerImportWizard extends React.Component<ILayerImportProps, ILayerImportStates>{
     constructor() {
         super();
-        this.state = { step: 0 };
+        this.state = {
+            step: 0,
+            uploadDetails: {},
+        };
     }
     nextStep() {
         this.setState({
@@ -41,43 +31,69 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
     }
 
     setLayerType(type: LayerTypes) {
-        values.layerType = type;
+        let details = this.state.uploadDetails;
+        details.layerType = type;
+        this.setState({
+            uploadDetails: details
+        });
         this.nextStep();
     }
 
-    setFileInfo(fileInfo: IFileUploadStates) {
+    setFileInfo(fileInfo: IFileUploadStates, loadDemo: boolean = false) {
+        let details = this.state.uploadDetails;
+
         this.setLayerName(fileInfo.layerName);
-        values.headers = [];
+        details.headers = [];
         let ext = fileInfo.fileExtension;
         if (ext === 'csv') {
-            values.rawContent = fileInfo.content;
-            values.headers = fileInfo.headers;
-            values.delimiter = fileInfo.delimiter;
-            values.fileExtension = ext;
+            details.content = fileInfo.content;
+            details.headers = fileInfo.headers;
+            details.delimiter = fileInfo.delimiter;
+            details.fileExtension = ext;
+            this.setState({
+                uploadDetails: details
+            });
             this.nextStep();
         }
         else {
+            details.fileExtension = ext;
             if (ext === 'geojson')
-                values.geoJSON = JSON.parse(fileInfo.content);
+                details.geoJSON = JSON.parse(fileInfo.content);
             else if (ext === 'kml' || ext === 'gpx' || ext === 'wkt')
-                values.geoJSON = _fileModel.ParseToGeoJSON(fileInfo.content, ext)
-            let props = values.geoJSON.features ? values.geoJSON.features[0].properties : {};
+                details.geoJSON = _fileModel.ParseToGeoJSON(fileInfo.content, ext)
+            let props = details.geoJSON.features ? details.geoJSON.features[0].properties : {};
             for (let h of Object.keys(props)) {
-                values.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
+                details.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
             }
-            this.submit(); //skip extra info if already in geojson
+            this.setState({
+                uploadDetails: details
+            });
+            if (loadDemo)
+                this.submit()
+            else
+                this.nextStep();
         }
     }
 
     setFileDetails(fileDetails) {
-        values.latField = fileDetails.latitudeField;
-        values.lonField = fileDetails.longitudeField;
-        values.coordinateSystem = fileDetails.coordinateSystem;
+        let details = this.state.uploadDetails;
+
+        details.latitudeField = fileDetails.latitudeField;
+        details.longitudeField = fileDetails.longitudeField;
+        details.coordinateSystem = fileDetails.coordinateSystem;
+        this.setState({
+            uploadDetails: details
+        });
         this.submit();
     }
 
     setLayerName(name: string) {
-        values.layerName = name;
+        let details = this.state.uploadDetails;
+
+        details.layerName = name;
+        this.setState({
+            uploadDetails: details,
+        });
     }
     cancel() {
         this.props.cancel();
@@ -88,22 +104,34 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
      * @return {void}
      */
     submit() {
-        if (!values.geoJSON && values.fileExtension === 'csv') {
-            values.geoJSON = _fileModel.ParseCSVToGeoJSON(values.rawContent, values.latField, values.lonField, values.delimiter, values.coordinateSystem, values.headers);
+        let details = this.state.uploadDetails;
+
+        if (!details.geoJSON && details.fileExtension === 'csv') {
+            details.geoJSON = _fileModel.ParseCSVToGeoJSON(details.content,
+                details.latitudeField,
+                details.longitudeField,
+                details.delimiter,
+                details.coordinateSystem,
+                details.headers);
         }
+        else if (details.coordinateSystem && details.coordinateSystem !== 'WGS84') {
+            details.geoJSON = _fileModel.ProjectCoords(details.geoJSON, details.coordinateSystem);
+        }
+        this.setState({ uploadDetails: details });
         let submitData: ILayerData = {
             id: -1,
-            layerName: values.layerName,
-            geoJSON: values.geoJSON,
-            layerType: values.layerType,
-            headers: values.headers,
-            heatMapVariable: values.heatMapVariable,
+            layerName: details.layerName,
+            geoJSON: details.geoJSON,
+            layerType: details.layerType,
+            headers: details.headers,
+            heatMapVariable: details.heatMapVariable,
         };
         this.props.submit(submitData);
     }
 
     loadDemo(type: LayerTypes) {
-        values.layerType = type;
+        let details = this.state.uploadDetails;
+        details.layerType = type;
         let fileInfo: IFileUploadStates = {
             fileExtension: 'geojson',
 
@@ -119,9 +147,11 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
         else if (type === LayerTypes.HeatMap) {
             fileInfo.layerName = 'Air Particle Heat Demo';
             fileInfo.content = symbolSample;
-            values.heatMapVariable = 'particles'
+            details.heatMapVariable = 'particles'
         }
-        this.setFileInfo(fileInfo);
+
+        this.setState({ uploadDetails: details });
+        this.setFileInfo(fileInfo, true);
 
     }
     getCurrentView() {
@@ -141,9 +171,11 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
                     />
             case 2:
                 return <FileDetailsView
-                    headers={values.headers}
+                    headers={this.state.uploadDetails.headers}
                     saveValues={this.setFileDetails.bind(this) }
                     goBack = {this.previousStep.bind(this) }
+                    isHeatMap={this.state.uploadDetails.layerType === LayerTypes.HeatMap}
+                    isGeoJSON={this.state.uploadDetails.geoJSON ? true : false}
                     />
         }
     }

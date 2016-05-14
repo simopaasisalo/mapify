@@ -163,7 +163,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         let customIcon = L.AwesomeMarkers.icon({
                             icon: layerData.visOptions.symbolOptions.iconFA,
                             prefix: 'fa',
-                            markerColor: 'red'
+                            markerColor: 'blue'
                         })
                         return L.marker(latlng, { icon: customIcon });
                     }
@@ -403,7 +403,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (layerData.heatMapVariable) { pos.push(heatVal / max) };
             arr.push(pos);
         });
-        return L.heatLayer(arr, {})
+        return L.heatLayer(arr, { relative: true })
     }
 
     /**

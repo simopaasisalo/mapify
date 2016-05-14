@@ -71,7 +71,7 @@ export class FilePreProcessModel {
             });
 
         if (coordSystem !== 'WGS84')
-            geoJSON = this.projectCoords(geoJSON, coordSystem)
+            geoJSON = this.ProjectCoords(geoJSON, coordSystem)
         geoJSON = this.setGeoJSONTypes(geoJSON, headers);
 
         return geoJSON;
@@ -108,7 +108,7 @@ export class FilePreProcessModel {
      * @param  fromProj   Original projection name
      * @return            The projected L.GeoJSON
      */
-    private projectCoords(geoJSON, fromProj: string) {
+    public ProjectCoords(geoJSON, fromProj: string) {
         geoJSON.features.forEach(feature => {
             let x = feature.geometry.coordinates[0];
             let y = feature.geometry.coordinates[1];
