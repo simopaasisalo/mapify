@@ -34,6 +34,7 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
             if (_allowedFileTypes.indexOf(ext) !== -1) {
                 this.setState({
                     content: contents.result,
+                    fileName: fileName,
                     layerName: fileName,
                     fileExtension: ext
                 });
@@ -73,7 +74,7 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
     render() {
         let dropStyle = {
             height: 100,
-            border: '1px dotted #549341',
+            border: this.state.fileName ? '1px solid #549341' : '1px dotted #549341',
             borderRadius: 15,
             margin: 5,
             textAlign: 'center',
@@ -92,7 +93,7 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
                     <Dropzone
                         style={dropStyle}
                         onDrop={this.onDrop.bind(this) }>
-                        Drop file or click to open upload menu
+                        {this.state.fileName ? <span><i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/> {this.state.fileName} </span> : <span>Drop file or click to open upload menu</span> }
                     </Dropzone>
                     <label>Give a name to the layer</label>
                     <input type="text" onChange={this.layerNameChanged.bind(this) } value={this.state.layerName}/>

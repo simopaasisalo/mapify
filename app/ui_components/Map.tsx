@@ -529,7 +529,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         if (filter.remove)
                             layerData.layer.removeLayer(lyr);
                         else
-                        (lyr as any).setStyle({ opacity: 0.2 })
+                        (lyr as any).setStyle({ fillOpacity: 0.2, opacity: 0.2 })
                     });
                     filter.filteredIndices.push(+val); //mark as filtered
                 }
@@ -539,7 +539,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                             if (filter.remove)
                                 layerData.layer.addLayer(lyr);
                             else
-                        (lyr as any).setStyle({ opacity: 1 });
+                        (lyr as any).setStyle({ fillOpacity: 1, opacity: 1 });
                         }
                     }, this);
                     filter.filteredIndices.splice(filteredIndex, 1);

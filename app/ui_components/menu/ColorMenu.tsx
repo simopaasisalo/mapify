@@ -10,12 +10,35 @@ const _gradientOptions: { value: string }[] =
         { value: 'Reds' },
         { value: 'Blues' },
         { value: 'Greens' },
+        { value: 'BuGn' },
         { value: 'OrRd' },
         { value: 'YlOrRd' },
+        { value: 'YlOrBr' },
         { value: 'RdPu' },
         { value: 'PuRd' },
         { value: 'PuBu' },
+        { value: 'YlGn' },
         { value: 'YlGnBu' },
+        { value: 'PuBuGn' },
+        { value: 'Spectral' },
+        { value: 'RdYlGn' },
+        { value: 'RdYlBu' },
+        { value: 'RdBu' },
+        { value: 'PiYG' },
+        { value: 'PRGn' },
+        { value: 'BrBG' },
+        { value: 'RdGy' },
+        { value: 'Set1' },
+        { value: 'Set2' },
+        { value: 'Set3' },
+        { value: 'Accent' },
+        { value: 'Dark2' },
+        { value: 'Paired' },
+        { value: 'Pastel1' },
+        { value: 'Pastel2' }
+
+
+
     ];
 
 export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates>{

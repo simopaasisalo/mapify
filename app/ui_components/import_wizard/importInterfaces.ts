@@ -62,6 +62,7 @@ interface IFileUploadProps {
 
 /** The React states of the file upload view */
 interface IFileUploadStates {
+    fileName?: string,
     /** The name of the layer to upload */
     layerName?: string,
     /** The file extension of the updated file */
