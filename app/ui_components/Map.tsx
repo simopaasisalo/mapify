@@ -475,7 +475,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         let filterValues: { [index: number]: L.ILayer[] };
         if (info.id !== -1 && !layerUpdate) {
 
-            this.filterLayer(info.id, info.minValue, info.maxValue); //hack-ish way to make sure that all of the layers are displayed after update
+            this.filterLayer(info.id, info.currentMin, info.currentMax); //hack-ish way to make sure that all of the layers are displayed after update
         }
         filterValues = {}
         if (layerData.layerType !== LayerTypes.HeatMap) {
@@ -494,8 +494,10 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 layerDataId: info.layerDataId,
                 filterValues: filterValues,
                 fieldToFilter: info.fieldToFilter,
-                minValue: info.minValue,
-                maxValue: info.maxValue,
+                currentMin: info.currentMin,
+                currentMax: info.currentMax,
+                totalMin: info.totalMin,
+                totalMax: info.totalMax,
                 steps: info.steps,
                 filteredIndices: [],
                 remove: info.remove,
@@ -518,8 +520,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     filterLayer(filterId: number, lowerLimit: any, upperLimit: any) {
         let filter: IFilter = this.state.filters.filter((f) => { return f.id === filterId })[0];
-        filter.minValue = lowerLimit;
-        filter.maxValue = upperLimit;
+        filter.currentMin = lowerLimit;
+        filter.currentMax = upperLimit;
         let layerData: ILayerData = this.state.layers.filter((lyr) => { return lyr.id === filter.layerDataId })[0];
         if (layerData.layerType !== LayerTypes.HeatMap) {
             for (let val in filter.filterValues) {
@@ -528,8 +530,19 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     filter.filterValues[val].map(function(lyr) {
                         if (filter.remove)
                             layerData.layer.removeLayer(lyr);
-                        else
-                        (lyr as any).setStyle({ fillOpacity: 0.2, opacity: 0.2 })
+                        else {
+
+                            if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) { //for divIcons - replace existing with a copy with new opacity
+                                let icon = (lyr as any).options.icon;
+                                let html = icon.options.html.replace('opacity:' + layerData.visOptions.colorOptions.fillOpacity + ';', 'opacity:0.2;');
+
+                                icon.options.html = html;
+                                (lyr as any).setIcon(icon);
+                            }
+                            else {
+                                (lyr as any).setStyle({ fillOpacity: 0.2, opacity: 0.2 })
+                            }
+                        }
                     });
                     filter.filteredIndices.push(+val); //mark as filtered
                 }
@@ -539,7 +552,16 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                             if (filter.remove)
                                 layerData.layer.addLayer(lyr);
                             else
-                        (lyr as any).setStyle({ fillOpacity: 1, opacity: 1 });
+                                if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
+                                    let icon = (lyr as any).options.icon;
+                                    let html = icon.options.html.replace('opacity:0.2;', 'opacity:' + layerData.visOptions.colorOptions.fillOpacity + ';');
+
+                                    icon.options.html = html;
+                                    (lyr as any).setIcon(icon);
+                                }
+                                else {
+                                    (lyr as any).setStyle({ fillOpacity: layerData.visOptions.colorOptions.fillOpacity, opacity: layerData.visOptions.colorOptions.opacity });
+                                }
                         }
                     }, this);
                     filter.filteredIndices.splice(filteredIndex, 1);
@@ -573,7 +595,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             for (let i in filters) {
                 let filter = filters[i];
                 let val = layer.feature.properties[filter.fieldToFilter];
-                canUnFilter = val <= filter.maxValue && val >= filter.minValue;
+                canUnFilter = val <= filter.currentMax && val >= filter.currentMin;
 
             }
             return canUnFilter;
@@ -593,8 +615,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 id = {this.state.filters[key].id}
                 title={this.state.filters[key].title}
                 valueChanged={this.filterLayer.bind(this) }
-                key={key} maxValue={this.state.filters[key].maxValue}
-                minValue={this.state.filters[key].minValue}
+                key={key} maxValue={this.state.filters[key].totalMax}
+                minValue={this.state.filters[key].totalMin}
                 steps={this.state.filters[key].steps}/>)
         }
         return arr;

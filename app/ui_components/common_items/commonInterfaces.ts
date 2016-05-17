@@ -163,9 +163,13 @@ interface IFilter {
     /** Dictionary containing lists of layers by the value being filtered*/
     filterValues?: { [value: number]: L.ILayer[] },
     /** Current maximum value */
-    maxValue?: number,
+    currentMax?: number,
     /** Current min value */
-    minValue?: number,
+    currentMin?: number,
+    /** Original maximum value */
+    totalMax?: number,
+    /** Original min value */
+    totalMin?: number,
     /** User defined steps*/
     steps?: [number, number][],
     /** Whether to remove the filtered layer completely or change opacity*/

@@ -13,6 +13,16 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
             };
 
     }
+    shouldComponentUpdate(nextProps: IOnScreenFilterProps, nextState: IOnScreenFilterStates) {
+        return this.props.title !== nextProps.title ||
+            this.props.minValue !== nextProps.minValue ||
+            this.props.maxValue !== nextProps.maxValue ||
+            this.props.steps !== nextProps.steps ||
+            this.state.lowerLimit !== nextState.lowerLimit ||
+            this.state.upperLimit !== nextState.upperLimit ||
+            this.state.step !== nextState.step ||
+            this.state.lockDistance !== nextState.lockDistance;
+    }
     componentDidUpdate() {
         this.props.valueChanged(this.props.id, this.state.lowerLimit, this.state.upperLimit)
 
