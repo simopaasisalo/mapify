@@ -5,19 +5,29 @@ import {SymbolTypes} from './../common_items/common';
 export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuStates>{
     constructor(props: ISymbolMenuProps) {
         super(props);
-        this.state =
-            {
-                sizeXVar: this.props.prevOptions ? this.props.prevOptions.sizeXVariable : this.props.headers[0].label,
-                sizeYVar: this.props.prevOptions ? this.props.prevOptions.sizeYVariable : this.props.headers[0].label,
 
-                sizeMultiplier: 1,
-                sizeLowLimit: 0,
-                sizeUpLimit: 90,
-                symbolType: SymbolTypes.Circle,
-                iconFA: 'fa-anchor',
-                iconShape: 'circle',
-                chartFields: this.props.headers
-            };
+        this.getPreviousOptions(props.prevOptions, true)
+    }
+    getPreviousOptions(prev: ISymbolOptions, initial: boolean) {
+        let state: ISymbolMenuStates = {
+            sizeXVar: prev ? prev.sizeXVar : '',
+            sizeYVar: prev ? prev.sizeYVar : '',
+            sizeMultiplier: prev.sizeMultiplier ? prev.sizeMultiplier : 1,
+            sizeLowLimit: prev.sizeLowLimit ? prev.sizeMultiplier : 0,
+            sizeUpLimit: prev.sizeUpLimit ? prev.sizeUpLimit : 90,
+            symbolType: prev.symbolType ? prev.symbolType : SymbolTypes.Circle,
+            iconFA: prev.iconFA ? prev.iconFA : 'fa-anchor',
+            iconShape: prev.iconShape ? prev.iconShape : 'circle',
+            chartType: prev.chartType ? prev.chartType : 'pie',
+            chartFields: prev.chartFields !== undefined ? prev.chartFields : this.props.headers
+
+        }
+        initial ? this.state = state : this.setState(state);
+    }
+    componentWillReceiveProps(nextProps: ISymbolMenuProps) {
+
+        this.getPreviousOptions(nextProps.prevOptions, false)
+
     }
     typeChanged(type: SymbolTypes) {
         this.setState({
@@ -25,6 +35,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
         });
     }
     xVariableChanged(val) {
+        console.log(val)
         this.setState({
             sizeXVar: val ? val.value : '',
         });
@@ -61,7 +72,19 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
     iconShapeChanged(shape: 'circle' | 'square' | 'star' | 'penta') {
         this.setState({
             iconShape: shape
-        })
+        });
+    }
+    chartTypeChanged(type: 'pie' | 'donut') {
+        this.setState({
+            chartType: type
+        });
+    }
+    chartFieldsChanged(e: IHeader[]) {
+        if (e === null)
+            e = [];
+        this.setState({
+            chartFields: e,
+        });
     }
     saveOptions() {
         let chartHeads: string[] = [];
@@ -69,15 +92,16 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             chartHeads.push(h.label)
         });
         this.props.saveValues({
-            sizeXVariable: this.state.sizeXVar,
-            sizeYVariable: this.state.sizeYVar,
+            sizeXVar: this.state.sizeXVar,
+            sizeYVar: this.state.sizeYVar,
             sizeMultiplier: this.state.sizeMultiplier,
-            sizeLowerLimit: this.state.sizeLowLimit,
-            sizeUpperLimit: this.state.sizeUpLimit,
+            sizeLowLimit: this.state.sizeLowLimit,
+            sizeUpLimit: this.state.sizeUpLimit,
             symbolType: this.state.symbolType,
             iconFA: this.state.iconFA,
             iconShape: this.state.iconShape,
-            chartFields: chartHeads
+            chartFieldNames: chartHeads,
+            chartType: this.state.chartType,
         });
     }
     getIcons() {
@@ -121,13 +145,6 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             </table>
         );
 
-    }
-    chartFieldsChanged(e: IHeader[]) {
-        if (e === null)
-            e = [];
-        this.setState({
-            chartFields: e,
-        });
     }
     render() {
         return (
@@ -285,6 +302,32 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                                 onChange={this.chartFieldsChanged.bind(this) }
                                 value={this.state.chartFields}
                                 />
+                            Chart type
+                            <br/>
+                            <label forHTML='pie'>
+                                Pie
+                                <input
+                                    type='radio'
+                                    onChange={this.chartTypeChanged.bind(this, 'pie') }
+                                    checked={this.state.chartType === 'pie'}
+                                    name='charttype'
+                                    id='rect'
+                                    />
+                                <br/>
+
+                            </label>
+                            <label forHTML='donut'>
+                                Donut
+                                <input
+                                    type='radio'
+                                    onChange={this.chartTypeChanged.bind(this, 'donut') }
+                                    checked={this.state.chartType === 'donut'}
+                                    name='charttype'
+                                    id='donut'
+                                    />
+                                <br/>
+
+                            </label>
                             <i>TIP: hover over symbol segments to see corresponding value</i>
                         </div>
 

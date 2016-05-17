@@ -41,8 +41,8 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
     createScaledSizeLegend(options: IVisualizationOptions) {
         let symbolType = options.symbolOptions.symbolType;
         let opt = options.symbolOptions;
-        let xVar = opt.sizeXVariable;
-        let yVar = opt.sizeYVariable;
+        let xVar = opt.sizeXVar;
+        let yVar = opt.sizeYVar;
         let square = xVar && yVar && xVar === yVar;
 
         if (symbolType === SymbolTypes.Circle) {
@@ -100,7 +100,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             }
 
             return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
-                {y ? options.symbolOptions.sizeYVariable : options.symbolOptions.sizeXVariable}
+                {y ? options.symbolOptions.sizeYVar : options.symbolOptions.sizeXVar}
                 <div>
                     {divs.map(function(d) { return d }) }
                 </div>
@@ -146,7 +146,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             }
 
             return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
-                {options.symbolOptions.sizeXVariable}
+                {options.symbolOptions.sizeXVar}
                 <div>
                     {divs.map(function(d) { return d }) }
                 </div>
@@ -191,7 +191,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         if (options.symbolOptions.symbolType === SymbolTypes.Chart) {
             chartLegend = this.createChartSymbolLegend(options.symbolOptions);
         }
-        if (options.symbolOptions.sizeXVariable || options.symbolOptions.sizeYVariable) {
+        if (options.symbolOptions.sizeXVar || options.symbolOptions.sizeYVar) {
             scaledLegend = this.createScaledSizeLegend(options);
         }
         if (!choroLegend && !scaledLegend) {

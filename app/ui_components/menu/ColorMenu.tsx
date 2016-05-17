@@ -15,7 +15,6 @@ const _gradientOptions: { value: string }[] =
         { value: 'YlOrRd' },
         { value: 'YlOrBr' },
         { value: 'RdPu' },
-        { value: 'PuRd' },
         { value: 'PuBu' },
         { value: 'YlGn' },
         { value: 'YlGnBu' },
@@ -27,15 +26,15 @@ const _gradientOptions: { value: string }[] =
         { value: 'PiYG' },
         { value: 'PRGn' },
         { value: 'BrBG' },
-        { value: 'RdGy' },
-        { value: 'Set1' },
+        //{ value: 'RdGy' },
+        //{ value: 'Set1' },
         { value: 'Set2' },
-        { value: 'Set3' },
-        { value: 'Accent' },
+        //{ value: 'Set3' },
+        //{ value: 'Accent' },
         { value: 'Dark2' },
         { value: 'Paired' },
-        { value: 'Pastel1' },
-        { value: 'Pastel2' }
+        //{ value: 'Pastel1' },
+        //{ value: 'Pastel2' }
 
 
 
@@ -44,20 +43,25 @@ const _gradientOptions: { value: string }[] =
 export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates>{
     constructor(props: IColorMenuProps) {
         super(props);
-        let prev = this.props.prevOptions;
-        this.state =
-            {
-                colorSelectOpen: false,
-                baseColor: '#E0E62D',
-                borderColor: '#000',
-                opacity: 0.8,
-                colorScaleFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
-                colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
-                useMultipleColors: this.props.isChoropleth,
-                revertColorScheme: false,
-                steps: 7,
-                mode: 'q',
-            };
+        this.getPreviousOptions(props.prevOptions, true)
+    }
+    getPreviousOptions(prev: IColorOptions, initial: boolean) {
+        let state = {
+            baseColor: prev.fillColor ? prev.fillColor : '#E0E62D',
+            borderColor: prev.color ? prev.color : '#000',
+            opacity: prev.opacity ? prev.opacity : 0.8,
+            colorScaleFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
+            colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
+            useMultipleColors: (prev.choroplethFieldName || this.props.isChoropleth) ? true : false,
+            revertColorScheme: prev.revert ? prev.revert : false,
+            steps: prev.steps ? prev.steps : 7,
+            mode: prev.mode ? prev.mode : 'q',
+        };
+        initial ? this.state = state : this.setState(state)
+    }
+    componentWillReceiveProps(nextProps: IColorMenuProps) {
+        this.getPreviousOptions(nextProps.prevOptions, false);
+
     }
     shouldComponentUpdate(nextProps: IColorMenuProps, nextState: IColorMenuStates) {
         return nextProps.isVisible !== this.props.isVisible ||
@@ -73,6 +77,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             nextState.steps !== this.state.steps ||
             nextState.mode !== this.state.mode;
     }
+
     colorSelect(color) {
         this.setState({
             startColor: '#' + color.hex,

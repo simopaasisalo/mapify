@@ -99,23 +99,7 @@ interface IColorOptions extends L.PathOptions {
     revert: boolean,
 }
 /** Symbol specific options - size, icon etc. */
-interface ISymbolOptions {
-    symbolType: SymbolTypes,
-
-    /** The font-awesome tag. Used if symbolType == Icon*/
-    iconFA?: string,
-    /** The Extra-Markers- shape Used if symbolType == Icon*/
-    iconShape?: 'circle' | 'square' | 'star' | 'penta',
-    /** If symbol is of scalable type, the variable by which to scale the symbol width */
-    sizeXVariable?: string,
-    /** If symbol is of scalable type, the variable by which to scale the symbol height */
-    sizeYVariable?: string,
-    /** If symbol is of scalable type, the minimum size that will be rendered */
-    sizeLowerLimit?: number,
-    /** If symbol is of scalable type, the maximum size that will be rendered */
-    sizeUpperLimit?: number,
-    /** If symbol is of scalable type, the value by which to multiply the value to get the final size of the symbol */
-    sizeMultiplier?: number,
+interface ISymbolOptions extends ISymbolMenuStates {
     /** If symbol is of scalable type, the minimum of all the x-values being calculated. Is used in the legend */
     actualMinXValue?: number,
     /** If symbol is of scalable type, the minimum of all the y-values being calculated. Is used in the legend */
@@ -132,8 +116,10 @@ interface ISymbolOptions {
     actualMaxX?: number,
     /** If symbol is of scalable type, the maximum of all the y being calculated. Is used in the legend */
     actualMaxY?: number,
-    /** The fields which to draw on a chart*/
-    chartFields?: string[]
+    /** The string array version of the chart field headers*/
+    chartFieldNames?: string[],
+
+
 }
 /** The React properties of the filters shown on the map */
 interface IOnScreenFilterProps {

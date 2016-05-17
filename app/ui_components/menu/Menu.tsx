@@ -15,7 +15,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     componentWillMount() {
         this.state = {
             visibleOptions: 0,
-            activeLayer: this.props.layers ? this.props.layers[0] : null,
+            activeLayer: this.props.layers ? this.props.layers[this.props.layers.length - 1] : null,
         };
     }
     componentWillReceiveProps(nextProps: IMenuProps) {
@@ -64,6 +64,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     }
     addNewLayer() {
         this.setState({
+            activeLayer: null,
             visibleOptions: 0,
 
         });
@@ -99,6 +100,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
 
     addFilterToMap(info: IFilter) {
         return this.props.saveFilter(info);
+    }
+
+    deleteFilter(id: number) {
+        this.props.deleteFilter(id);
     }
 
     legendStatusChanged(info: ILegend) {
@@ -205,6 +210,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                         filters={this.props.filters}
                         layer = {this.state.activeLayer}
                         addFilterToMap = {this.addFilterToMap.bind(this) }
+                        deleteFilter={this.deleteFilter.bind(this) }
                         isVisible = {this.state.activeLayer && this.state.visibleOptions === 4}/>
                 </Menu.Item>
                 <Menu.Item>

@@ -14,6 +14,8 @@ interface IMenuProps {
     deleteLayer: (id: number) => void,
     /** Create a new filter or replace an existing one. Returns id*/
     saveFilter: (info: IFilter) => number,
+    /** Remove a filter from the map */
+    deleteFilter: (id: number) => void,
     /** Update the map legend*/
     legendStatusChanged: (info: ILegend) => void,
     /** Should the menu be rendered*/
@@ -115,6 +117,8 @@ interface ISymbolMenuStates {
     sizeMultiplier?: number,
     /** Currently selected chart fields*/
     chartFields?: IHeader[],
+    /** The type of chart to draw*/
+    chartType?: 'pie' | 'donut',
 }
 
 /** The React properties of the layer menu*/
@@ -143,7 +147,7 @@ interface IFilterMenuProps {
     /** adds the filter control to the map. Is triggered by button press. Returns the id of the created filter */
     addFilterToMap: (info: IFilter) => number,
     /** Removes filter by specified id from the map */
-    removeFilterFromMap?: (id: number) => void,
+    deleteFilter: (id: number) => void,
     /** Should the menu be displayed */
     isVisible: boolean,
     /** The currently selected layer from the Menu*/

@@ -42,11 +42,9 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         colorOptions: this.defaultColorOptions,
         symbolOptions: { symbolType: SymbolTypes.Circle },
         onEachFeature: this.addPopupsToLayer,
-        pointToLayer: (function(feature, latlng: L.LatLng) {
+        pointToLayer: function(feature, latlng: L.LatLng) {
             return L.circleMarker(latlng, this.defaultColorOptions)
-        }),
-
-
+        }.bind(this),
     }
     constructor() {
         super();
@@ -97,7 +95,9 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     layerImportSubmit(layerData: ILayerData) {
         let layer;
-        layerData.visOptions = this.defaultVisOptions;
+        layerData.visOptions = JSON.parse(JSON.stringify(this.defaultVisOptions));
+        layerData.visOptions.onEachFeature = this.defaultVisOptions.onEachFeature;
+        layerData.visOptions.pointToLayer = this.defaultVisOptions.pointToLayer;
         layerData.id = _currentLayerId;
         _currentLayerId++;
         if (layerData.layerType === LayerTypes.ChoroplethMap) {
@@ -107,10 +107,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             layer = this.createHeatLayer(layerData);
         }
         else {
-            layer = L.geoJson(layerData.geoJSON, {
-                pointToLayer: layerData.visOptions.pointToLayer.bind(this),
-                onEachFeature: layerData.visOptions.onEachFeature.bind(this),
-            });
+            layer = L.geoJson(layerData.geoJSON, layerData.visOptions);
         }
         layerData.layer = layer;
         layer.addTo(_map);
@@ -155,42 +152,42 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     refreshLayer(layerData: ILayerData) {
         if (layerData) {
             let filter = this.state.filters.filter((f) => { return f.layerDataId === layerData.id })[0];
-
+            let col = layerData.visOptions.colorOptions;
+            let sym = layerData.visOptions.symbolOptions;
             _map.removeLayer(layerData.layer);
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
-                    if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
+                    if (sym.symbolType === SymbolTypes.Icon) {
                         let customIcon = L.ExtraMarkers.icon({
-                            icon: layerData.visOptions.symbolOptions.iconFA,
+                            icon: sym.iconFA,
                             prefix: 'fa',
-                            markerColor: layerData.visOptions.colorOptions.fillColor,
+                            markerColor: col.fillColor,
                             svg: true,
-                            shape: layerData.visOptions.symbolOptions.iconShape,
+                            shape: sym.iconShape,
                         });
                         return L.marker(latlng, { icon: customIcon });
                     }
-                    else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
-                        let vis = layerData.visOptions.colorOptions;
-                        let sym = layerData.visOptions.symbolOptions;
-                        let fillColor = vis.fillColor ? vis.fillColor : this.getChoroplethColor(vis.limits, vis.colors, feature.properties[vis.choroplethFieldName]);
-                        let borderColor = vis.color;
-                        let x: number = sym.sizeXVariable ? GetSymbolSize(feature.properties[sym.sizeXVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
-                        let y: number = sym.sizeYVariable ? GetSymbolSize(feature.properties[sym.sizeYVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
-                        let html = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + vis.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
+                    else if (sym.symbolType === SymbolTypes.Rectangle) {
+
+                        let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethFieldName]);
+                        let borderColor = col.color;
+                        let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+                        let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+                        let html = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
                         let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
                         return L.marker(latlng, { icon: rectMarker });
                     }
-                    else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Chart) {
-                        let sym = layerData.visOptions.symbolOptions;
+                    else if (sym.symbolType === SymbolTypes.Chart) {
                         let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
                         let vals = [];
                         let i = 0;
-                        sym.chartFields.map(function(e) {
+                        sym.chartFieldNames.map(function(e) {
                             vals.push({ feat: e, val: feature.properties[e], color: colors[i] });
                             i++;
                         });
 
                         let html = makePieChart({
+                            fullCircle: sym.chartType === 'pie',
                             data: vals,
                             valueFunc: function(d) { return d.val; },
                             strokeWidth: 1,
@@ -208,7 +205,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 });
             }
             let layer;
-            if (layerData.layerType === LayerTypes.ChoroplethMap || layerData.visOptions.colorOptions.choroplethFieldName !== '') {
+            if (layerData.layerType === LayerTypes.ChoroplethMap || col.choroplethFieldName !== '') {
                 layer = this.createChoroplethLayer(layerData);
             }
             else if (layerData.layerType === LayerTypes.SymbolMap) {
@@ -224,7 +221,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (layerData.layerType === LayerTypes.SymbolMap) {
                 let opt = layerData.visOptions.symbolOptions;
                 //if needs to scale and is of scalable type
-                if (opt.sizeXVariable || opt.sizeYVariable && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
+                if (opt.sizeXVar || opt.sizeYVar && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
                     scaleSymbolLayerSize(opt);
                 }
             }
@@ -240,11 +237,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
         function scaleSymbolLayerSize(opt: ISymbolOptions) {
             (layerData.layer as any).eachLayer(function(layer) {
-                let xVal = layer.feature.properties[opt.sizeXVariable];
-                let yVal = layer.feature.properties[opt.sizeYVariable];
+                let xVal = layer.feature.properties[opt.sizeXVar];
+                let yVal = layer.feature.properties[opt.sizeYVar];
                 let r = 10;
-                if (opt.sizeXVariable) {
-                    r = GetSymbolSize(xVal, opt.sizeMultiplier, opt.sizeLowerLimit, opt.sizeUpperLimit);
+                if (opt.sizeXVar) {
+                    r = GetSymbolSize(xVal, opt.sizeMultiplier, opt.sizeLowLimit, opt.sizeUpLimit);
                     if (opt.symbolType === SymbolTypes.Circle) {
                         layer.setRadius(r);
                     }
@@ -268,8 +265,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
                     }
                 }
-                if (opt.sizeYVariable) {
-                    r = GetSymbolSize(yVal, opt.sizeMultiplier, opt.sizeLowerLimit, opt.sizeUpperLimit);
+                if (opt.sizeYVar) {
+                    r = GetSymbolSize(yVal, opt.sizeMultiplier, opt.sizeLowLimit, opt.sizeUpLimit);
                     if (opt.symbolType === SymbolTypes.Circle) {
                         layer.setRadius(r);
                     }
@@ -300,31 +297,30 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (!options.data || !options.valueFunc) {
                 return '';
             }
-            var data = options.data,
+            let data = options.data,
                 valueFunc = options.valueFunc,
                 r = options.outerRadius ? options.outerRadius : 28,
                 rInner = options.innerRadius ? options.innerRadius : r - 10,
                 strokeWidth = options.strokeWidth ? options.strokeWidth : 1,
                 pathTitleFunc = options.pathTitleFunc ? options.pathTitleFunc : function(d) { return d.data.feat + ': ' + d.data.val }, //Title for each path
                 pieLabel = options.pieLabel ? options.pieLabel : '', //Label for the whole pie
-                pieLabelClass = options.pieLabelClass ? options.pieLabelClass : 'marker-cluster-pie-label',//Class for the pie label
                 pathFillFunc = options.pathFillFunc,
 
                 origo = (r + strokeWidth), //Center coordinate
                 w = origo * 2, //width and height of the svg element
                 h = w,
                 donut = d3.layout.pie(),
-                arc = d3.svg.arc().innerRadius(rInner).outerRadius(r);
+                arc = options.fullCircle ? d3.svg.arc().outerRadius(r) : d3.svg.arc().innerRadius(rInner).outerRadius(r);
 
             //Create an svg element
-            var svg = document.createElementNS(d3.ns.prefix.svg, 'svg');
+            let svg = document.createElementNS(d3.ns.prefix.svg, 'svg');
             //Create the pie chart
-            var vis = d3.select(svg)
+            let vis = d3.select(svg)
                 .data([data])
                 .attr('width', w)
                 .attr('height', h);
 
-            var arcs = vis.selectAll('g.arc')
+            let arcs = vis.selectAll('g.arc')
                 .data(donut.value(valueFunc))
                 .enter().append('svg:g')
                 .attr('class', 'arc')
@@ -542,6 +538,20 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     }
 
     /**
+     * deleteFilter - Removes a filter from the map
+     *
+     * @param  id  The id of the layer to delete
+     */
+    deleteFilter(id: number) {
+        let filterToDelete = this.state.filters.filter(function(f) { return f.id === id })[0];
+        this.filterLayer(id, filterToDelete.totalMin, filterToDelete.totalMax); //reset filter
+        let filters = this.state.filters.filter(function(f) { return f.id !== id });
+        this.setState({
+            filters: filters,
+        });
+    }
+
+    /**
      * filterLayer - Remove or show items based on changes on a filter
      *
      * @param  id   The filter to change
@@ -715,6 +725,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
                     saveFilter ={this.saveFilter.bind(this) }
+                    deleteFilter={this.deleteFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     visible={this.state.menuShown}

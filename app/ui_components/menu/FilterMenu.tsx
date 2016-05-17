@@ -164,7 +164,10 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
 
         });
     }
-
+    deleteFilter() {
+        this.props.deleteFilter(this.state.selectedFilterId);
+        this.setState({ selectedFilterId: - 1 })
+    }
     getStepValues() {
         let steps: [number, number][] = [];
         for (let i = 0; i < this.state.customStepCount; i++) {
@@ -269,7 +272,10 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                         </label>
                     </div>
                 }
-                <button className='menuButton' onClick={this.saveFilter.bind(this) }>Create filter</button>
+                <button className='menuButton' onClick={this.saveFilter.bind(this) }>Save filter</button>
+                {filters.length > 0 && this.state.selectedFilterId !== -1 ?
+                    <button className='menuButton' onClick={this.deleteFilter.bind(this) }>Delete filter</button>
+                    : null}
             </div >
     }
 }
