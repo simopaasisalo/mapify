@@ -7,7 +7,9 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
         super(props);
         this.state =
             {
-                sizeVar: this.props.prevOptions ? this.props.prevOptions.sizeVariable : this.props.headers[0].label,
+                sizeXVar: this.props.prevOptions ? this.props.prevOptions.sizeXVariable : this.props.headers[0].label,
+                sizeYVar: this.props.prevOptions ? this.props.prevOptions.sizeYVariable : this.props.headers[0].label,
+
                 sizeMultiplier: 1,
                 sizeLowLimit: 0,
                 sizeUpLimit: 90,
@@ -21,9 +23,15 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             symbolType: type,
         });
     }
-    sizeVariableChanged(val) {
+    xVariableChanged(val) {
         this.setState({
-            sizeVar: val ? val.value : '',
+            sizeXVar: val ? val.value : '',
+        });
+    }
+
+    yVariableChanged(val) {
+        this.setState({
+            sizeYVar: val ? val.value : '',
         });
     }
     sizeMultiplierChanged(e) {
@@ -55,7 +63,8 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             chartHeads.push(h.label)
         });
         this.props.saveValues({
-            sizeVariable: this.state.sizeVar,
+            sizeXVariable: this.state.sizeXVar,
+            sizeYVariable: this.state.sizeYVar,
             sizeMultiplier: this.state.sizeMultiplier,
             sizeLowerLimit: this.state.sizeLowLimit,
             sizeUpperLimit: this.state.sizeUpLimit,
@@ -167,20 +176,28 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
 
                     {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle ?
                         <div>
-                            <label>Select the variable to scale size by</label>
+                            <label>Scale width by</label>
                             <Select
                                 options={this.props.headers}
-                                onChange={this.sizeVariableChanged.bind(this) }
-                                value={this.state.sizeVar}
+                                onChange={this.xVariableChanged.bind(this) }
+                                value={this.state.sizeXVar}
                                 />
-                            {this.state.sizeVar ?
-                                <div><label>Select the size multiplier</label>
+                            {this.state.symbolType === SymbolTypes.Rectangle ? <div>
+                                <label>Scale height by</label>
+                                <Select
+                                    options={this.props.headers}
+                                    onChange={this.yVariableChanged.bind(this) }
+                                    value={this.state.sizeYVar}
+                                    />
+                            </div> : null}
+                            {this.state.sizeXVar || this.state.sizeYVar ?
+                                <div><label>Size multiplier</label>
                                     <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={0.1} max={10} step={0.1}/>
                                     <br/>
-                                    <label>Select the size lower limit</label>
+                                    <label>Size lower limit</label>
                                     <input type="number" value={this.state.sizeLowLimit} onChange={this.sizeLowLimitChanged.bind(this) } min={0}/>
                                     <br/>
-                                    <label>Select the size upper limit</label>
+                                    <label>Size upper limit</label>
                                     <input type="number" value={this.state.sizeUpLimit} onChange={this.sizeUpLimitChanged.bind(this) } min={1}/>
                                 </div>
                                 : null}
@@ -200,12 +217,6 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                                 <input type="text" onChange={this.faIconChanged.bind(this) } value={this.state.iconFA}/>
                             </div>
 
-                            : null
-                    }
-
-                    {
-                        this.state.symbolType === SymbolTypes.Rectangle ?
-                            <div/>
                             : null
                     }
                     {this.state.symbolType === SymbolTypes.Chart ?

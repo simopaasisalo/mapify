@@ -5,7 +5,7 @@ import * as ReactDOM from 'react-dom';
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
-import {LayerTypes, SymbolTypes, GetSymbolRadius} from './common_items/common';
+import {LayerTypes, SymbolTypes, GetSymbolSize} from './common_items/common';
 import {Filter} from './misc/Filter';
 import {Legend} from './misc/Legend';
 import 'leaflet';
@@ -172,8 +172,9 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         let sym = layerData.visOptions.symbolOptions;
                         let fillColor = vis.fillColor ? vis.fillColor : this.getChoroplethColor(vis.limits, vis.colors, feature.properties[vis.choroplethFieldName]);
                         let borderColor = vis.color;
-                        let side: number = sym.sizeVariable ? GetSymbolRadius(feature.properties[sym.sizeVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
-                        let html = '<div style="height: ' + side + 'px; width: ' + side + 'px; opacity:' + vis.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
+                        let x: number = sym.sizeXVariable ? GetSymbolSize(feature.properties[sym.sizeXVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
+                        let y: number = sym.sizeYVariable ? GetSymbolSize(feature.properties[sym.sizeYVariable], sym.sizeMultiplier, sym.sizeLowerLimit, sym.sizeUpperLimit) : 10;
+                        let html = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + vis.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
                         let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
                         return L.marker(latlng, { icon: rectMarker });
                     }
@@ -221,7 +222,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (layerData.layerType === LayerTypes.SymbolMap) {
                 let opt = layerData.visOptions.symbolOptions;
                 //if needs to scale and is of scalable type
-                if (opt.sizeVariable && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
+                if (opt.sizeXVariable || opt.sizeYVariable && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
                     scaleSymbolLayerSize(opt);
                 }
             }
@@ -237,28 +238,55 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
         function scaleSymbolLayerSize(opt: ISymbolOptions) {
             (layerData.layer as any).eachLayer(function(layer) {
-                let val = layer.feature.properties[opt.sizeVariable];
-                let radius = 10;
-                if (opt.sizeVariable) {
-                    radius = GetSymbolRadius(val, opt.sizeMultiplier, opt.sizeLowerLimit, opt.sizeUpperLimit);
+                let xVal = layer.feature.properties[opt.sizeXVariable];
+                let yVal = layer.feature.properties[opt.sizeYVariable];
+                let r = 10;
+                if (opt.sizeXVariable) {
+                    r = GetSymbolSize(xVal, opt.sizeMultiplier, opt.sizeLowerLimit, opt.sizeUpperLimit);
                     if (opt.symbolType === SymbolTypes.Circle) {
-                        layer.setRadius(radius);
+                        layer.setRadius(r);
                     }
-                    //calculate min and max values and -radii
-                    if (!opt.actualMaxValue && !opt.actualMinValue) {
-                        opt.actualMinValue = val;
-                        opt.actualMaxValue = val;
-                        opt.actualMaxRadius = radius;
-                        opt.actualMinRadius = radius;
+                    //calculate min and max values and -size
+                    if (!opt.actualMaxXValue && !opt.actualMinXValue) {
+                        opt.actualMinXValue = xVal;
+                        opt.actualMaxXValue = xVal;
+                        opt.actualMaxX = r;
+                        opt.actualMinX = r;
+
                     }
                     else {
-                        if (val > opt.actualMaxValue) {
-                            opt.actualMaxRadius = radius;
-                            opt.actualMaxValue = val;
+                        if (xVal > opt.actualMaxXValue) {
+                            opt.actualMaxX = r;
+                            opt.actualMaxXValue = xVal;
                         }
-                        if (radius < opt.actualMinRadius) {
-                            opt.actualMinRadius = radius;
-                            opt.actualMinValue = val;
+                        else if (xVal < opt.actualMinXValue) {
+                            opt.actualMinX = r;
+                            opt.actualMinXValue = xVal;
+                        }
+
+                    }
+                }
+                if (opt.sizeYVariable) {
+                    r = GetSymbolSize(yVal, opt.sizeMultiplier, opt.sizeLowerLimit, opt.sizeUpperLimit);
+                    if (opt.symbolType === SymbolTypes.Circle) {
+                        layer.setRadius(r);
+                    }
+                    //calculate min and max values and -size
+                    if (!opt.actualMaxYValue && !opt.actualMinYValue) {
+                        opt.actualMinYValue = yVal;
+                        opt.actualMaxYValue = yVal;
+                        opt.actualMaxY = r;
+                        opt.actualMinY = r;
+
+                    }
+                    else {
+                        if (yVal > opt.actualMaxYValue) {
+                            opt.actualMaxY = r;
+                            opt.actualMaxYValue = yVal;
+                        }
+                        if (yVal < opt.actualMinY) {
+                            opt.actualMinY = r;
+                            opt.actualMinYValue = yVal;
                         }
 
                     }

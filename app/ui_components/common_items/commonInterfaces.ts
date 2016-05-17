@@ -104,22 +104,32 @@ interface ISymbolOptions {
 
     /** The font-awesome tag. used if symbolType == Icon*/
     iconFA?: string,
-    /** If symbol is of scalable type, the variable by which to scale the symbol size */
-    sizeVariable?: string,
+    /** If symbol is of scalable type, the variable by which to scale the symbol width */
+    sizeXVariable?: string,
+    /** If symbol is of scalable type, the variable by which to scale the symbol height */
+    sizeYVariable?: string,
     /** If symbol is of scalable type, the minimum size that will be rendered */
     sizeLowerLimit?: number,
     /** If symbol is of scalable type, the maximum size that will be rendered */
     sizeUpperLimit?: number,
     /** If symbol is of scalable type, the value by which to multiply the value to get the final size of the symbol */
     sizeMultiplier?: number,
-    /** If symbol is of scalable type, the minimum of all the values being calculated. Is used in the legend */
-    actualMinValue?: number,
-    /** If symbol is of scalable type, the minimum of all the radii being calculated. Is used in the legend */
-    actualMinRadius?: number,
-    /** If symbol is of scalable type, the maximum of all the values being calculated. Is used in the legend */
-    actualMaxValue?: number,
-    /** If symbol is of scalable type, the maximum of all the radii being calculated. Is used in the legend */
-    actualMaxRadius?: number,
+    /** If symbol is of scalable type, the minimum of all the x-values being calculated. Is used in the legend */
+    actualMinXValue?: number,
+    /** If symbol is of scalable type, the minimum of all the y-values being calculated. Is used in the legend */
+    actualMinYValue?: number,
+    /** If symbol is of scalable type, the minimum of all the x being calculated. Is used in the legend */
+    actualMinX?: number,
+    /** If symbol is of scalable type, the minimum of all the y being calculated. Is used in the legend */
+    actualMinY?: number,
+    /** If symbol is of scalable type, the maximum of all the x-values being calculated. Is used in the legend */
+    actualMaxXValue?: number,
+    /** If symbol is of scalable type, the maximum of all the y-values being calculated. Is used in the legend */
+    actualMaxYValue?: number,
+    /** If symbol is of scalable type, the maximum of all the x being calculated. Is used in the legend */
+    actualMaxX?: number,
+    /** If symbol is of scalable type, the maximum of all the y being calculated. Is used in the legend */
+    actualMaxY?: number,
     /** The fields which to draw on a chart*/
     chartFields?: string[]
 }

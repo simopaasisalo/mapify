@@ -39,53 +39,119 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
     }
 
     createScaledSizeLegend(options: IVisualizationOptions) {
-
-        let divs = [];
+        let symbolType = options.symbolOptions.symbolType;
         let opt = options.symbolOptions;
-        let classes: number = 5;//options.colorOptions.limits ? options.colorOptions.limits.length : Math.min(Math.round(opt.actualMaxValue - opt.actualMinValue), 5);
-        let radii = [], values = [];
-        for (let i = 0; i < classes - 1; i++) {
-            radii[i] = Math.round(opt.actualMinRadius + i * ((opt.actualMaxRadius - opt.actualMinRadius) / classes));
-            values[i] = (opt.actualMinValue + i * ((opt.actualMaxValue - opt.actualMinValue) / classes)).toFixed(0);
-        }
-        radii.push(opt.actualMaxRadius);
-        values.push(opt.actualMaxValue.toFixed(0));
-        for (let i = 0; i < classes; i++) {
-            let margin = options.symbolOptions.symbolType === SymbolTypes.Circle ? radii[radii.length - 1] - radii[i] + 2 : (radii[radii.length - 1] - radii[i]) / 2 + 2;
-            let l = options.symbolOptions.symbolType === SymbolTypes.Circle ? 2 * radii[i] : radii[i];
-            let style = {
-                width: l,
-                height: l,
-                backgroundColor: options.colorOptions.fillColor,
-                float: this.props.horizontal ? '' : 'left',
-                border: '1px solid gray',
-                borderRadius: options.symbolOptions.symbolType === SymbolTypes.Circle ? '50%' : '',
-                marginLeft: this.props.horizontal ? 2 : margin, //center values
-                marginRight: this.props.horizontal ? 2 : margin, //center values
-                marginTop: this.props.horizontal ? margin : 2,
-                marginBottom: this.props.horizontal ? margin : 2,
-            }
-            let parentDivStyle = {
-                float: this.props.horizontal ? 'left' : '',
-                minHeight: '15px',
-                overflow: this.props.horizontal ? 'none' : 'auto',
-                lineHeight: this.props.horizontal ? '' : Math.max(2 * radii[i] + 4, 15) + 'px',
+        let xVar = opt.sizeXVariable;
+        let yVar = opt.sizeYVariable;
+        let square = xVar && yVar && xVar === yVar;
 
-            }
-            divs.push(
-                <div key={i} style={parentDivStyle}>
-                    <div style={style} />
-                    { values[i]}
+        if (symbolType === SymbolTypes.Circle) {
+            return circleLegend.call(this);
+        }
+        else if (symbolType === SymbolTypes.Rectangle) {
+            if (square)
+                return (<div>
+                    {rectangleLegend.call(this, false) }
                 </div>);
+            else {
+                return (
+                    <div>
+                        { xVar ? rectangleLegend.call(this, false) : null }
+                        {yVar ? rectangleLegend.call(this, true) : null }
+                    </div>);
+            }
         }
 
-        return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
-            {options.symbolOptions.sizeVariable}
-            <div>
-                {divs.map(function(d) { return d }) }
-            </div>
-        </div>;
+        function rectangleLegend(y: boolean) {
+            let divs = [], sides = [], values = [];
+            let classes: number = 5;
+            for (let i = 0; i < classes - 1; i++) {
+                sides[i] = y ? Math.round(opt.actualMinY + i * ((opt.actualMaxY - opt.actualMinY) / classes)) : Math.round(opt.actualMinX + i * ((opt.actualMaxX - opt.actualMinX) / classes));
+                values[i] = y ? (opt.actualMinYValue + i * ((opt.actualMaxYValue - opt.actualMinYValue) / classes)).toFixed(0) : (opt.actualMinXValue + i * ((opt.actualMaxXValue - opt.actualMinXValue) / classes)).toFixed(0);
+            }
+            sides.push(y ? opt.actualMaxY : opt.actualMaxX);
+            values.push(y ? opt.actualMaxYValue.toFixed(0) : opt.actualMaxXValue.toFixed(0));
+            let textWidth = values[values.length - 1].length;
 
+            for (let i = 0; i < classes; i++) {
+                let margin = (sides[sides.length - 1] - sides[i]) / 2;
+                let l = sides[i];
+                let style = {
+                    width: square ? l : y ? 10 : l,
+                    height: square ? l : y ? l : 10,
+                    backgroundColor: options.colorOptions.fillColor,
+                    display: this.props.horizontal ? '' : 'inline-block',
+                    border: '1px solid gray',
+                    marginLeft: this.props.horizontal || y ? 'auto' : margin, //center values
+                    marginRight: this.props.horizontal || y ? 'auto' : margin, //center values
+                    marginTop: this.props.horizontal && y ? margin : 'auto',
+                    marginBottom: this.props.horizontal && y ? margin : 'auto',
+                }
+
+                let parentDivStyle = {
+                    float: this.props.horizontal ? 'left' : '',
+                    marginRight: this.props.horizontal ? 5 : 0,
+                }
+                divs.push(
+                    <div key={i} style={parentDivStyle}>
+                        <div style={style} />
+                        <span style={{ display: 'inline-block', width: this.props.horizontal ? '' : textWidth * 10 }}>{ values[i]}</span>
+                    </div >);
+            }
+
+            return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
+                {y ? options.symbolOptions.sizeYVariable : options.symbolOptions.sizeXVariable}
+                <div>
+                    {divs.map(function(d) { return d }) }
+                </div>
+            </div>;
+        }
+
+        function circleLegend() {
+            let divs = [], radii = [], values = [];
+            let classes: number = 5;
+            for (let i = 0; i < classes - 1; i++) {
+                radii[i] = Math.round(opt.actualMinX + i * ((opt.actualMaxX - opt.actualMinX) / classes));
+                values[i] = (opt.actualMinXValue + i * ((opt.actualMaxXValue - opt.actualMinXValue) / classes)).toFixed(0);
+            }
+            radii.push(opt.actualMaxX);
+            values.push(opt.actualMaxXValue.toFixed(0));
+            for (let i = 0; i < classes; i++) {
+                let margin = radii[radii.length - 1] - radii[i] + 2;
+                let l = 2 * radii[i];
+                let style = {
+                    width: l,
+                    height: l,
+                    backgroundColor: options.colorOptions.fillColor,
+                    float: this.props.horizontal ? '' : 'left',
+                    border: '1px solid gray',
+                    borderRadius: '50%',
+                    marginLeft: this.props.horizontal ? 2 : margin, //center values
+                    marginRight: this.props.horizontal ? 2 : margin, //center values
+                    marginTop: this.props.horizontal ? margin : 2,
+                    marginBottom: this.props.horizontal ? margin : 2,
+                }
+                let parentDivStyle = {
+                    float: this.props.horizontal ? 'left' : '',
+                    minHeight: '15px',
+                    overflow: this.props.horizontal ? 'none' : 'auto',
+                    lineHeight: this.props.horizontal ? '' : Math.max(2 * radii[i] + 4, 15) + 'px',
+
+                }
+                divs.push(
+                    <div key={i} style={parentDivStyle}>
+                        <div style={style} />
+                        <span style={{ marginRight: this.props.horizontal ? 15 : '' }}>{ values[i]}</span>
+                    </div>);
+            }
+
+            return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
+                {options.symbolOptions.sizeXVariable}
+                <div>
+                    {divs.map(function(d) { return d }) }
+                </div>
+            </div>;
+        }
 
     }
 
@@ -125,7 +191,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         if (options.symbolOptions.symbolType === SymbolTypes.Chart) {
             chartLegend = this.createChartSymbolLegend(options.symbolOptions);
         }
-        if (options.symbolOptions.sizeVariable) {
+        if (options.symbolOptions.sizeXVariable || options.symbolOptions.sizeYVariable) {
             scaledLegend = this.createScaledSizeLegend(options);
         }
         if (!choroLegend && !scaledLegend) {
