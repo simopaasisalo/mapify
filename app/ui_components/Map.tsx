@@ -9,7 +9,7 @@ import {LayerTypes, SymbolTypes, GetSymbolSize} from './common_items/common';
 import {Filter} from './misc/Filter';
 import {Legend} from './misc/Legend';
 import 'leaflet';
-import 'drmonty-leaflet-awesome-markers';
+import 'Leaflet.extra-markers';
 let Modal = require('react-modal');
 let d3 = require('d3');
 
@@ -160,11 +160,13 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
                     if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon) {
-                        let customIcon = L.AwesomeMarkers.icon({
+                        let customIcon = L.ExtraMarkers.icon({
                             icon: layerData.visOptions.symbolOptions.iconFA,
                             prefix: 'fa',
-                            markerColor: 'blue'
-                        })
+                            markerColor: layerData.visOptions.colorOptions.fillColor,
+                            svg: true,
+                            shape: layerData.visOptions.symbolOptions.iconShape,
+                        });
                         return L.marker(latlng, { icon: customIcon });
                     }
                     else if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {

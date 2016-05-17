@@ -102,8 +102,10 @@ interface IColorOptions extends L.PathOptions {
 interface ISymbolOptions {
     symbolType: SymbolTypes,
 
-    /** The font-awesome tag. used if symbolType == Icon*/
+    /** The font-awesome tag. Used if symbolType == Icon*/
     iconFA?: string,
+    /** The Extra-Markers- shape Used if symbolType == Icon*/
+    iconShape?: 'circle' | 'square' | 'star' | 'penta',
     /** If symbol is of scalable type, the variable by which to scale the symbol width */
     sizeXVariable?: string,
     /** If symbol is of scalable type, the variable by which to scale the symbol height */

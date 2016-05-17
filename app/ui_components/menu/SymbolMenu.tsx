@@ -15,6 +15,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                 sizeUpLimit: 90,
                 symbolType: SymbolTypes.Circle,
                 iconFA: 'fa-anchor',
+                iconShape: 'circle',
                 chartFields: this.props.headers
             };
     }
@@ -57,6 +58,11 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             iconFA: icon,
         });
     }
+    iconShapeChanged(shape: 'circle' | 'square' | 'star' | 'penta') {
+        this.setState({
+            iconShape: shape
+        })
+    }
     saveOptions() {
         let chartHeads: string[] = [];
         this.state.chartFields.map(function(h) {
@@ -70,6 +76,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             sizeUpperLimit: this.state.sizeUpLimit,
             symbolType: this.state.symbolType,
             iconFA: this.state.iconFA,
+            iconShape: this.state.iconShape,
             chartFields: chartHeads
         });
     }
@@ -209,12 +216,62 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                     {
                         this.state.symbolType === SymbolTypes.Icon ?
                             <div>
-                                Select an icon
+
+                                Icon
                                 {this.getIcons.call(this) }
                                 Or
                                 <br/>
                                 <label>Use another <a href='http://fontawesome.io/icons/'>Font Awesome</a> icon</label>
                                 <input type="text" onChange={this.faIconChanged.bind(this) } value={this.state.iconFA}/>
+                                <br/>
+                                Icon shape
+                                <div>
+                                    <label forHTML='circle'>
+                                        Circle
+                                        <input
+                                            type='radio'
+                                            onChange={this.iconShapeChanged.bind(this, 'circle') }
+                                            checked={this.state.iconShape === 'circle'}
+                                            name='iconShape'
+                                            id='circle'
+                                            />
+                                        <br/>
+                                    </label>
+                                    <label forHTML='square'>
+                                        Square
+                                        <input
+                                            type='radio'
+                                            onChange={this.iconShapeChanged.bind(this, 'square') }
+                                            checked={this.state.iconShape === 'square'}
+                                            name='iconShape'
+                                            id='square'
+                                            />
+                                        <br/>
+                                    </label>
+                                    <label forHTML='star'>
+                                        Star
+                                        <input
+                                            type='radio'
+                                            onChange={this.iconShapeChanged.bind(this, 'star') }
+                                            checked={this.state.iconShape === 'star'}
+                                            name='iconShape'
+                                            id='star'
+                                            />
+                                        <br/>
+                                    </label>
+                                    <label forHTML='penta'>
+                                        Penta
+                                        <input
+                                            type='radio'
+                                            onChange={this.iconShapeChanged.bind(this, 'penta') }
+                                            checked={this.state.iconShape === 'penta'}
+                                            name='iconShape'
+                                            id='penta'
+                                            />
+                                        <br/>
+                                    </label>
+
+                                </div>
                             </div>
 
                             : null
@@ -231,7 +288,8 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             <i>TIP: hover over symbol segments to see corresponding value</i>
                         </div>
 
-                        : null}
+                        : null
+                    }
                     <button className='menuButton' onClick={this.saveOptions.bind(this) }>Refresh map</button>
                 </div >
         );

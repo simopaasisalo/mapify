@@ -101,6 +101,8 @@ interface ISymbolMenuStates {
     symbolType?: SymbolTypes,
     /** If creating Icon symbols, the font-awesome class name to display*/
     iconFA?: string,
+    /** The Extra-Markers- shape. Used if symbolType == Icon*/
+    iconShape?: 'circle' | 'square' | 'star' | 'penta',
     /** The name of the field to scale size x-axis by*/
     sizeXVar?: string,
     /** The name of the field to scale size y-axis by*/
