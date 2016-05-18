@@ -55,8 +55,7 @@ h2,h3{
   border: 2px solid gray;
   overflow-x: hidden;
   overflow-y: auto;
-  max-height: 300;
-  width: 300;
+  max-height: 600;
 }
 
 .primaryButton {
@@ -116,4 +115,13 @@ h2,h3{
 	text-align:center;
 }.menuButton:hover {
 	background-color:#293c60;
+}
+
+.colorBlock{
+  cursor: pointer;
+  width: 100px;
+  height: 70px;
+  border-radius: 15px;
+  text-align: center;
+  line-height: 35px;
 }

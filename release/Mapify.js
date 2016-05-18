@@ -87,6 +87,7 @@
 	            steps: 7,
 	            mode: 'q',
 	            revert: false,
+	            iconTextColor: '#FFF',
 	        };
 	        this.defaultVisOptions = {
 	            colorOptions: this.defaultColorOptions,
@@ -183,7 +184,10 @@
 	                            prefix: 'fa',
 	                            markerColor: col_1.fillColor,
 	                            svg: true,
+	                            svgBorderColor: col_1.color,
+	                            svgOpacity: col_1.fillOpacity,
 	                            shape: sym_1.iconShape,
+	                            iconColor: col_1.iconTextColor,
 	                        });
 	                        return L.marker(latlng, { icon: customIcon });
 	                    }
@@ -25957,7 +25961,7 @@
 	                this.state.activeLayer && this.state.activeLayer.layerType !== common_1.LayerTypes.HeatMap ?
 	                    React.createElement(Menu.Item, null, 
 	                        React.createElement("p", {className: "menuHeader fa fa-paint-brush", onClick: this.changeActiveMenu.bind(this, 2), style: { backgroundColor: this.state.visibleOptions === 2 ? '#1a263f' : '#293c60' }}, " Colors "), 
-	                        React.createElement(ColorMenu_1.ColorMenu, {headers: this.state.activeLayer ? this.state.activeLayer.headers.filter(function (val) { return val.type === 'number'; }) : [], saveValues: this.refreshColorOptions.bind(this), isVisible: this.state.visibleOptions === 2, prevOptions: this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null, isChoropleth: this.state.activeLayer ? this.state.activeLayer.layerType === common_1.LayerTypes.ChoroplethMap : false}))
+	                        React.createElement(ColorMenu_1.ColorMenu, {headers: this.state.activeLayer ? this.state.activeLayer.headers.filter(function (val) { return val.type === 'number'; }) : [], saveValues: this.refreshColorOptions.bind(this), isVisible: this.state.visibleOptions === 2, prevOptions: this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null, isChoropleth: this.state.activeLayer ? this.state.activeLayer.layerType === common_1.LayerTypes.ChoroplethMap : false, isIconSymbol: this.state.activeLayer ? this.state.activeLayer.layerType === common_1.LayerTypes.SymbolMap && this.state.activeLayer.visOptions.symbolOptions.symbolType === common_1.SymbolTypes.Icon : false}))
 	                    : React.createElement("div", null), 
 	                this.state.activeLayer && this.state.activeLayer.layerType !== common_1.LayerTypes.ChoroplethMap && this.state.activeLayer.layerType !== common_1.LayerTypes.HeatMap ?
 	                    React.createElement(Menu.Item, null, 
@@ -27550,7 +27554,8 @@
 	    }
 	    ColorMenu.prototype.getPreviousOptions = function (prev, initial) {
 	        var state = {
-	            baseColor: prev.fillColor ? prev.fillColor : '#E0E62D',
+	            fillColor: prev.fillColor ? prev.fillColor : '#E0E62D',
+	            iconTextColor: prev.iconTextColor ? prev.iconTextColor : '#FFF',
 	            borderColor: prev.color ? prev.color : '#000',
 	            opacity: prev.opacity ? prev.opacity : 0.8,
 	            colorScaleFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
@@ -27571,8 +27576,9 @@
 	            nextState.colorScaleFieldName !== this.state.colorScaleFieldName ||
 	            nextState.colorScheme !== this.state.colorScheme ||
 	            nextState.opacity !== this.state.opacity ||
-	            nextState.baseColor !== this.state.baseColor ||
+	            nextState.fillColor !== this.state.fillColor ||
 	            nextState.borderColor !== this.state.borderColor ||
+	            nextState.iconTextColor !== this.state.iconTextColor ||
 	            nextState.colorSelectOpen !== this.state.colorSelectOpen ||
 	            nextState.useMultipleColors !== this.state.useMultipleColors ||
 	            nextState.revertColorScheme !== this.state.revertColorScheme ||
@@ -27582,8 +27588,9 @@
 	    ColorMenu.prototype.colorSelect = function (color) {
 	        this.setState({
 	            startColor: '#' + color.hex,
-	            baseColor: this.state.editing === 'baseColor' ? '#' + color.hex : this.state.baseColor,
+	            fillColor: this.state.editing === 'fillColor' ? '#' + color.hex : this.state.fillColor,
 	            borderColor: this.state.editing === 'borderColor' ? '#' + color.hex : this.state.borderColor,
+	            iconTextColor: this.state.editing === 'iconTextColor' ? '#' + color.hex : this.state.iconTextColor,
 	        });
 	    };
 	    ColorMenu.prototype.choroVariableChanged = function (e) {
@@ -27626,11 +27633,14 @@
 	    ColorMenu.prototype.toggleColorPick = function (property) {
 	        var startColor;
 	        switch (property) {
-	            case ('baseColor'):
-	                startColor = this.state.baseColor;
+	            case ('fillColor'):
+	                startColor = this.state.fillColor;
 	                break;
 	            case ('borderColor'):
 	                startColor = this.state.borderColor;
+	                break;
+	            case ('iconTextColor'):
+	                startColor = this.state.iconTextColor;
 	                break;
 	        }
 	        this.setState({
@@ -27650,31 +27660,24 @@
 	            mode: this.state.mode,
 	            fillOpacity: this.state.opacity,
 	            opacity: this.state.opacity,
-	            fillColor: this.state.useMultipleColors ? '' : this.state.baseColor,
+	            fillColor: this.state.useMultipleColors ? '' : this.state.fillColor,
+	            iconTextColor: this.state.iconTextColor,
 	            color: this.state.borderColor,
 	            revert: this.state.revertColorScheme,
 	        });
 	    };
 	    ColorMenu.prototype.render = function () {
-	        var currentColorBlockStyle = {
-	            cursor: 'pointer',
-	            width: 100,
-	            height: 70,
-	            borderRadius: 15,
-	            textAlign: 'center',
-	            lineHeight: '70px',
-	            background: this.state.baseColor,
-	            color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.baseColor.substr(1), 16)).toString(16))).slice(-6)
+	        var fillColorBlockStyle = {
+	            background: this.state.fillColor,
+	            color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.fillColor.substr(1), 16)).toString(16))).slice(-6)
 	        };
 	        var borderColorBlockStyle = {
-	            cursor: 'pointer',
-	            width: 100,
-	            height: 70,
-	            borderRadius: 15,
-	            textAlign: 'center',
-	            lineHeight: '70px',
 	            background: this.state.borderColor,
 	            color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.borderColor.substr(1), 16)).toString(16))).slice(-6)
+	        };
+	        var iconTextColorBlockStyle = {
+	            background: this.state.iconTextColor,
+	            color: '#' + ('000000' + ((0xffffff ^ parseInt(this.state.iconTextColor.substr(1), 16)).toString(16))).slice(-6)
 	        };
 	        var colorSelectStyle = {
 	            overlay: {
@@ -27701,15 +27704,18 @@
 	        };
 	        return (!this.props.isVisible ? null :
 	            React.createElement("div", {className: "mapify-options"}, 
-	                this.props.isChoropleth ? null :
+	                this.props.isChoropleth || this.props.isIconSymbol ? null :
 	                    React.createElement("div", null, 
 	                        React.createElement("label", {htmlFor: 'multipleSelect'}, "Use multiple colors"), 
 	                        React.createElement("input", {id: 'multipleSelect', type: 'checkbox', onChange: this.multipleColorsChanged.bind(this), checked: this.state.useMultipleColors})), 
 	                React.createElement("div", {style: { display: 'flex', flexDirection: 'row' }}, 
 	                    this.state.useMultipleColors ?
 	                        null :
-	                        React.createElement("div", {style: currentColorBlockStyle, onClick: this.toggleColorPick.bind(this, 'baseColor')}, "Base color"), 
-	                    React.createElement("div", {style: borderColorBlockStyle, onClick: this.toggleColorPick.bind(this, 'borderColor')}, "Border color")), 
+	                        React.createElement("div", {className: 'colorBlock', style: fillColorBlockStyle, onClick: this.toggleColorPick.bind(this, 'fillColor')}, "Fill color"), 
+	                    React.createElement("div", {className: 'colorBlock', style: borderColorBlockStyle, onClick: this.toggleColorPick.bind(this, 'borderColor')}, "Border color"), 
+	                    this.props.isIconSymbol ?
+	                        React.createElement("div", {className: 'colorBlock', style: iconTextColorBlockStyle, onClick: this.toggleColorPick.bind(this, 'iconTextColor')}, "Icon text color")
+	                        : null), 
 	                React.createElement("label", null, "Opacity"), 
 	                React.createElement("input", {type: 'number', max: 1, min: 0, step: 0.1, onChange: this.opacityChanged.bind(this), value: this.state.opacity}), 
 	                React.createElement(Modal, {isOpen: this.state.colorSelectOpen, style: colorSelectStyle}, 
@@ -53361,23 +53367,39 @@
 	                        React.createElement("input", {type: "text", onChange: this.faIconChanged.bind(this), value: this.state.iconFA}), 
 	                        React.createElement("br", null), 
 	                        "Icon shape", 
-	                        React.createElement("div", null, 
-	                            React.createElement("label", {forHTML: 'circle'}, 
-	                                "Circle", 
-	                                React.createElement("input", {type: 'radio', onChange: this.iconShapeChanged.bind(this, 'circle'), checked: this.state.iconShape === 'circle', name: 'iconShape', id: 'circle'}), 
-	                                React.createElement("br", null)), 
-	                            React.createElement("label", {forHTML: 'square'}, 
-	                                "Square", 
-	                                React.createElement("input", {type: 'radio', onChange: this.iconShapeChanged.bind(this, 'square'), checked: this.state.iconShape === 'square', name: 'iconShape', id: 'square'}), 
-	                                React.createElement("br", null)), 
-	                            React.createElement("label", {forHTML: 'star'}, 
-	                                "Star", 
-	                                React.createElement("input", {type: 'radio', onChange: this.iconShapeChanged.bind(this, 'star'), checked: this.state.iconShape === 'star', name: 'iconShape', id: 'star'}), 
-	                                React.createElement("br", null)), 
-	                            React.createElement("label", {forHTML: 'penta'}, 
-	                                "Penta", 
-	                                React.createElement("input", {type: 'radio', onChange: this.iconShapeChanged.bind(this, 'penta'), checked: this.state.iconShape === 'penta', name: 'iconShape', id: 'penta'}), 
-	                                React.createElement("br", null))))
+	                        React.createElement("br", null), 
+	                        React.createElement("div", {style: { borderBottom: this.state.iconShape === 'circle' ? '4px solid #999999' : '1px solid #1a263f', display: 'inline-block' }, onClick: this.iconShapeChanged.bind(this, 'circle')}, 
+	                            React.createElement("svg", {viewBox: "0 0 69.529271 95.44922", height: "40", width: "40"}, 
+	                                React.createElement("g", {transform: "translate(-139.52 -173.21)"}, 
+	                                    React.createElement("path", {fill: "#999999", d: "m174.28 173.21c-19.199 0.00035-34.764 15.355-34.764 34.297 0.007 6.7035 1.5591 12.813 5.7461 18.854l0.0234 0.0371 28.979 42.262 28.754-42.107c3.1982-5.8558 5.9163-11.544 6.0275-19.045-0.0001-18.942-15.565-34.298-34.766-34.297z"})
+	                                )
+	                            )
+	                        ), 
+	                        React.createElement("div", {style: { borderBottom: this.state.iconShape === 'square' ? '4px solid #999999' : '1px solid #1a263f', display: 'inline-block' }, onClick: this.iconShapeChanged.bind(this, 'square')}, 
+	                            React.createElement("svg", {viewBox: "0 0 69.457038 96.523441", height: "40", width: "40"}, 
+	                                React.createElement("g", {transform: "translate(-545.27 -658.39)"}, 
+	                                    React.createElement("path", {fill: "#999999", d: "m545.27 658.39v65.301h22.248l12.48 31.223 12.676-31.223h22.053v-65.301h-69.457z"})
+	                                )
+	                            )
+	                        ), 
+	                        React.createElement("div", {style: { borderBottom: this.state.iconShape === 'star' ? '4px solid #999999' : '1px solid #1a263f', display: 'inline-block' }, onClick: this.iconShapeChanged.bind(this, 'star')}, 
+	                            React.createElement("svg", {height: "40", width: "40", viewBox: "0 0 77.690999 101.4702"}, 
+	                                React.createElement("g", {transform: "translate(-101.15 -162.97)"}, 
+	                                    React.createElement("g", {transform: "matrix(1 0 0 1.0165 -65.712 -150.28)"}, 
+	                                        React.createElement("path", {fill: "#999999", d: "m205.97 308.16-11.561 11.561h-16.346v16.346l-11.197 11.197 11.197 11.197v15.83h15.744l11.615 33.693 11.467-33.568 0.125-0.125h16.346v-16.346l11.197-11.197-11.197-11.197v-15.83h-15.83l-11.561-11.561z"})
+	                                    )
+	                                )
+	                            )
+	                        ), 
+	                        React.createElement("div", {style: { borderBottom: this.state.iconShape === 'penta' ? '4px solid #999999' : '1px solid #1a263f', display: 'inline-block' }, onClick: this.iconShapeChanged.bind(this, 'penta')}, 
+	                            React.createElement("svg", {viewBox: "0 0 71.550368 96.362438", height: "40", width: "40"}, 
+	                                React.createElement("g", {transform: "translate(-367.08 -289.9)"}, 
+	                                    React.createElement("path", {fill: "#999999", d: "m367.08 322.5 17.236-32.604h36.151l18.164 32.25-35.665 64.112z"})
+	                                )
+	                            )
+	                        ), 
+	                        React.createElement("br", null), 
+	                        "Change icon colors in the color menu")
 	                    : null, 
 	                this.state.symbolType === common_1.SymbolTypes.Chart ?
 	                    React.createElement("div", null, 
@@ -53748,8 +53770,9 @@
 	    LegendMenu.prototype.render = function () {
 	        return (!this.props.isVisible ? null :
 	            React.createElement("div", {className: "mapify-options"}, 
-	                React.createElement("label", {htmlFor: 'showLegend'}, "Show legend"), 
-	                React.createElement("input", {id: 'showLegend', type: 'checkbox', checked: this.state.visible, onChange: this.showLegendChanged.bind(this)}), 
+	                React.createElement("label", {htmlFor: 'showLegend'}, 
+	                    "Show legend", 
+	                    React.createElement("input", {id: 'showLegend', type: 'checkbox', checked: this.state.visible, onChange: this.showLegendChanged.bind(this)})), 
 	                React.createElement("br", null), 
 	                React.createElement("label", null, "Title"), 
 	                React.createElement("input", {type: 'text', style: { width: '100%' }, value: this.state.title, onChange: this.titleChanged.bind(this)}), 
@@ -53757,8 +53780,9 @@
 	                React.createElement("label", null, "Meta"), 
 	                React.createElement("textarea", {style: { width: '100%', height: 50 }, rows: 5, value: this.state.meta, onChange: this.metaChanged.bind(this)}), 
 	                React.createElement("br", null), 
-	                React.createElement("label", {htmlFor: 'makeHorizontal'}, "Align horizontally"), 
-	                React.createElement("input", {id: 'makeHorizontal', type: 'checkbox', checked: this.state.horizontal, onChange: this.horizontalChanged.bind(this)})));
+	                React.createElement("label", {htmlFor: 'makeHorizontal'}, 
+	                    "Align horizontally", 
+	                    React.createElement("input", {id: 'makeHorizontal', type: 'checkbox', checked: this.state.horizontal, onChange: this.horizontalChanged.bind(this)}))));
 	    };
 	    return LegendMenu;
 	}(React.Component));
@@ -65671,7 +65695,7 @@
 	    };
 	    Legend.prototype.createNormalLegend = function (options) {
 	    };
-	    Legend.prototype.createLegend = function (options) {
+	    Legend.prototype.createLegend = function (options, id) {
 	        var choroLegend, scaledLegend, chartLegend, normalLegend;
 	        if (options.colorOptions.colors) {
 	            choroLegend = this.createChoroplethLegend(options);
@@ -65685,7 +65709,7 @@
 	        if (!choroLegend && !scaledLegend) {
 	            normalLegend = this.createNormalLegend(options);
 	        }
-	        return React.createElement("div", null, 
+	        return React.createElement("div", {key: id}, 
 	            choroLegend, 
 	            scaledLegend, 
 	            chartLegend);
@@ -65694,7 +65718,9 @@
 	        return (React.createElement(Draggable, {handle: '.legendHeader'}, 
 	            React.createElement("div", {className: 'legend', style: { width: 'auto' }}, 
 	                React.createElement("h2", {className: 'draggableHeader legendHeader'}, this.props.title), 
-	                React.createElement("div", null, this.createLegend(this.props.mapLayers[0].visOptions)), 
+	                React.createElement("div", null, this.props.mapLayers.map(function (m) {
+	                    return this.createLegend(m.visOptions, m.id);
+	                }, this)), 
 	                React.createElement("p", {style: { clear: 'both', maxWidth: this.props.horizontal ? 500 : 200 }}, this.props.meta))
 	        ));
 	    };
@@ -65710,14 +65736,6 @@
   \************************************************************************/
 /***/ function(module, exports) {
 
-	/*!
-	 * Leaflet.extra-markers
-	 * Custom Markers for Leaflet JS based on Awesome Markers
-	 * Leaflet ExtraMarkers
-	 * https://github.com/coryasilva/Leaflet.ExtraMarkers/
-	 * @author coryasilva <https://github.com/coryasilva>
-	 * @version 1.0.5
-	 */
 	(function(window, document, undefined) {
 	    "use strict";
 	    L.ExtraMarkers = {};
@@ -65736,6 +65754,8 @@
 	            icon: "",
 	            innerHTML: "",
 	            markerColor: "red",
+	            svgBorderColor: "#fff",
+	            svgOpacity: 1,
 	            iconColor: "#fff",
 	            number: "",
 	            svg: false
@@ -65771,18 +65791,18 @@
 	            }
 	
 	            if(options.svg) {
-	                var svg = '<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 69.529271 95.44922" style="fill:'+options.markerColor+';stroke:'+options.iconColor+';" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><g transform="translate(-139.52 -173.21)"><path d="m174.28 173.21c-19.199 0.00035-34.764 15.355-34.764 34.297 0.007 6.7035 1.5591 12.813 5.7461 18.854l0.0234 0.0371 28.979 42.262 28.754-42.107c3.1982-5.8558 5.9163-11.544 6.0275-19.045-0.0001-18.942-15.565-34.298-34.766-34.297z"/></g></svg>';
+	                var svg = '<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 69.529271 95.44922" style="fill:'+options.markerColor+';stroke:'+options.svgBorderColor+';fill-opacity:'+options.svgOpacity+';" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><g transform="translate(-139.52 -173.21)"><path d="m174.28 173.21c-19.199 0.00035-34.764 15.355-34.764 34.297 0.007 6.7035 1.5591 12.813 5.7461 18.854l0.0234 0.0371 28.979 42.262 28.754-42.107c3.1982-5.8558 5.9163-11.544 6.0275-19.045-0.0001-18.942-15.565-34.298-34.766-34.297z"/></g></svg>';
 	
 	                if(options.shape == "square") {
-	                    svg = '<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 69.457038 96.523441" style="fill:'+options.markerColor+';stroke:'+options.iconColor+';" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><g transform="translate(-545.27 -658.39)"><path d="m545.27 658.39v65.301h22.248l12.48 31.223 12.676-31.223h22.053v-65.301h-69.457z"/></g></svg>';
+	                    svg = '<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 69.457038 96.523441" style="fill:'+options.markerColor+';stroke:'+options.svgBorderColor+';fill-opacity:'+options.svgOpacity+';" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><g transform="translate(-545.27 -658.39)"><path d="m545.27 658.39v65.301h22.248l12.48 31.223 12.676-31.223h22.053v-65.301h-69.457z"/></g></svg>';
 	                }
 	
 	                if(options.shape == "star") {
-	                    svg = '<svg style="top:0; fill:'+options.markerColor+';stroke:'+options.iconColor+';" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 77.690999 101.4702"><g transform="translate(-101.15 -162.97)"><g transform="matrix(1 0 0 1.0165 -65.712 -150.28)"><path d="m205.97 308.16-11.561 11.561h-16.346v16.346l-11.197 11.197 11.197 11.197v15.83h15.744l11.615 33.693 11.467-33.568 0.125-0.125h16.346v-16.346l11.197-11.197-11.197-11.197v-15.83h-15.83l-11.561-11.561z"/></g></g></svg>';
+	                    svg = '<svg style="top:0; fill:'+options.markerColor+';stroke:'+options.svgBorderColor+';fill-opacity:'+options.svgOpacity+';" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 77.690999 101.4702"><g transform="translate(-101.15 -162.97)"><g transform="matrix(1 0 0 1.0165 -65.712 -150.28)"><path d="m205.97 308.16-11.561 11.561h-16.346v16.346l-11.197 11.197 11.197 11.197v15.83h15.744l11.615 33.693 11.467-33.568 0.125-0.125h16.346v-16.346l11.197-11.197-11.197-11.197v-15.83h-15.83l-11.561-11.561z"/></g></g></svg>';
 	                }
 	
 	                if(options.shape == "penta") {
-	                    svg = '<svg style="fill:'+options.markerColor+';stroke:'+options.iconColor+';"   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 71.550368 96.362438" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><g transform="translate(-367.08 -289.9)"><path d="m367.08 322.5 17.236-32.604h36.151l18.164 32.25-35.665 64.112z"/></g></svg>';
+	                    svg = '<svg style="fill:'+options.markerColor+';stroke:'+options.svgBorderColor+';fill-opacity:'+options.svgOpacity+';"   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 71.550368 96.362438" height="100%" width="100%" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><g transform="translate(-367.08 -289.9)"><path d="m367.08 322.5 17.236-32.604h36.151l18.164 32.25-35.665 64.112z"/></g></svg>';
 	                }
 	
 	                return svg+"<i " + iconNumber + iconColorStyle + "class='" + options.extraClasses + " " + options.prefix + " " + options.icon + "'></i>";
@@ -65822,6 +65842,7 @@
 	        return new L.ExtraMarkers.Icon(options);
 	    };
 	})(window, document);
+
 
 /***/ },
 /* 278 */
