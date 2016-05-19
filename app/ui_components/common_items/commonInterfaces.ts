@@ -85,6 +85,8 @@ interface IMapMainStates {
 interface IColorOptions extends L.PathOptions {
     /** If not empty, use choropleth coloring */
     choroplethFieldName: string,
+    /** Is the scale user-made?*/
+    useCustomScale?: boolean,
     /** Color name array to use in choropleth*/
     colors?: string[],
     /** Value array to use in choropleth*/
@@ -97,6 +99,8 @@ interface IColorOptions extends L.PathOptions {
     mode: string,
     /** Revert the color scheme*/
     revert: boolean,
+    /** The color of the icon in symbol maps */
+    iconTextColor?: string,
 }
 /** Symbol specific options - size, icon etc. */
 interface ISymbolOptions extends ISymbolMenuStates {
@@ -198,7 +202,8 @@ interface ILegend {
     /** Should the legend be horizontally aligned */
     horizontal?: boolean,
     /** Is the legend shown on the map */
-    visible?: boolean
+    visible?: boolean,
+    showPercentages?: boolean,
 }
 
 /** The React properties of the map legend */

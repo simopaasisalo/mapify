@@ -57,6 +57,8 @@ declare module L {
 
             shape?: 'circle' | 'square' | 'star' | 'penta';
             svg?: boolean;
+            svgBorderColor: string,
+            svgOpacity: number,
         }
 
         var Icon: ExtraMarkers.IconStatic;

@@ -8,9 +8,10 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         return nextProps.title !== this.props.title ||
             nextProps.meta !== this.props.meta ||
             nextProps.mapLayers !== this.props.mapLayers ||
-            nextProps.horizontal !== this.props.horizontal;
+            nextProps.horizontal !== this.props.horizontal ||
+            nextProps.showPercentages !== this.props.showPercentages;
     }
-    createChoroplethLegend(options: IVisualizationOptions) {
+    createChoroplethLegend(options: IVisualizationOptions, percentages) {
         let divs = [];
         let limits = options.colorOptions.limits;
         let colors = options.colorOptions.colors;
@@ -21,16 +22,21 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                 minWidth: '20px',
                 minHeight: '20px',
             }
+
             divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
                 <div style={colorStyle} />
-                <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-                    {  i == limits.length - 1 ?
-                        null :
-                        limits[i].toFixed(0) + '-' + limits[i + 1].toFixed(0) }
-                </span>
+                {  i == limits.length - 1 ?
+                    null :
+                    <span style={{ marginLeft: '3px', marginRight: '3px' }}>
+
+                        {limits[i].toFixed(0) + '-'} {this.props.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
+                        {this.props.showPercentages ? <br/> : null}
+                        {this.props.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
+                    </span>
+                }
             </div >);
         }
-        return <div style={{ margin: '5px', float: 'left' }}>
+        return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
             { options.colorOptions.choroplethFieldName }
             <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
@@ -45,17 +51,23 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         let yVar = opt.sizeYVar;
         let square = xVar && yVar && xVar === yVar;
 
+        let style = {
+            float: 'left',
+            margin: 5,
+            clear: this.props.horizontal ? 'both' : ''
+        }
         if (symbolType === SymbolTypes.Circle) {
             return circleLegend.call(this);
         }
         else if (symbolType === SymbolTypes.Rectangle) {
+
             if (square)
-                return (<div>
+                return (<div style={style}>
                     {rectangleLegend.call(this, false) }
                 </div>);
             else {
                 return (
-                    <div>
+                    <div style={style}>
                         { xVar ? rectangleLegend.call(this, false) : null }
                         {yVar ? rectangleLegend.call(this, true) : null }
                     </div>);
@@ -63,6 +75,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         }
 
         function rectangleLegend(y: boolean) {
+
             let divs = [], sides = [], values = [];
             let classes: number = 5;
             for (let i = 0; i < classes - 1; i++) {
@@ -183,10 +196,37 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
     createNormalLegend(options: IVisualizationOptions) {
 
     }
-    createLegend(options: IVisualizationOptions) {
+    getStepPercentages(geoJSON: any, field: string, limits: number[]) {
+        let counts: { [stepId: number]: number } = {};
+        let totalCount = geoJSON.features.length;
+        geoJSON.features.map(function(feat) {
+
+            let val = feat.properties[field];
+            for (let i in limits) {
+                if (val <= limits[+i + 1]) {
+                    if (counts[i]) {
+                        counts[i]++;
+                    }
+                    else {
+                        counts[i] = 1;
+                    }
+                    break;
+                }
+            }
+
+        });
+
+        for (let i in counts) {
+            counts[i] = +(counts[i] / totalCount * 100).toFixed(2);
+        }
+        return counts;
+    }
+    createLegend(layer: ILayerData) {
         let choroLegend, scaledLegend, chartLegend, normalLegend;
-        if (options.colorOptions.colors) {
-            choroLegend = this.createChoroplethLegend(options);
+        let options = layer.visOptions;
+        if (options.colorOptions.colors && options.colorOptions.colors.length !== 0) {
+            let percentages = this.getStepPercentages(layer.geoJSON, options.colorOptions.choroplethFieldName, options.colorOptions.limits);
+            choroLegend = this.createChoroplethLegend(options, percentages);
         }
         if (options.symbolOptions.symbolType === SymbolTypes.Chart) {
             chartLegend = this.createChartSymbolLegend(options.symbolOptions);
@@ -197,7 +237,8 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         if (!choroLegend && !scaledLegend) {
             normalLegend = this.createNormalLegend(options);
         }
-        return <div>
+
+        return <div key={layer.id}>
             {choroLegend}
             {scaledLegend}
             {chartLegend}
@@ -206,15 +247,24 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
     render() {
         return (
             <Draggable
-                handle={'.legendHeader'}
+                handle={'.dragOverlay'}
+                bounds={'parent'}
                 >
-                <div className='legend' style={{ width: 'auto' }}>
+                <div className='legend' style={{
+                    width: 'auto',
+                    MozUserSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    msUserSelect: 'none',
+                }}>
                     <h2 className='draggableHeader legendHeader'>{this.props.title}</h2>
                     <div>
-                        {this.createLegend(this.props.mapLayers[0].visOptions) }
+                        {this.props.mapLayers.map(function(m) {
+                            return this.createLegend(m);
+                        }, this) }
                     </div>
                     <p style={{ clear: 'both', maxWidth: this.props.horizontal ? 500 : 200 }}>{this.props.meta}</p>
                 </div >
+
             </Draggable >
         );
     }

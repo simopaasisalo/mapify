@@ -47,26 +47,34 @@ interface IColorMenuProps extends ISubMenuProps {
     prevOptions: IColorOptions,
     /** Is the current layer using color scaling*/
     isChoropleth: boolean,
+    /**Is the current layer using icon symbols*/
+    isIconSymbol: boolean,
     /** Save the current options to the layer*/
     saveValues: (values: IColorOptions) => void,
+
+    layer: ILayerData,
 }
 
 /** The React states of the color menu*/
 interface IColorMenuStates {
     /** The name of the field to scale the fill color by*/
-    colorScaleFieldName?: string,
+    colorSchemeFieldName?: string,
     /** The color scheme to use when scaling by value*/
     colorScheme?: string,
-    /** The name of the field to scale the opacity by*/
-    opacityField?: string,
+    /** Use a premade scale or user defined one*/
+    useCustomScheme?: boolean,
+    limits?: number[],
+    colors?: string[],
     /** The current opacity. Modifies both the fill and border opacity*/
     opacity?: number,
     /** Is the layer using multiple fill colors (ie. choropleth layers)*/
     useMultipleColors?: boolean,
-    /** Fill color for monochromatic layers. Hex or CSS color name*/
-    baseColor?: string,
+    /** Fill color for single color layers. Hex or CSS color name*/
+    fillColor?: string,
     /** Border color of layers. Hex or CSS color name*/
     borderColor?: string,
+    /** Icon symbol fa-color. Hex or CSS color name*/
+    iconTextColor?: string,
     /** Should the color display be rendered*/
     colorSelectOpen?: boolean,
     /** Reverse the color schemes*/

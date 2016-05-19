@@ -104,6 +104,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
             }
             let row = 0;
             for (let i of steps) {
+                console.log(i)
                 rows.push(
                     <li key={i}>
                         <input
@@ -210,7 +211,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                     <div>
                         <label>Select the variable by which to filter</label>
                         <Select
-                            options={this.props.layer.headers}
+                            options={this.props.layer.headers.filter(function(h) { return h.type === 'number' }) }
                             onChange={this.filterVariableChanged.bind(this) }
                             value={this.state.selectedField}
                             />
@@ -276,6 +277,8 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                 {filters.length > 0 && this.state.selectedFilterId !== -1 ?
                     <button className='menuButton' onClick={this.deleteFilter.bind(this) }>Delete filter</button>
                     : null}
+                <br/>
+                <i>TIP: drag the filter on screen by the header to place it where you wish</i>
             </div >
     }
 }

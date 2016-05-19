@@ -12,7 +12,6 @@ import 'leaflet';
 import 'Leaflet.extra-markers';
 let Modal = require('react-modal');
 let d3 = require('d3');
-
 let chroma = require('chroma-js');
 let heat = require('leaflet.heat');
 let domToImage = require('dom-to-image');
@@ -37,6 +36,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         steps: 7,
         mode: 'q',
         revert: false,
+        iconTextColor: '#FFF',
     }
     private defaultVisOptions: IVisualizationOptions = {
         colorOptions: this.defaultColorOptions,
@@ -163,7 +163,10 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                             prefix: 'fa',
                             markerColor: col.fillColor,
                             svg: true,
+                            svgBorderColor: col.color,
+                            svgOpacity: col.fillOpacity,
                             shape: sym.iconShape,
+                            iconColor: col.iconTextColor,
                         });
                         return L.marker(latlng, { icon: customIcon });
                     }
@@ -375,9 +378,10 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         let values = (layerData.geoJSON as any).features.map(function(item) {
             return item.properties[opts.choroplethFieldName];
         });
-
-        opts.limits = chroma.limits(values, opts.mode, opts.steps);
-        opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
+        if (!opts.limits)
+            opts.limits = chroma.limits(values, opts.mode, opts.steps);
+        if (!opts.colors)
+            opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
         if (opts.revert) {
             opts.colors.reverse();
         }
@@ -677,7 +681,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 title={this.state.legend.title}
                 meta ={this.state.legend.meta}
                 mapLayers={this.state.layers}
-                horizontal={this.state.legend.horizontal}/>
+                horizontal={this.state.legend.horizontal}
+                showPercentages={this.state.legend.showPercentages}/>
 
         }
     }

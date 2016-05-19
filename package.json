@@ -8,7 +8,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "Leaflet.extra-markers": "git+http://github.com/24eme/Leaflet.ExtraMarkers",
+    "Leaflet.extra-markers": "git+http://github.com/coryasilva/Leaflet.ExtraMarkers",
     "chart.js": "^2.1.2",
     "chroma-js": "^1.1.1",
     "csv2geojson": "^5.0.0",

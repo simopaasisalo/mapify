@@ -176,11 +176,12 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                             onClick = {this.changeActiveMenu.bind(this, 2) }
                             style={{ backgroundColor: this.state.visibleOptions === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
                         <ColorMenu
-                            headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
+                            layer = {this.state.activeLayer}
                             saveValues = {this.refreshColorOptions.bind(this) }
                             isVisible = {this.state.visibleOptions === 2}
                             prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
                             isChoropleth = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.ChoroplethMap : false}
+                            isIconSymbol = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.SymbolMap && this.state.activeLayer.visOptions.symbolOptions.symbolType === SymbolTypes.Icon : false}
                             />
                     </Menu.Item>
                     : <div/>
