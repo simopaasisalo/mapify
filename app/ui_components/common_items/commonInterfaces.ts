@@ -109,9 +109,9 @@ interface ISymbolOptions {
     /** The list of icons to use. Default: one IIcon with shape='circle' and iconFA='anchor'*/
     icons?: IIcon[],
     /** Name of the field by which to calculate icon values*/
-    iconField?:string,
+    iconField?: string,
     /** The steps of the field values by which to choose the icons */
-    iconLimits?:number[],
+    iconLimits?: number[],
     /** The name of the field to scale size x-axis by*/
     sizeXVar?: string,
     /** The name of the field to scale size y-axis by*/
@@ -150,9 +150,9 @@ interface ISymbolOptions {
 
 interface IIcon {
     /** If creating Icon symbols, the font-awesome class name to display*/
-    iconFA?: string,
+    fa?: string,
     /** The Extra-Markers- shape. Used if symbolType == Icon*/
-    iconShape?: 'circle' | 'square' | 'star' | 'penta',
+    shape?: 'circle' | 'square' | 'star' | 'penta',
 }
 
 /** The React properties of the filters shown on the map */
