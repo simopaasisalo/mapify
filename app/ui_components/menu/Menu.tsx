@@ -193,7 +193,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                             onClick = {this.changeActiveMenu.bind(this, 3) }
                             style={{ backgroundColor: this.state.visibleOptions === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
                         <SymbolMenu
-                            headers = {this.state.activeLayer ? this.state.activeLayer.headers.filter(function(val) { return val.type === 'number' }) : []}
+                            layer = {this.state.activeLayer}
                             saveValues = {this.refreshSymbolOptions.bind(this) }
                             isVisible = {this.state.visibleOptions === 3}
                             prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.symbolOptions : null}

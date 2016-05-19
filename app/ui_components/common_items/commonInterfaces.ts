@@ -103,7 +103,29 @@ interface IColorOptions extends L.PathOptions {
     iconTextColor?: string,
 }
 /** Symbol specific options - size, icon etc. */
-interface ISymbolOptions extends ISymbolMenuStates {
+interface ISymbolOptions {
+    /** The type of the symbol*/
+    symbolType?: SymbolTypes,
+    /** The list of icons to use. Default: one IIcon with shape='circle' and iconFA='anchor'*/
+    icons?: IIcon[],
+    /** Name of the field by which to calculate icon values*/
+    iconField?:string,
+    /** The steps of the field values by which to choose the icons */
+    iconLimits?:number[],
+    /** The name of the field to scale size x-axis by*/
+    sizeXVar?: string,
+    /** The name of the field to scale size y-axis by*/
+    sizeYVar?: string,
+    /** The minimum allowed size when scaling*/
+    sizeLowLimit?: number,
+    /** The maximum allowed size when scaling*/
+    sizeUpLimit?: number,
+    /** The multiplier to scale the value by*/
+    sizeMultiplier?: number,
+    /** Currently selected chart fields*/
+    chartFields?: IHeader[],
+    /** The type of chart to draw*/
+    chartType?: 'pie' | 'donut',
     /** If symbol is of scalable type, the minimum of all the x-values being calculated. Is used in the legend */
     actualMinXValue?: number,
     /** If symbol is of scalable type, the minimum of all the y-values being calculated. Is used in the legend */
@@ -125,6 +147,14 @@ interface ISymbolOptions extends ISymbolMenuStates {
 
 
 }
+
+interface IIcon {
+    /** If creating Icon symbols, the font-awesome class name to display*/
+    iconFA?: string,
+    /** The Extra-Markers- shape. Used if symbolType == Icon*/
+    iconShape?: 'circle' | 'square' | 'star' | 'penta',
+}
+
 /** The React properties of the filters shown on the map */
 interface IOnScreenFilterProps {
     /** Filter identification */

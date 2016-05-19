@@ -158,14 +158,23 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
                     if (sym.symbolType === SymbolTypes.Icon) {
+                      let icon, shape;
+                      for(let i in sym.iconLimits){
+                        let val = feature.properties[sym.iconField];
+                        if (val<sym.iconLimits[i]){
+                          icon = sym.icons[i].iconFA;
+                          shape = sym.icons[i].iconShape;
+                          break;
+                        }
+                      }
                         let customIcon = L.ExtraMarkers.icon({
-                            icon: sym.iconFA,
+                            icon: icon?icon:sym.icons[0].iconFA,
                             prefix: 'fa',
                             markerColor: col.fillColor,
                             svg: true,
                             svgBorderColor: col.color,
                             svgOpacity: col.fillOpacity,
-                            shape: sym.iconShape,
+                            shape: shape? shape:sym.icons[0].iconShape,
                             iconColor: col.iconTextColor,
                         });
                         return L.marker(latlng, { icon: customIcon });

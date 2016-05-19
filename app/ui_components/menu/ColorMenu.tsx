@@ -104,7 +104,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     toggleColorPick(property: string) {
         this.setState({
-            colorSelectOpen: !this.state.colorSelectOpen,
+            colorSelectOpen: this.state.editing !== property? true : !this.state.colorSelectOpen,
             editing: property,
         });
     }
@@ -339,10 +339,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                             Set the <i>lower limit</i> for each step and a color to match
                                             {this.renderSteps() }
                                         </div>
-                                        : null
-                                    }
-                                    {this.state.useCustomScheme ?
-                                        null :
+                                        :
                                         <div>
                                             <label forHTML='quantiles'>
                                                 Quantiles

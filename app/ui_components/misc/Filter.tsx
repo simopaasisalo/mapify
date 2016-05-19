@@ -130,7 +130,6 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
     }
 
     onKeyDown(e) {
-        console.log(e);
         if (e.keyCode == '38') {
             if (this.state.step) {
                 this.setState({ step: this.state.step - 1 })

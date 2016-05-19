@@ -80,56 +80,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
         }
     }
 
-    renderSteps() {
-        let rows = [];
-        let inputStyle = {
-            display: 'inline',
-            width: 100
-        }
-        if (this.state.customSteps.length === 0) {
-            let steps: [number, number][] = [];
 
-            if (!this.state.useDistinctValues) {
-                for (let i = this.state.minVal; i < this.state.maxVal; i += (this.state.maxVal - this.state.minVal) / this.state.customStepCount) {
-                    let step: [number, number] = [i, i + (this.state.maxVal - this.state.minVal) / this.state.customStepCount - 1];
-                    steps.push(step);
-                }
-            }
-            else {
-                let values = this.getDistinctValues(this.state.selectedField);
-                for (let i = 0; i < values.length - 1; i++) {
-                    let step: [number, number] = [values[i], values[i + 1] - 1];
-                    steps.push(step);
-                }
-            }
-            let row = 0;
-            for (let i of steps) {
-                console.log(i)
-                rows.push(
-                    <li key={i}>
-                        <input
-                            id={row + 'min'}
-                            type='number'
-                            defaultValue={i[0].toFixed(2) }
-                            style={inputStyle}
-                            step='any'/>
-                        -
-                        <input
-                            id={row + 'max'}
-                            type='number'
-                            defaultValue={i[1].toFixed(2) }
-                            style={inputStyle}
-                            step='any'/>
-                    </li>);
-                row++;
-            }
-        }
-        return <div>
-            <button onClick={this.changeStepsCount.bind(this, -1) }>-</button>
-            <button onClick={this.changeStepsCount.bind(this, 1) }>+</button>
-            <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r }) }</ul>
-        </div>
-    }
     filterTitleChanged(e) {
         this.setState({ filterTitle: e.target.value });
     }
@@ -191,7 +142,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
             filters.push({ value: this.props.filters[i].id, label: this.props.filters[i].title });
         }
 
-        return !this.props.isVisible ? null :
+        return (!this.props.isVisible ? null :
             <div className="mapify-options">
                 <label>Give a name to the filter</label>
                 <input type="text" onChange={this.filterTitleChanged.bind(this) } value={this.state.filterTitle}/>
@@ -239,7 +190,7 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                                 />
                             <br/>
                         </label>
-                        {this.renderSteps() }
+                        {renderSteps.call(this) }
                     </div>
                     : null}
                 {this.props.layer.layerType === LayerTypes.HeatMap ||
@@ -279,6 +230,56 @@ export class FilterMenu extends React.Component<IFilterMenuProps, IFilterMenuSta
                     : null}
                 <br/>
                 <i>TIP: drag the filter on screen by the header to place it where you wish</i>
-            </div >
+            </div >);
+
+            function renderSteps() {
+                let rows = [];
+                let inputStyle = {
+                    display: 'inline',
+                    width: 100
+                }
+                if (this.state.customSteps.length === 0) {
+                    let steps: [number, number][] = [];
+
+                    if (!this.state.useDistinctValues) {
+                        for (let i = this.state.minVal; i < this.state.maxVal; i += (this.state.maxVal - this.state.minVal) / this.state.customStepCount) {
+                            let step: [number, number] = [i, i + (this.state.maxVal - this.state.minVal) / this.state.customStepCount - 1];
+                            steps.push(step);
+                        }
+                    }
+                    else {
+                        let values = this.getDistinctValues(this.state.selectedField);
+                        for (let i = 0; i < values.length - 1; i++) {
+                            let step: [number, number] = [values[i], values[i + 1] - 1];
+                            steps.push(step);
+                        }
+                    }
+                    let row = 0;
+                    for (let i of steps) {
+                        rows.push(
+                            <li key={i}>
+                                <input
+                                    id={row + 'min'}
+                                    type='number'
+                                    defaultValue={i[0].toFixed(2) }
+                                    style={inputStyle}
+                                    step='any'/>
+                                -
+                                <input
+                                    id={row + 'max'}
+                                    type='number'
+                                    defaultValue={i[1].toFixed(2) }
+                                    style={inputStyle}
+                                    step='any'/>
+                            </li>);
+                        row++;
+                    }
+                }
+                return <div>
+                    <button onClick={this.changeStepsCount.bind(this, -1) }>-</button>
+                    <button onClick={this.changeStepsCount.bind(this, 1) }>+</button>
+                    <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r }) }</ul>
+                </div>
+            }
     }
 }

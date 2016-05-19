@@ -31,7 +31,6 @@ interface IMenuStates {
 
     /** The currently selected layer*/
     activeLayer?: ILayerData,
-
 }
 /** The interface shared by the sub menus */
 interface ISubMenuProps {
@@ -51,7 +50,7 @@ interface IColorMenuProps extends ISubMenuProps {
     isIconSymbol: boolean,
     /** Save the current options to the layer*/
     saveValues: (values: IColorOptions) => void,
-
+    /** layer being edited*/
     layer: ILayerData,
 }
 
@@ -63,7 +62,9 @@ interface IColorMenuStates {
     colorScheme?: string,
     /** Use a premade scale or user defined one*/
     useCustomScheme?: boolean,
+    /** Either user selected limits or chroma-js calculated ones*/
     limits?: number[],
+    /** Either user selected colors or chroma-js calculated ones*/
     colors?: string[],
     /** The current opacity. Modifies both the fill and border opacity*/
     opacity?: number,
@@ -103,31 +104,28 @@ interface ISymbolMenuProps extends ISubMenuProps {
     prevOptions: ISymbolOptions,
     /** Save the current options to the layer*/
     saveValues: (values: ISymbolOptions) => void,
+    /** Layer being edited */
+    layer: ILayerData,
+
 }
 
 /** The React states of the symbol menu*/
-interface ISymbolMenuStates {
-    /** The type of the symbol*/
-    symbolType?: SymbolTypes,
-    /** If creating Icon symbols, the font-awesome class name to display*/
-    iconFA?: string,
-    /** The Extra-Markers- shape. Used if symbolType == Icon*/
-    iconShape?: 'circle' | 'square' | 'star' | 'penta',
-    /** The name of the field to scale size x-axis by*/
-    sizeXVar?: string,
-    /** The name of the field to scale size y-axis by*/
-    sizeYVar?: string,
-    /** The minimum allowed size when scaling*/
-    sizeLowLimit?: number,
-    /** The maximum allowed size when scaling*/
-    sizeUpLimit?: number,
-    /** The multiplier to scale the value by*/
-    sizeMultiplier?: number,
-    /** Currently selected chart fields*/
-    chartFields?: IHeader[],
-    /** The type of chart to draw*/
-    chartType?: 'pie' | 'donut',
+interface ISymbolMenuStates extends ISymbolOptions {
+    /** Is the icon selection visible*/
+    iconSelectOpen?: boolean,
+    /** Use steps to define different icons*/
+    useIconSteps?: boolean,
+
+
+    /** The icon being edited */
+currentIconIndex?:number,
+iconStepCount?:number,
+/** Headers of number type */
+selectableHeaders? : IHeader[],
+
 }
+
+
 
 /** The React properties of the layer menu*/
 interface ILayerMenuProps {
