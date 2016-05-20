@@ -36,7 +36,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-            { options.colorOptions.choroplethFieldName }
+            { options.colorOptions.choroplethField }
             <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
             </div >
@@ -191,18 +191,20 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             </div >
         </div >;
     }
-    createIconLegend(options: IVisualizationOptions, layerName: string) {
+    createIconLegend(options: IVisualizationOptions, percentages, layerName: string) {
         let divs = [];
         let limits = options.symbolOptions.iconLimits;
         let icons: IIcon[] = options.symbolOptions.icons;
+        let col = options.colorOptions;
         if (limits && limits.length > 0) {
             for (let i = 0; i < limits.length - 1; i++) {
 
                 divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
-                    {getIcon(icons[i].shape, icons[i].fa, options.colorOptions.color, options.colorOptions.fillColor, options.colorOptions.iconTextColor) }
+                    {getIcon(icons[i].shape, icons[i].fa, col.color, col.choroplethField === options.symbolOptions.iconField ? col.colors[i] : col.fillColor, options.colorOptions.iconTextColor) }
                     <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-
                         {limits[i].toFixed(0) + '-'} {this.props.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
+                        {this.props.showPercentages ? <br/> : null}
+                        {this.props.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
                     </span>
                 </div >);
             }
@@ -262,7 +264,6 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             }
             return <div
                 style={{
-                    display: 'inline-block',
                     textAlign: 'center',
                     verticalAlign: 'middle',
                     color: iconColor,
@@ -307,18 +308,21 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
     createLegend(layer: ILayerData) {
         let choroLegend, scaledLegend, chartLegend, iconLegend, normalLegend;
         let options = layer.visOptions;
-        if (options.colorOptions.colors && options.colorOptions.colors.length !== 0) {
-            let percentages = this.getStepPercentages(layer.geoJSON, options.colorOptions.choroplethFieldName, options.colorOptions.limits);
+        let col = options.colorOptions;
+        let sym = options.symbolOptions;
+        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.choroplethField)) {
+            let percentages = this.props.showPercentages ? this.getStepPercentages(layer.geoJSON, col.choroplethField, col.limits) : {};
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
-        if (options.symbolOptions.symbolType === SymbolTypes.Chart) {
-            chartLegend = this.createChartSymbolLegend(options.symbolOptions);
+        if (sym.symbolType === SymbolTypes.Chart) {
+            chartLegend = this.createChartSymbolLegend(sym);
         }
-        if (options.symbolOptions.sizeXVar || options.symbolOptions.sizeYVar) {
+        if (sym.sizeXVar || sym.sizeYVar) {
             scaledLegend = this.createScaledSizeLegend(options);
         }
-        if (options.symbolOptions.symbolType === SymbolTypes.Icon) {
-            iconLegend = this.createIconLegend(options, layer.layerName);
+        if (sym.symbolType === SymbolTypes.Icon) {
+            let percentages = this.props.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
+            iconLegend = this.createIconLegend(options, percentages, layer.layerName);
         }
         if (!choroLegend && !scaledLegend) {
             normalLegend = this.createNormalLegend(options);

@@ -84,7 +84,7 @@ interface IMapMainStates {
 /** The color options to transfer between the menu and the main app */
 interface IColorOptions extends L.PathOptions {
     /** If not empty, use choropleth coloring */
-    choroplethFieldName: string,
+    choroplethField: string,
     /** Is the scale user-made?*/
     useCustomScale?: boolean,
     /** Color name array to use in choropleth*/

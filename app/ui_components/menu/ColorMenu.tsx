@@ -16,9 +16,9 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             iconTextColor: prev.iconTextColor ? prev.iconTextColor : '#FFF',
             borderColor: prev.color ? prev.color : '#000',
             opacity: prev.opacity ? prev.opacity : 0.8,
-            colorSchemeFieldName: prev.choroplethFieldName ? prev.choroplethFieldName : '',
+            colorSchemeFieldName: prev.choroplethField ? prev.choroplethField : '',
             colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
-            useMultipleColors: (prev.choroplethFieldName || this.props.isChoropleth) ? true : false,
+            useMultipleColors: (prev.choroplethField || this.props.isChoropleth) ? true : false,
             revertColorScheme: prev.revert ? prev.revert : false,
             steps: prev.steps ? prev.steps : 7,
             mode: prev.mode ? prev.mode : 'q',
@@ -85,7 +85,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     multipleColorsChanged(e) {
         this.setState({
-            useMultipleColors: e.target.checked
+            useMultipleFillColors: e.target.checked
         });
     }
     revertChanged(e) {
@@ -104,7 +104,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     toggleColorPick(property: string) {
         this.setState({
-            colorSelectOpen: this.state.editing !== property? true : !this.state.colorSelectOpen,
+            colorSelectOpen: this.state.editing !== property ? true : !this.state.colorSelectOpen,
             editing: property,
         });
     }
@@ -143,7 +143,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
 
     getStepValues() {
-        if (!this.state.useMultipleColors)
+        if (!this.state.useMultipleFillColors)
             return [];
         let limits: number[] = [];
         for (let i = 0; i < this.state.steps; i++) {
@@ -155,18 +155,18 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     saveOptions() {
         this.props.saveValues({
-            choroplethFieldName: this.state.useMultipleColors ? this.state.colorSchemeFieldName : '',
+            choroplethField: this.state.useMultipleFillColors ? this.state.colorSchemeFieldName : '',
             steps: this.state.steps,
-            colorScheme: this.state.useMultipleColors ? this.state.colorScheme : '',
+            colorScheme: this.state.useMultipleFillColors ? this.state.colorScheme : '',
             mode: this.state.mode,
             fillOpacity: this.state.opacity,
             opacity: this.state.opacity,
-            fillColor: this.state.useMultipleColors ? '' : this.state.fillColor,
+            fillColor: this.state.useMultipleFillColors ? '' : this.state.fillColor,
             iconTextColor: this.state.iconTextColor,
             color: this.state.borderColor,
             revert: this.state.revertColorScheme,
             limits: this.state.useCustomScheme ? this.getStepValues() : this.state.limits,
-            colors: this.state.useMultipleColors ? this.state.colors : [],
+            colors: this.state.useMultipleFillColors ? this.state.colors : [],
             useCustomScale: this.state.useCustomScheme,
         });
     }
@@ -245,14 +245,14 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         }
         return (!this.props.isVisible ? null :
             <div className="mapify-options">
-                {this.props.isChoropleth || this.props.isIconSymbol ? null :
+                {this.props.isChoropleth ? null :
                     <div>
-                        <label htmlFor='multipleSelect'>Use multiple colors</label>
-                        <input id='multipleSelect' type='checkbox' onChange={this.multipleColorsChanged.bind(this) } checked={this.state.useMultipleColors}/>
+                        <label htmlFor='multipleSelect'>Use multiple fill colors</label>
+                        <input id='multipleSelect' type='checkbox' onChange={this.multipleColorsChanged.bind(this) } checked={this.state.useMultipleFillColors}/>
                     </div>
                 }
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
-                    {this.state.useMultipleColors ?
+                    {this.state.useMultipleFillColors ?
                         null :
                         <div className='colorBlock' style={fillColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'fillColor') }>Fill</div>
                     }
@@ -284,7 +284,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                         style={{ position: 'absolute', left: 80 }}>OK</button>
                 </Modal>
                 {
-                    this.state.useMultipleColors ?
+                    this.state.useMultipleFillColors ?
                         <div>
                             <label>Select the variable to color by</label>
                             <Select

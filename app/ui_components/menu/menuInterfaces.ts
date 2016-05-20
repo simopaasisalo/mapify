@@ -69,7 +69,7 @@ interface IColorMenuStates {
     /** The current opacity. Modifies both the fill and border opacity*/
     opacity?: number,
     /** Is the layer using multiple fill colors (ie. choropleth layers)*/
-    useMultipleColors?: boolean,
+    useMultipleFillColors?: boolean,
     /** Fill color for single color layers. Hex or CSS color name*/
     fillColor?: string,
     /** Border color of layers. Hex or CSS color name*/
@@ -118,10 +118,10 @@ interface ISymbolMenuStates extends ISymbolOptions {
 
 
     /** The icon being edited */
-currentIconIndex?:number,
-iconStepCount?:number,
-/** Headers of number type */
-selectableHeaders? : IHeader[],
+    currentIconIndex?: number,
+    iconStepCount?: number,
+    /** Headers of number type */
+    selectableHeaders?: IHeader[],
 
 }
 

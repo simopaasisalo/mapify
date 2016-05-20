@@ -31,7 +31,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         fillOpacity: 0.8,
         opacity: 0.8,
         color: '#000',
-        choroplethFieldName: '',
+        choroplethField: '',
         colorScheme: 'Greys',
         steps: 7,
         mode: 'q',
@@ -158,10 +158,10 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
                     if (sym.symbolType === SymbolTypes.Icon) {
-                        let icon, shape;
+                        let icon, shape, val;
                         for (let i in sym.iconLimits) {
                             if (+i !== sym.iconLimits.length - 1) {
-                                let val = feature.properties[sym.iconField];
+                                val = feature.properties[sym.iconField];
                                 if (val < sym.iconLimits[i]) {
                                     icon = sym.icons[i].fa;
                                     shape = sym.icons[i].shape;
@@ -172,7 +172,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         let customIcon = L.ExtraMarkers.icon({
                             icon: icon ? icon : sym.icons[0].fa,
                             prefix: 'fa',
-                            markerColor: col.fillColor,
+                            markerColor: col.choroplethField ? this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]) : col.fillColor,
                             svg: true,
                             svgBorderColor: col.color,
                             svgOpacity: col.fillOpacity,
@@ -183,7 +183,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     }
                     else if (sym.symbolType === SymbolTypes.Rectangle) {
 
-                        let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethFieldName]);
+                        let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]);
                         let borderColor = col.color;
                         let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
                         let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
@@ -219,7 +219,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 });
             }
             let layer;
-            if (layerData.layerType === LayerTypes.ChoroplethMap || col.choroplethFieldName !== '') {
+            if (layerData.layerType === LayerTypes.ChoroplethMap || col.choroplethField !== '') {
                 layer = this.createChoroplethLayer(layerData);
             }
             else if (layerData.layerType === LayerTypes.SymbolMap) {
@@ -377,17 +377,17 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     createChoroplethLayer(layerData: ILayerData) {
         let opts = layerData.visOptions.colorOptions;
-        if (opts.choroplethFieldName === '') {
+        if (opts.choroplethField === '') {
             layerData.headers.map(function(h) {
                 if (h.type == 'number') {
-                    opts.choroplethFieldName = h.label;
+                    opts.choroplethField = h.label;
                 }
             })
-            if (opts.choroplethFieldName === '')
-                opts.choroplethFieldName = layerData.headers[0].label;
+            if (opts.choroplethField === '')
+                opts.choroplethField = layerData.headers[0].label;
         }
         let values = (layerData.geoJSON as any).features.map(function(item) {
-            return item.properties[opts.choroplethFieldName];
+            return item.properties[opts.choroplethField];
         });
         if (!opts.limits)
             opts.limits = chroma.limits(values, opts.mode, opts.steps);
@@ -401,7 +401,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             return {
                 fillOpacity: opts.fillOpacity,
                 opacity: opts.opacity,
-                fillColor: this.getChoroplethColor(opts.limits, opts.colors, feature.properties[opts.choroplethFieldName]),
+                fillColor: this.getChoroplethColor(opts.limits, opts.colors, feature.properties[opts.choroplethField]),
                 color: opts.color,
                 weight: 1,
             }
