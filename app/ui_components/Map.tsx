@@ -199,14 +199,14 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                             vals.push({ feat: e, val: feature.properties[e], color: colors[i] });
                             i++;
                         });
-
+                        let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
                         let html = makePieChart({
                             fullCircle: sym.chartType === 'pie',
                             data: vals,
                             valueFunc: function(d) { return d.val; },
                             strokeWidth: 1,
-                            outerRadius: 30,
-                            innerRadius: 10,
+                            outerRadius: radius,
+                            innerRadius: radius / 3,
                             pieClass: function(d) { return d.data.feat },
                             pathFillFunc: function(d) { return d.data.color },
                         });

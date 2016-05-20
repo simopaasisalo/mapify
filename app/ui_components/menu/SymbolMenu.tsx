@@ -129,10 +129,6 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
         }
     }
     saveOptions() {
-        let chartHeads: string[] = [];
-        this.state.chartFields.map(function(h) {
-            chartHeads.push(h.label)
-        });
         this.props.saveValues({
             sizeXVar: this.state.sizeXVar,
             sizeYVar: this.state.sizeYVar,
@@ -143,7 +139,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             icons: this.state.icons,
             iconLimits: this.state.iconLimits,
             iconField: this.state.iconField,
-            chartFieldNames: chartHeads,
+            chartFields: this.state.chartFields,
             chartType: this.state.chartType,
         });
     }
@@ -315,7 +311,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
 
                     </label>
 
-                    {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle ?
+                    {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle || this.state.symbolType === SymbolTypes.Chart ?
                         <div>
                             <label>Scale width by</label>
                             <Select
