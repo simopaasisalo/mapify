@@ -86,7 +86,7 @@ interface IColorOptions extends L.PathOptions {
     /** If not empty, use choropleth coloring */
     choroplethField: string,
     /** Is the scale user-made?*/
-    useCustomScale?: boolean,
+    useCustomScheme?: boolean,
     /** Color name array to use in choropleth*/
     colors?: string[],
     /** Value array to use in choropleth*/

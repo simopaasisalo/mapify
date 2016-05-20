@@ -8,7 +8,7 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
             {
                 lowerLimit: this.props.minValue - 1,
                 upperLimit: this.props.maxValue + 1,
-                step: 1,
+                step: -1,
                 lockDistance: false,
             };
 
@@ -160,7 +160,6 @@ export class Filter extends React.Component<IOnScreenFilterProps, IOnScreenFilte
                     value={[this.state.lowerLimit, this.state.upperLimit]}
                     min={this.props.minValue - 1}
                     max={this.props.maxValue + 1}
-                    step={this.state.step}
                     withBars>
                     <div className='minHandle'></div>
                     <div className='maxHandle'></div>

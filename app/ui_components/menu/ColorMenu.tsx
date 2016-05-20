@@ -11,18 +11,18 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         this.getPreviousOptions(props.prevOptions, true)
     }
     getPreviousOptions(prev: IColorOptions, initial: boolean) {
-        let state = {
+        let state: IColorMenuStates = {
             fillColor: prev.fillColor ? prev.fillColor : '#E0E62D',
             iconTextColor: prev.iconTextColor ? prev.iconTextColor : '#FFF',
             borderColor: prev.color ? prev.color : '#000',
             opacity: prev.opacity ? prev.opacity : 0.8,
             colorSchemeFieldName: prev.choroplethField ? prev.choroplethField : '',
             colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
-            useMultipleColors: (prev.choroplethField || this.props.isChoropleth) ? true : false,
+            useMultipleFillColors: (prev.choroplethField || this.props.isChoropleth) ? true : false,
             revertColorScheme: prev.revert ? prev.revert : false,
             steps: prev.steps ? prev.steps : 7,
             mode: prev.mode ? prev.mode : 'q',
-            useCustomScale: prev.useCustomScale ? prev.useCustomScale : false,
+            useCustomScheme: prev.useCustomScheme ? prev.useCustomScheme : false,
             colors: prev.colors ? prev.colors : [],
             limits: prev.limits ? prev.limits : [],
         };
@@ -167,7 +167,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             revert: this.state.revertColorScheme,
             limits: this.state.useCustomScheme ? this.getStepValues() : this.state.limits,
             colors: this.state.useMultipleFillColors ? this.state.colors : [],
-            useCustomScale: this.state.useCustomScheme,
+            useCustomScheme: this.state.useCustomScheme,
         });
     }
     renderSteps() {

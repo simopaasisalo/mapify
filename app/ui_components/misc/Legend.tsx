@@ -343,9 +343,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                 >
                 <div className='legend' style={{
                     width: 'auto',
-                    MozUserSelect: 'none',
-                    WebkitUserSelect: 'none',
-                    msUserSelect: 'none',
+                    textAlign: 'center'
                 }}>
                     <h2 className='draggableHeader legendHeader'>{this.props.title}</h2>
                     <div>
