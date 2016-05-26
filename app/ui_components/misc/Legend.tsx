@@ -181,7 +181,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
                 <div style={colorStyle} />
                 <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-                    { headers[i]}
+                    { headers[i].label}
                 </span>
             </div >);
         }

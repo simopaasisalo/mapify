@@ -28,11 +28,9 @@ interface ILayerTypeProps {
     /** A short description of the map's appearance and common use cases*/
     description: string,
     /** The url of an example image*/
-    imageLocation: string,
+    imageURL: string,
     /** The selection event */
     onClick: (type: LayerTypes) => void,
-    /** The demo load button click event */
-    loadDemo: (type: LayerTypes) => void,
     /** Is the layer type currently selected */
     selected: boolean,
 }
@@ -41,8 +39,6 @@ interface ILayerTypeProps {
 interface ILayerTypeSelectProps {
     /** saves the selected layer type to the import wizard */
     saveValues: (type: LayerTypes) => void,
-    /** skips the other steps, loads a sample of selected map type*/
-    loadDemo: (type: LayerTypes) => void,
     /** cancels the layer import wizard */
     cancel: () => void,
 }

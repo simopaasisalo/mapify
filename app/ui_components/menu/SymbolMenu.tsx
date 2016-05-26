@@ -313,7 +313,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
 
                     {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle || this.state.symbolType === SymbolTypes.Chart ?
                         <div>
-                            <label>Scale width by</label>
+                            <label>Scale {this.state.symbolType === SymbolTypes.Rectangle ? 'width' : 'size'} by</label>
                             <Select
                                 options={this.state.selectableHeaders}
                                 onChange={this.xVariableChanged.bind(this) }

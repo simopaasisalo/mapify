@@ -24,25 +24,25 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
     latitudeSelectionChanged(val) {
         this.setState(
             {
-                latitudeField: val.value,
+                latitudeField: val ? val.value : '',
             });
     }
     longitudeSelectionChanged(val) {
         this.setState(
             {
-                longitudeField: val.value,
+                longitudeField: val ? val.value : '',
             });
     }
     coordinateSystemChanged(val) {
         this.setState(
             {
-                coordinateSystem: val.value,
+                coordinateSystem: val ? val.value : '',
             });
     }
     heatValueChanged(val) {
         this.setState(
             {
-                heatVal: val.value,
+                heatVal: val ? val.value : '',
             });
     }
     goBack() {
@@ -100,7 +100,7 @@ export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDet
                     : null}
             </div>
             <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this) }>Go back</button>
-            <button className='primaryButton' style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Mapify!</button>
+            <button className='primaryButton' disabled={!this.state.coordinateSystem || (this.props.isHeatMap && !this.state.heatVal) || (!this.props.isGeoJSON && (!this.state.latitudeField || !this.state.longitudeField)) } style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Mapify!</button>
         </div>
     }
 

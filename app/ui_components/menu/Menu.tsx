@@ -134,6 +134,10 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
     saveImage(options: IExportMenuStates) {
         this.props.saveImage(options);
     }
+    saveFile() {
+        this.props.saveFile();
+    }
+
     render() {
         let layers = [];
         if (this.props.layers) {
@@ -247,6 +251,7 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                     <ExportMenu
                         isVisible = {this.state.visibleOptions === 7}
                         saveImage = {this.saveImage.bind(this) }
+                        saveFile = {this.saveFile.bind(this) }
                         />
                 </Menu.Item>
             </Menu.Menu >

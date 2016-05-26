@@ -54,7 +54,7 @@ interface ILayerData {
     /** The name of the layer. Will be shown in the UI*/
     layerName: string,
     /** The GeoJSON representation of the data.*/
-    geoJSON: { features: any[], type: string },
+    geoJSON?: { features: any[], type: string },
     /** The type of the layer. Will affect the options available.*/
     layerType: LayerTypes,
     /** The data property names.*/
@@ -68,6 +68,8 @@ interface ILayerData {
 }
 
 interface IMapMainStates {
+    /** Is the welcome screen visible*/
+    welcomeShown?: boolean,
     /** Is the import wizard visible*/
     importWizardShown?: boolean,
     /** Is the options menu visible*/
@@ -95,10 +97,10 @@ interface IColorOptions extends L.PathOptions {
     colorScheme?: string,
     /** The amount of colors to use in choropleth*/
     steps: number,
+    /** Is the scheme reversed. This is used only to keep the menu selection synced with map*/
+    revert: boolean,
     /** The Chroma-js method to calculate colors. Default q->quantiles*/
     mode: string,
-    /** Revert the color scheme*/
-    revert: boolean,
     /** The color of the icon in symbol maps */
     iconTextColor?: string,
 }
@@ -130,9 +132,9 @@ interface ISymbolOptions {
     actualMinXValue?: number,
     /** If symbol is of scalable type, the minimum of all the y-values being calculated. Is used in the legend */
     actualMinYValue?: number,
-    /** If symbol is of scalable type, the minimum of all the x being calculated. Is used in the legend */
+    /** If symbol is of scalable type, the minimum of all the x(pixels) being calculated. Is used in the legend */
     actualMinX?: number,
-    /** If symbol is of scalable type, the minimum of all the y being calculated. Is used in the legend */
+    /** If symbol is of scalable type, the minimum of all the y(pixels) being calculated. Is used in the legend */
     actualMinY?: number,
     /** If symbol is of scalable type, the maximum of all the x-values being calculated. Is used in the legend */
     actualMaxXValue?: number,
@@ -142,8 +144,7 @@ interface ISymbolOptions {
     actualMaxX?: number,
     /** If symbol is of scalable type, the maximum of all the y being calculated. Is used in the legend */
     actualMaxY?: number,
-    /** The string array version of the chart field headers*/
-    chartFieldNames?: string[],
+
 
 
 }
@@ -240,4 +241,33 @@ interface ILegend {
 interface IOnScreenLegendProps extends ILegend {
     /** The layers from which to draw the legend */
     mapLayers: ILayerData[],
+}
+
+interface ILayerSaveData extends ILayerData {
+    //topoJSON: Object,
+}
+
+interface ISaveData {
+    layers: ILayerSaveData[],
+    legend: ILegend,
+    filters: IFilter[],
+}
+
+interface IWelcomeScreenProps {
+    loadMap: (saveData: ISaveData) => void,
+    openLayerImport: () => void,
+}
+interface IWelcomeScreenStates {
+    /** User selected filename to upload*/
+    fileName?: string,
+    /** The JSON of the saved data */
+    savedJSON?: ISaveData,
+}
+interface IDemoPreviewProps {
+    imageURL: string,
+    description: string,
+    loadDemo: () => void,
+}
+interface IDemoPreviewStates {
+    overlayOpen?: boolean
 }

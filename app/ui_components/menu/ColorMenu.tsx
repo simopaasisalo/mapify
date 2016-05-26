@@ -54,7 +54,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         this.setState({
             colorSchemeFieldName: name,
         });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, this.state.steps, this.state.colorScheme, name);
+        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, this.state.steps, this.state.colorScheme, name, this.state.revertColorScheme);
 
     }
     schemeChanged(e) {
@@ -62,7 +62,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         this.setState({
             colorScheme: scheme
         });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, this.state.steps, scheme, this.state.colorSchemeFieldName);
+        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, this.state.steps, scheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
     }
     opacityChanged(e) {
         this.setState({
@@ -74,13 +74,13 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         this.setState({
             steps: steps,
         });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, steps, this.state.colorScheme, this.state.colorSchemeFieldName);
+        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, steps, this.state.colorScheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
     }
     modeChanged(mode) {
         this.setState({
             mode: mode,
         });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : mode, this.state.steps, this.state.colorScheme, this.state.colorSchemeFieldName);
+        this.calculateValues(this.state.useCustomScheme ? 'q' : mode, this.state.steps, this.state.colorScheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
 
     }
     multipleColorsChanged(e) {
@@ -92,6 +92,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         this.setState({
             revertColorScheme: e.target.checked,
         });
+        this.calculateValues(this.state.mode, this.state.steps, this.state.colorScheme, this.state.colorSchemeFieldName, e.target.checked);
+
     }
     customSchemeChanged(e) {
         let use: boolean = e.target.checked;
@@ -100,7 +102,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
             useCustomScheme: use,
             steps: steps
         });
-        this.calculateValues(use ? 'q' : this.state.mode, steps, this.state.colorScheme, this.state.colorSchemeFieldName);
+        this.calculateValues(use ? 'q' : this.state.mode, steps, this.state.colorScheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
     }
     toggleColorPick(property: string) {
         this.setState({
@@ -112,7 +114,16 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         return <ColorScheme gradientName={option.value} revert={this.state.revertColorScheme}/>;
     }
 
-    calculateValues(mode: string, steps: number, scheme: string, fieldName: string) {
+    /**
+     * calculateValues - Performs the chroma-js calculation to get colors and steps
+     *
+     * @param  mode      chroma-js mode to calculate classes
+     * @param  steps     amount of classes
+     * @param  scheme    selected color scheme
+     * @param  fieldName feature property by which to color
+     * @param  revert   is the scheme reversed
+     */
+    calculateValues(mode: string, steps: number, scheme: string, fieldName: string, revert: boolean) {
         let lyr = this.props.layer;
         let values = (lyr.geoJSON as any).features.map(function(feat) {
             return feat.properties[fieldName];
@@ -121,7 +132,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         let colors: string[] = chroma.scale(scheme).colors(limits.length - 1);
         this.setState({
             limits: limits,
-            colors: colors,
+            colors: revert ? colors.reverse() : colors,
         })
     }
 

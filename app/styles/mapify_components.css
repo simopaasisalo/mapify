@@ -77,6 +77,9 @@ h2,h3{
 }.primaryButton:hover {
 	background-color:#415c93;
 }
+.primaryButton:disabled{
+  background-color:#c1c1c1;
+}
 /* This button was generated using CSSButtonGenerator.com */
 
 .secondaryButton{

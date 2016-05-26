@@ -8,6 +8,7 @@ import {MapInitModel} from '../models/MapInitModel';
 import {LayerTypes, SymbolTypes, GetSymbolSize} from './common_items/common';
 import {Filter} from './misc/Filter';
 import {Legend} from './misc/Legend';
+import {WelcomeScreen} from './misc/WelcomeScreen';
 import 'leaflet';
 import 'Leaflet.extra-markers';
 let Modal = require('react-modal');
@@ -15,6 +16,7 @@ let d3 = require('d3');
 let chroma = require('chroma-js');
 let heat = require('leaflet.heat');
 let domToImage = require('dom-to-image');
+let topojson = require('topojson');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _currentFilterId: number = 0;
@@ -35,7 +37,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         colorScheme: 'Greys',
         steps: 7,
         mode: 'q',
-        revert: false,
         iconTextColor: '#FFF',
     }
     private defaultVisOptions: IVisualizationOptions = {
@@ -49,6 +50,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     constructor() {
         super();
         this.state = {
+            welcomeShown: true,
             importWizardShown: false,
             menuShown: false,
             layers: null,
@@ -73,12 +75,13 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
         }).setView([0, 0], 2);
         _map.doubleClickZoom.disable();
+
+    }
+    startLayerImport() {
         this.setState({
             importWizardShown: true,
-            menuShown: false,
-            layers: null,
-        });
-
+            welcomeShown: false,
+        })
     }
 
     cancelLayerImport() {
@@ -137,7 +140,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
     }
 
-
     getLayerInfoById(id: number) {
         for (let lyr of this.state.layers) {
             if (lyr.id == id) {
@@ -146,15 +148,17 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
     }
     /**
-     * refreshLayer - Update the layer on the map after the user has changed the visualization options
+     * reloadhLayer - Update the layer on the map after the user has changed the visualization options
      * @param  layerData  The layer to update
+     * @param  wasImported  Was layer imported from a previously saved map
      */
-    refreshLayer(layerData: ILayerData) {
+    reloadLayer(layerData: ILayerData, wasImported: boolean = false) {
         if (layerData) {
             let filter = this.state.filters.filter((f) => { return f.layerDataId === layerData.id })[0];
             let col = layerData.visOptions.colorOptions;
             let sym = layerData.visOptions.symbolOptions;
-            _map.removeLayer(layerData.layer);
+            if (!wasImported)
+                _map.removeLayer(layerData.layer);
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
                     if (sym.symbolType === SymbolTypes.Icon) {
@@ -195,8 +199,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
                         let vals = [];
                         let i = 0;
-                        sym.chartFieldNames.map(function(e) {
-                            vals.push({ feat: e, val: feature.properties[e], color: colors[i] });
+                        sym.chartFields.map(function(e) {
+                            vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
                             i++;
                         });
                         let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
@@ -230,8 +234,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             }
 
             layer.addTo(_map);
+            if (wasImported)
+                _map.fitBounds(layerData.layerType === LayerTypes.HeatMap ? (layer as any)._latlngs : layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
+
             layerData.layer = layer;
-            let layers = this.state.layers.filter((lyr) => { return lyr.id != layerData.id });
+            let layers = this.state.layers ? this.state.layers.filter((lyr) => { return lyr.id != layerData.id }) : [];
             if (layerData.layerType === LayerTypes.SymbolMap) {
                 let opt = layerData.visOptions.symbolOptions;
                 //if needs to scale and is of scalable type
@@ -393,9 +400,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             opts.limits = chroma.limits(values, opts.mode, opts.steps);
         if (!opts.colors)
             opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
-        if (opts.revert) {
-            opts.colors.reverse();
-        }
         let style = function(feature) {
 
             return {
@@ -714,6 +718,63 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 (window as any).saveAs(blob, 'Mapify_map.png');
             });
     }
+
+    saveFile() {
+        let saveLayers: ILayerSaveData[] = [];
+        for (let i of this.state.layers) {
+            let lyr: ILayerSaveData = {
+                id: i.id,
+                layerName: i.layerName,
+                layerType: i.layerType,
+                headers: i.headers,
+                visOptions: i.visOptions,
+                heatMapVariable: i.heatMapVariable,
+                //topoJSON: topojson.topology(i.geoJSON),
+                geoJSON: i.geoJSON,
+
+
+            }
+            saveLayers.push(lyr)
+        }
+        let filters: IFilter[] = [];
+        for (let i of this.state.filters) {
+            let filter: IFilter = {
+                id: i.id,
+                title: i.title,
+                layerDataId: i.layerDataId,
+                fieldToFilter: i.fieldToFilter,
+                currentMax: i.currentMax,
+                currentMin: i.currentMin,
+                totalMax: i.totalMax,
+                totalMin: i.totalMin,
+                steps: i.steps,
+                remove: i.remove,
+                filteredIndices: i.filteredIndices,
+            }
+            filters.push(filter)
+        }
+        let saveData: ISaveData = {
+            layers: saveLayers,
+            legend: this.state.legend,
+            filters: filters,
+
+        };
+        let blob = new Blob([JSON.stringify(saveData)], { type: "text/plain;charset=utf-8" });
+        (window as any).saveAs(blob, 'map.mapify');
+    }
+
+    loadSavedMap(saveData: ISaveData) {
+        for (let i in saveData.layers) {
+            this.reloadLayer(saveData.layers[i], true)
+
+        }
+        this.setState({
+            welcomeShown: false,
+            menuShown: true,
+            legend: saveData.legend,
+            filters: saveData.filters,
+        })
+    }
     render() {
         let modalStyle = {
             content: {
@@ -726,6 +787,14 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             <div>
                 <div id='map'/>
                 <Modal
+                    isOpen={this.state.welcomeShown}
+                    style = {modalStyle}>
+                    <WelcomeScreen
+                        loadMap={this.loadSavedMap.bind(this) }
+                        openLayerImport={this.startLayerImport.bind(this) }
+                        />
+                </Modal>
+                <Modal
                     isOpen={this.state.importWizardShown}
                     style = {modalStyle}>
                     <LayerImportWizard
@@ -737,7 +806,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 <MapifyMenu
                     layers = {this.state.layers}
                     filters={this.state.filters}
-                    refreshMap={this.refreshLayer.bind(this) }
+                    refreshMap={this.reloadLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
                     saveFilter ={this.saveFilter.bind(this) }
@@ -746,6 +815,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     visible={this.state.menuShown}
                     saveImage ={this.saveImage}
+                    saveFile = {this.saveFile.bind(this) }
                     />
                 {this.getFilters() }
                 {this.showLegend() }

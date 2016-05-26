@@ -92,7 +92,9 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
                     <p> GeoJSON, CSV(point data with coordinates in two columns), KML, GPX, WKT</p>
                     <Dropzone
                         style={dropStyle}
-                        onDrop={this.onDrop.bind(this) }>
+                        onDrop={this.onDrop.bind(this) }
+                        accept={_allowedFileTypes.map(function(type) { return '.' + type }).join(', ') }>
+
                         {this.state.fileName ? <span><i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/> {this.state.fileName} </span> : <span>Drop file or click to open upload menu</span> }
                     </Dropzone>
                     <label>Give a name to the layer</label>
@@ -100,7 +102,7 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
 
                 </div>
                 <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this) }>Previous</button>
-                <button className='primaryButton' style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Continue</button>
+                <button className='primaryButton' disabled={this.state.content === '' || this.state.layerName === ''}  style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Continue</button>
             </div>
         );
     }

@@ -22,6 +22,8 @@ interface IMenuProps {
     visible: boolean,
     /** Export map as .png */
     saveImage: (options: IExportMenuStates) => void,
+    /** Export map as .mapify*/
+    saveFile: () => void,
 }
 
 /** The React states of the menu */
@@ -206,7 +208,10 @@ interface IPopUpMenuStates {
 
 /** The React states of the export menu */
 interface IExportMenuProps extends ISubMenuProps {
+    /** Save map as a .png image*/
     saveImage: (options: IExportMenuStates) => void,
+    /** Save map as a .mapify file*/
+    saveFile: () => void,
 }
 
 /** The React states of the export menu */

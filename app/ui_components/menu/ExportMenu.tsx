@@ -23,6 +23,9 @@ export class ExportMenu extends React.Component<IExportMenuProps, IExportMenuSta
     saveImage() {
         this.props.saveImage(this.state);
     }
+    saveFile() {
+        this.props.saveFile();
+    }
     render() {
         return (
             this.props.isVisible ?
@@ -34,6 +37,11 @@ export class ExportMenu extends React.Component<IExportMenuProps, IExportMenuSta
                     <input id='showFilters' type='checkbox' checked={this.state.showFilters} onChange={this.showFiltersChanged.bind(this) }/>
                     <br/>
                     <button className='menuButton' onClick={this.saveImage.bind(this) }>Export map as image</button>
+                    <br/>
+                    Or
+                    <br/>
+                    <button className='menuButton' onClick={this.saveFile.bind(this) }>Export map as a file</button>
+
                 </div>
                 : null
         )
