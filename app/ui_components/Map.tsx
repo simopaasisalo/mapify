@@ -38,6 +38,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         steps: 7,
         mode: 'q',
         iconTextColor: '#FFF',
+        revert: false
     }
     private defaultVisOptions: IVisualizationOptions = {
         colorOptions: this.defaultColorOptions,
