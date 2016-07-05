@@ -26,6 +26,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             iconSelectOpen: false,
             currentIconIndex: 0,
             iconStepCount: prev.icons ? prev.icons.length : 5,
+            blockValue: prev.blockValue ? prev.blockValue : 50,
         }
         initial ? this.state = state : this.setState(state);
     }
@@ -37,6 +38,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
     typeChanged(type: SymbolTypes) {
         this.setState({
             symbolType: type,
+            sizeXVar : this.state.sizeXVar ? this.state.sizeXVar : this.props.headers[0]? this.props.headers[0] : undefined,
         });
     }
     xVariableChanged(val) {
@@ -63,6 +65,11 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
     sizeUpLimitChanged(e) {
         this.setState({
             sizeUpLimit: e.currentTarget.valueAsNumber
+        });
+    }
+    blockValueChanged(e) {
+        this.setState({
+            blockValue: e.currentTarget.valueAsNumber
         });
     }
     faIconChanged(iconFA) {
@@ -141,6 +148,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             iconField: this.state.iconField,
             chartFields: this.state.chartFields,
             chartType: this.state.chartType,
+            blockValue: this.state.blockValue,
         });
     }
 
@@ -264,6 +272,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
             !this.props.isVisible ? null :
                 <div className="mapify-options">
                     <label forHTML='circle'>
+                        <i style={{ margin: 4 }} className='fa fa-circle-o'/>
                         Circle
                         <input
                             type='radio'
@@ -275,6 +284,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                         <br/>
                     </label>
                     <label forHTML='rect'>
+                        <i style={{ margin: 4 }} className='fa fa-signal'/>
                         Rectangle
                         <input
                             type='radio'
@@ -284,9 +294,9 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             id='rect'
                             />
                         <br/>
-
                     </label>
                     <label forHTML='icon'>
+                        <i style={{ margin: 4 }} className='fa fa-map-marker'/>
                         Icon
                         <input
                             type='radio'
@@ -296,9 +306,9 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             id='icon'
                             />
                         <br/>
-
                     </label>
-                    <label forHTML='char'>
+                    <label forHTML='chart'>
+                        <i style={{ margin: 4 }} className='fa fa-pie-chart'/>
                         Chart
                         <input
                             type='radio'
@@ -308,10 +318,20 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                             id='chart'
                             />
                         <br/>
-
                     </label>
-
-                    {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle || this.state.symbolType === SymbolTypes.Chart ?
+                    <label forHTML='blocks'>
+                        <i style={{ margin: 4 }} className='fa fa-th-large'/>
+                        Blocks
+                        <input
+                            type='radio'
+                            onChange={this.typeChanged.bind(this, SymbolTypes.Blocks) }
+                            checked={this.state.symbolType === SymbolTypes.Blocks}
+                            name='symboltype'
+                            id='blocks'
+                            />
+                        <br/>
+                    </label>
+                    {this.state.symbolType === SymbolTypes.Circle || this.state.symbolType === SymbolTypes.Rectangle || this.state.symbolType === SymbolTypes.Chart || this.state.symbolType === SymbolTypes.Blocks ?
                         <div>
                             <label>Scale {this.state.symbolType === SymbolTypes.Rectangle ? 'width' : 'size'} by</label>
                             <Select
@@ -327,7 +347,7 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                                     value={this.state.sizeYVar}
                                     />
                             </div> : null}
-                            {this.state.sizeXVar || this.state.sizeYVar ?
+                            {this.state.symbolType !== SymbolTypes.Blocks && (this.state.sizeXVar || this.state.sizeYVar) ?
                                 <div><label>Size multiplier</label>
                                     <input type="number" value={this.state.sizeMultiplier} onChange={this.sizeMultiplierChanged.bind(this) } min={0.1} max={10} step={0.1}/>
                                     <br/>
@@ -418,6 +438,14 @@ export class SymbolMenu extends React.Component<ISymbolMenuProps, ISymbolMenuSta
                         </div>
 
                         : null
+                    }
+                    {this.state.symbolType === SymbolTypes.Blocks ?
+                        <div>
+                            <label>Single block value</label>
+                            <input type="number" value={this.state.blockValue} onChange={this.blockValueChanged.bind(this) } min={0}/>
+                        </div>
+                        : null
+
                     }
                     <button className='menuButton' onClick={this.saveOptions.bind(this) }>Refresh map</button>
                     <Modal

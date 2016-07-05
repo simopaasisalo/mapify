@@ -191,6 +191,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             </div >
         </div >;
     }
+
     createIconLegend(options: IVisualizationOptions, percentages, layerName: string) {
         let divs = [];
         let limits = options.symbolOptions.iconLimits;
@@ -277,9 +278,35 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
         }
     }
-    createNormalLegend(options: IVisualizationOptions) {
 
+    createBlockLegend(options: IVisualizationOptions) {
+        let style = {
+            width: 10,
+            height: 10,
+            backgroundColor: options.colorOptions.fillColor,
+            float: this.props.horizontal ? '' : 'left',
+            border: '1px solid ' + options.colorOptions.color,
+            margin: 'auto',
+        }
+        let parentDivStyle = {
+            float: this.props.horizontal ? 'left' : '',
+            minHeight: '15px',
+            overflow: this.props.horizontal ? 'none' : 'auto',
+            lineHeight: this.props.horizontal ? '' : 24 + 'px',
+
+        }
+        return (
+            <div style={{ margin: '5px', float: 'left' }}>
+                {options.symbolOptions.sizeXVar}
+                <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+                    <div style={style} />
+                    =
+                    <span style={{ display: 'inline-block' }}>{ options.symbolOptions.blockValue}</span>
+
+                </div >
+            </div >);
     }
+
     getStepPercentages(geoJSON: any, field: string, limits: number[]) {
         let counts: { [stepId: number]: number } = {};
         let totalCount = geoJSON.features.length;
@@ -305,8 +332,9 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         }
         return counts;
     }
+
     createLegend(layer: ILayerData) {
-        let choroLegend, scaledLegend, chartLegend, iconLegend, normalLegend;
+        let choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
         let options = layer.visOptions;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
@@ -324,15 +352,17 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             let percentages = this.props.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
             iconLegend = this.createIconLegend(options, percentages, layer.layerName);
         }
-        if (!choroLegend && !scaledLegend) {
-            normalLegend = this.createNormalLegend(options);
+        if (sym.symbolType === SymbolTypes.Blocks) {
+            blockLegend = this.createBlockLegend(options);
         }
+
 
         return <div key={layer.id}>
             {choroLegend}
             {scaledLegend}
             {chartLegend}
             {iconLegend}
+            {blockLegend}
         </div>
     }
     render() {

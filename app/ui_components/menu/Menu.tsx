@@ -152,11 +152,11 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 <Menu.Brand>
                     Options
                 </Menu.Brand>
-                <Menu.Item>
+                <Menu.Item style={{ backgroundColor: this.state.visibleOptions === 1 ? '#1a263f' : '#293c60' }}>
                     <p
                         className="menuHeader fa fa-bars"
                         onClick = {this.changeActiveMenu.bind(this, 1) }
-                        style={{ backgroundColor: this.state.visibleOptions === 1 ? '#1a263f' : '#293c60' }}> Layers </p>
+                        > Layers </p>
                     <LayerMenu
                         isVisible = {this.state.visibleOptions === 1}
                         layers={this.props.layers}

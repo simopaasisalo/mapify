@@ -97,11 +97,6 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
                         description='This demo shows the choropleth map type by mapping the United States by population density.'
                         loadDemo={this.loadDemo.bind(this, 'chorodemo') }
                         />
-                    <DemoPreview
-                        imageURL='demos/us_chorodemo.png'
-                        description='This demo shows the choropleth map type by mapping the United States by population density.'
-                        loadDemo={this.loadDemo.bind(this, 'chorodemo') }
-                        />
                 </div>
             </div>
             <div style={{ height: 300, display: 'inline-flex' }}>
@@ -117,14 +112,14 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
                         >
                         {this.state.fileName ? <span><i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/> {this.state.fileName} </span> : <span>Drop file or click to open upload menu</span> }
                     </Dropzone>
-                    <button  style={{ position: 'absolute', bottom: 10, left: 0 }}  className='primaryButton' disabled={this.state.fileName === null || this.state.fileName === ''} onClick={this.loadMap.bind(this) }>Load existing map</button>
+                    <button  style={{ position: 'absolute', bottom: 10, left: 10 }}  className='primaryButton' disabled={this.state.fileName === null || this.state.fileName === ''} onClick={this.loadMap.bind(this) }>Load existing map</button>
 
                 </div>
                 <div style={{ width: '50%', display: 'inline-block' }}>
                     <h3>Create a new map</h3>
                     Start creating your own map from here. Select a layer type, upload your file and get visualizin' in minutes!
                     <br/>
-                    <button style={{ position: 'absolute', bottom: 10, right: 0 }} className='primaryButton' onClick={this.createNewMap.bind(this) }>Create a map</button>
+                    <button style={{ position: 'absolute', bottom: 10, right: 10 }} className='primaryButton' onClick={this.createNewMap.bind(this) }>Create a map</button>
                 </div>
             </div>
 

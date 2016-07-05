@@ -16,10 +16,12 @@ enum SymbolTypes {
     Circle,
     /** Basic rectancular symbol. Uses L.DivIcon. Width and height can both be resized, and color can be changed. */
     Rectangle,
-    /** TODO */
+    /** Pie- or donut chart based on multiple icons. Can be resized, but color scheme is static. */
     Chart,
     /** leaflet.Awesome-Markers- type marker. Uses Font Awesome-css to show a specific icon. */
-    Icon
+    Icon,
+    /** Create a stack of squares. Uses L.DivIcon. Square amount adjustable */
+    Blocks,
 }
 
 /** Projection names to show in import wizard */

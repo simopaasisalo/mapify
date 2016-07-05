@@ -17,6 +17,7 @@ let chroma = require('chroma-js');
 let heat = require('leaflet.heat');
 let domToImage = require('dom-to-image');
 let topojson = require('topojson');
+let reactDOMServer = require('react-dom/server');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 let _currentFilterId: number = 0;
@@ -149,7 +150,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
     }
     /**
-     * reloadhLayer - Update the layer on the map after the user has changed the visualization options
+     * reloadLayer - Update the layer on the map after the user has changed the visualization options
      * @param  layerData  The layer to update
      * @param  wasImported  Was layer imported from a previously saved map
      */
@@ -160,93 +161,105 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             let sym = layerData.visOptions.symbolOptions;
             if (!wasImported)
                 _map.removeLayer(layerData.layer);
+
+
             if (layerData.layerType !== LayerTypes.HeatMap) {
+                if (layerData.layerType === LayerTypes.SymbolMap) {
+                    let opt = layerData.visOptions.symbolOptions;
+                    //if needs to scale and is of scalable type
+                    if (opt.sizeXVar || opt.sizeYVar && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle || opt.symbolType === SymbolTypes.Blocks)) {
+                        getMaxValues(opt);
+                    }
+                }
                 layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
-                    if (sym.symbolType === SymbolTypes.Icon) {
-                        let icon, shape, val;
-                        for (let i in sym.iconLimits) {
-                            if (+i !== sym.iconLimits.length - 1) {
-                                val = feature.properties[sym.iconField];
-                                if (val < sym.iconLimits[i]) {
-                                    icon = sym.icons[i].fa;
-                                    shape = sym.icons[i].shape;
-                                    break;
+                    let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]);
+                    let borderColor = col.color;
+                    switch (sym.symbolType) {
+                        case SymbolTypes.Icon:
+                            let icon, shape, val;
+                            for (let i in sym.iconLimits) {
+                                if (+i !== sym.iconLimits.length - 1) {
+                                    val = feature.properties[sym.iconField];
+                                    if (val < sym.iconLimits[i]) {
+                                        icon = sym.icons[i].fa;
+                                        shape = sym.icons[i].shape;
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        let customIcon = L.ExtraMarkers.icon({
-                            icon: icon ? icon : sym.icons[0].fa,
-                            prefix: 'fa',
-                            markerColor: col.choroplethField ? this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]) : col.fillColor,
-                            svg: true,
-                            svgBorderColor: col.color,
-                            svgOpacity: col.fillOpacity,
-                            shape: shape ? shape : sym.icons[0].shape,
-                            iconColor: col.iconTextColor,
-                        });
-                        return L.marker(latlng, { icon: customIcon });
-                    }
-                    else if (sym.symbolType === SymbolTypes.Rectangle) {
+                            let customIcon = L.ExtraMarkers.icon({
+                                icon: icon ? icon : sym.icons[0].fa,
+                                prefix: 'fa',
+                                markerColor: fillColor,
+                                svg: true,
+                                svgBorderColor: borderColor,
+                                svgOpacity: col.fillOpacity,
+                                shape: shape ? shape : sym.icons[0].shape,
+                                iconColor: col.iconTextColor,
+                            });
+                            return L.marker(latlng, { icon: customIcon });
+                        case SymbolTypes.Rectangle:
 
-                        let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]);
-                        let borderColor = col.color;
-                        let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
-                        let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
-                        let html = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
-                        let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
-                        return L.marker(latlng, { icon: rectMarker });
+                            let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+                            let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+                            let rectHtml = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
+                            let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: rectHtml, className: '' });
+                            return L.marker(latlng, { icon: rectMarker });
+                        case SymbolTypes.Chart:
+                            let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
+                            let vals = [];
+                            let i = 0;
+                            sym.chartFields.map(function(e) {
+                                vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
+                                i++;
+                            });
+                            let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
+                            let chartHtml = makePieChart({
+                                fullCircle: sym.chartType === 'pie',
+                                data: vals,
+                                valueFunc: function(d) { return d.val; },
+                                strokeWidth: 1,
+                                outerRadius: radius,
+                                innerRadius: radius / 3,
+                                pieClass: function(d) { return d.data.feat },
+                                pathFillFunc: function(d) { return d.data.color },
+                            });
+                            let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: chartHtml, className: '' });
+                            return L.marker(latlng, { icon: marker });
+                        case SymbolTypes.Blocks:
+                            let side = Math.ceil(Math.sqrt(feature.properties[sym.sizeXVar] / sym.blockValue));
+                            let blockCount = Math.ceil(feature.properties[sym.sizeXVar] / sym.blockValue);
+                            let blockHtml = makeBlockSymbol(side, blockCount, fillColor, borderColor);
+                            let blockMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: blockHtml, className: '' });
+                            return L.marker(latlng, { icon: blockMarker });
                     }
-                    else if (sym.symbolType === SymbolTypes.Chart) {
-                        let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
-                        let vals = [];
-                        let i = 0;
-                        sym.chartFields.map(function(e) {
-                            vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
-                            i++;
-                        });
-                        let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
-                        let html = makePieChart({
-                            fullCircle: sym.chartType === 'pie',
-                            data: vals,
-                            valueFunc: function(d) { return d.val; },
-                            strokeWidth: 1,
-                            outerRadius: radius,
-                            innerRadius: radius / 3,
-                            pieClass: function(d) { return d.data.feat },
-                            pathFillFunc: function(d) { return d.data.color },
-                        });
-                        let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: html, className: '' });
-                        return L.marker(latlng, { icon: marker });
-                    }
-                    else {
-                        return L.circleMarker(latlng, layerData.visOptions.colorOptions);
-                    }
+
+                    return L.circleMarker(latlng, layerData.visOptions.colorOptions);
+
                 });
             }
             let layer;
-            if (layerData.layerType === LayerTypes.ChoroplethMap || col.choroplethField !== '') {
+            if (layerData.layerType === LayerTypes.HeatMap) {
+                layer = this.createHeatLayer(layerData);
+            }
+            else if (layerData.layerType === LayerTypes.ChoroplethMap || col.choroplethField !== '') {
                 layer = this.createChoroplethLayer(layerData);
             }
             else if (layerData.layerType === LayerTypes.SymbolMap) {
                 layer = L.geoJson(layerData.geoJSON, layerData.visOptions);
             }
-            else if (layerData.layerType === LayerTypes.HeatMap) {
-                layer = this.createHeatLayer(layerData);
-            }
 
             layer.addTo(_map);
+
             if (wasImported)
                 _map.fitBounds(layerData.layerType === LayerTypes.HeatMap ? (layer as any)._latlngs : layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
 
             layerData.layer = layer;
-            let layers = this.state.layers ? this.state.layers.filter((lyr) => { return lyr.id != layerData.id }) : [];
-            if (layerData.layerType === LayerTypes.SymbolMap) {
-                let opt = layerData.visOptions.symbolOptions;
-                //if needs to scale and is of scalable type
-                if (opt.sizeXVar || opt.sizeYVar && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle)) {
-                    scaleSymbolLayerSize(opt);
-                }
+            if (layerData.layerType === LayerTypes.SymbolMap && sym.symbolType === SymbolTypes.Circle && sym.sizeXVar) {
+                setCircleMarkerRadius(sym);
             }
+            let layers = this.state.layers ? this.state.layers.filter((lyr) => { return lyr.id != layerData.id }) : [];
+
             layers.push(layerData);
             this.setState({
                 layers: layers,
@@ -257,16 +270,20 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 this.saveFilter(filter, true);
         }
 
-        function scaleSymbolLayerSize(opt: ISymbolOptions) {
+        function setCircleMarkerRadius(sym: ISymbolOptions) {
+            (layerData.layer as any).eachLayer(function(layer) {
+                layer.setRadius(GetSymbolSize(layer.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
+
+            });
+        }
+
+        function getMaxValues(opt: ISymbolOptions) {
             (layerData.layer as any).eachLayer(function(layer) {
                 let xVal = layer.feature.properties[opt.sizeXVar];
                 let yVal = layer.feature.properties[opt.sizeYVar];
                 let r = 10;
                 if (opt.sizeXVar) {
                     r = GetSymbolSize(xVal, opt.sizeMultiplier, opt.sizeLowLimit, opt.sizeUpLimit);
-                    if (opt.symbolType === SymbolTypes.Circle) {
-                        layer.setRadius(r);
-                    }
                     //calculate min and max values and -size
                     if (!opt.actualMaxXValue && !opt.actualMinXValue) {
                         opt.actualMinXValue = xVal;
@@ -289,9 +306,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 }
                 if (opt.sizeYVar) {
                     r = GetSymbolSize(yVal, opt.sizeMultiplier, opt.sizeLowLimit, opt.sizeUpLimit);
-                    if (opt.symbolType === SymbolTypes.Circle) {
-                        layer.setRadius(r);
-                    }
                     //calculate min and max values and -size
                     if (!opt.actualMaxYValue && !opt.actualMinYValue) {
                         opt.actualMinYValue = yVal;
@@ -371,6 +385,51 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 return (svg as any).xml;
             }
             return "";
+        }
+
+        function makeBlockSymbol(sideLength: number, blockAmount: number, fillColor: string, borderColor: string) {
+            let arr = [];
+            for (let i = sideLength; i > 0; i--) {
+
+                arr.push(
+                    <tr key={i}>
+                        {getColumns.call(this, i).map(
+                            function(column) {
+                                return column;
+                            })
+                        }
+                    </tr>
+                );
+            }
+
+            function getColumns(i: number) {
+                let columns = [];
+                for (let c = 0; c < sideLength; c++) {
+                    let style = {
+                        width: 10,
+                        height: 10,
+                        backgroundColor: i + sideLength * c <= blockAmount ? fillColor : 'transparent',
+                        margin: 0,
+                        padding: 0,
+                        border: i + sideLength * c <= blockAmount ? '1px solid ' + borderColor : '0px',
+                    }
+                    columns.push(<td style={style} key={i + c}/>);
+                }
+                return columns;
+            }
+
+            let table =
+                <table style={{
+                    width: 10 * sideLength,
+                    borderCollapse: 'collapse'
+                }}>
+                    <tbody>
+                        {arr.map(function(td) {
+                            return td;
+                        }) }
+                    </tbody>
+                </table>;
+            return reactDOMServer.renderToString(table);
         }
 
     }
