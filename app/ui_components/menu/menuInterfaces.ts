@@ -117,8 +117,6 @@ interface ISymbolMenuStates extends ISymbolOptions {
     iconSelectOpen?: boolean,
     /** Use steps to define different icons*/
     useIconSteps?: boolean,
-
-
     /** The icon being edited */
     currentIconIndex?: number,
     iconStepCount?: number,
