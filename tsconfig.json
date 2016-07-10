@@ -25,9 +25,8 @@
 "typings-custom/leaflet.heat.d.ts",
 "typings-custom/leaflet.ExtraMarkers.d.ts",
 "app/ui_components/common_items/commonInterfaces.ts",
-"app/ui_components/menu/menuInterfaces.ts",
-"app/ui_components/import_wizard/importInterfaces.ts",
-"app/ui_components/Map.tsx"
+"app/ui_components/Map.tsx",
+"app/ui_components/Stores.ts"
 ],
     "compileOnSave": true,
     "buildOnSave": false,

@@ -5,102 +5,100 @@ let Select = require('react-select');
 var coords;
 import {DefaultProjections} from "../common_items/common";
 
+import {ImportWizardState} from '../Stores';
+import {observer} from 'mobx-react';
 
-export class FileDetailsView extends React.Component<IFileDetailsProps, IFileDetailsStates>{
+@observer
+export class FileDetailsView extends React.Component<
+{
+    state: ImportWizardState,
+    /** Saves the lat- and lon- field names and the coordinate system name to the import wizard*/
+    saveValues: (IFileDetails) => void,
+    /** Go to the previous step of the wizard */
+    goBack: () => void,
+}, {}>{
+    private activeLayer = this.props.state.layer;
     componentWillMount() {
         coords = [];
         for (let i = 0; i < DefaultProjections.length; i++) {
             let val = DefaultProjections[i];
             coords[i] = { value: val, label: val };
         }
-        this.setState({
-            latitudeField: this.props.isGeoJSON ? '' : this.props.headers.filter(function(val) { return val.type === 'number' })[0].label,
-            longitudeField: this.props.isGeoJSON ? '' : this.props.headers.filter(function(val) { return val.type === 'number' })[1].label,
-            coordinateSystem: 'WGS84',
-            heatVal: this.props.isHeatMap ? this.props.headers.filter(function(val) { return val.type === 'number' })[0].label : '',
-        });
+        this.props.state.latitudeField = this.props.state.isGeoJSON ? '' : this.activeLayer.numberHeaders[0].label;
+        this.props.state.longitudeField = this.props.state.isGeoJSON ? '' : this.activeLayer.numberHeaders[1].label;
+        this.props.state.coordinateSystem = 'WGS84';
+        this.activeLayer.heatMapVariable = this.props.state.isHeatMap ? this.activeLayer.numberHeaders[0].label : '';
 
     }
-    latitudeSelectionChanged(val) {
-        this.setState(
-            {
-                latitudeField: val ? val.value : '',
-            });
+    onLatitudeSelectionChange = (val) => {
+        this.props.state.latitudeField = val ? val.value : '';
     }
-    longitudeSelectionChanged(val) {
-        this.setState(
-            {
-                longitudeField: val ? val.value : '',
-            });
+    onLongitudeSelectionChange = (val) => {
+        this.props.state.longitudeField = val ? val.value : '';
     }
-    coordinateSystemChanged(val) {
-        this.setState(
-            {
-                coordinateSystem: val ? val.value : '',
-            });
+    onCoordinateSystemChange = (val) => {
+        this.props.state.coordinateSystem = val ? val.value : '';
     }
-    heatValueChanged(val) {
-        this.setState(
-            {
-                heatVal: val ? val.value : '',
-            });
+    onHeatValueChange = (val) => {
+        this.activeLayer.heatMapVariable = val ? val.value : '';
     }
-    goBack() {
+    goBack = () => {
         this.props.goBack();
     }
-    proceed() {
+    proceed = () => {
         let custom = (document.getElementById('customProj') as any).value;
         let values = {
-            latitudeField: this.state.latitudeField,
-            longitudeField: this.state.longitudeField,
-            coordinateSystem: custom !== 'Insert custom Proj4-string here' ? custom : this.state.coordinateSystem,
+            latitudeField: this.props.state.latitudeField,
+            longitudeField: this.props.state.longitudeField,
+            coordinateSystem: custom !== 'Insert custom Proj4-string here' ? custom : this.props.state.coordinateSystem,
         }
         this.props.saveValues(values);
     }
     render() {
+
         return <div style={{ height: '100%' }}>
             <div>
                 <div className = 'dialogHeader'>
                     <h2>Just a few more details</h2>
                 </div>
-                {this.props.isGeoJSON ?
+                {this.props.state.isGeoJSON ?
                     null :
                     <div>
                         <label>Select the latitude/Y field name</label>
                         <Select
-                            options={this.props.headers}
-                            onChange={this.latitudeSelectionChanged.bind(this) }
-                            value={this.state.latitudeField}
-                            placeholder='Latitude field...'/>
+                            options={this.activeLayer.numberHeaders}
+                            onChange={this.onLatitudeSelectionChange }
+                            value={this.props.state.latitudeField}
+                            />
                         <label>Select the longitude/X field name</label>
                         <Select
-                            options={this.props.headers}
-                            onChange={this.longitudeSelectionChanged.bind(this) }
-                            value={this.state.longitudeField}/>
+                            options={this.activeLayer.numberHeaders}
+                            onChange={this.onLongitudeSelectionChange }
+                            value={this.props.state.longitudeField}/>
                     </div>}
                 <label>Select the coordinate system</label>
 
                 <Select
                     options={coords}
-                    onChange={this.coordinateSystemChanged.bind(this) }
-                    value={this.state.coordinateSystem}/>
+                    onChange={this.onCoordinateSystemChange }
+                    value={this.props.state.coordinateSystem}/>
                 <p> Not sure? Try with the default (WGS84) and see if the data lines up.</p>
                 <p>Coordinate system missing? Get the Proj4-string for your system from
                     <a href='http://spatialreference.org/ref/'> Spatial Reference</a>
                 </p>
                 <input id='customProj' defaultValue='Insert custom Proj4-string here' style={{ width: 400 }}/>
-                {this.props.isHeatMap ?
+                {this.props.state.isHeatMap ?
                     <div>
                         <label>Select heat map variable</label>
                         <Select
-                            options={this.props.headers}
-                            onChange={this.heatValueChanged.bind(this) }
-                            value={this.state.heatVal}/>
+                            options={this.activeLayer.numberHeaders}
+                            onChange={this.onHeatValueChange }
+                            value={this.activeLayer.heatMapVariable}/>
                     </div>
                     : null}
             </div>
-            <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this) }>Go back</button>
-            <button className='primaryButton' disabled={!this.state.coordinateSystem || (this.props.isHeatMap && !this.state.heatVal) || (!this.props.isGeoJSON && (!this.state.latitudeField || !this.state.longitudeField)) } style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Mapify!</button>
+            <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack }>Go back</button>
+            <button className='primaryButton' disabled={!this.props.state.coordinateSystem || (this.props.state.isHeatMap && !this.activeLayer.heatMapVariable) || (!this.props.state.isGeoJSON && (!this.props.state.latitudeField || !this.props.state.longitudeField)) } style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed }>Mapify!</button>
         </div>
     }
 

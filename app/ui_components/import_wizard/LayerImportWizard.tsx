@@ -8,91 +8,55 @@ import {LayerTypes} from "../common_items/common";
 
 let _fileModel = new FilePreProcessModel();
 
+import {ImportWizardState} from '../Stores';
+import {observer} from 'mobx-react';
 
-export class LayerImportWizard extends React.Component<ILayerImportProps, ILayerImportStates>{
-    constructor() {
-        super();
-        this.state = {
-            step: 0,
-            uploadDetails: {},
-        };
-    }
+@observer
+export class LayerImportWizard extends React.Component<{
+    state: ImportWizardState,
+    /** Function to upload the data to the map */
+    submit: (Layer) => void,
+    /** Function to signal the cancellation of the import.  */
+    cancel: () => void,
+}, {}>{
     nextStep() {
-        this.setState({
-            step: this.state.step + 1,
-        });
+        this.props.state.step++;
     }
 
     previousStep() {
-        this.setState({
-            step: this.state.step - 1
-        });
+        this.props.state.step--;
     }
 
-    setLayerType(type: LayerTypes) {
-        let details = this.state.uploadDetails;
-        details.layerType = type;
-        this.setState({
-            uploadDetails: details
-        });
-        this.nextStep();
-    }
-
-    setFileInfo(fileInfo: IFileUploadStates, loadDemo: boolean = false) {
-        let details = this.state.uploadDetails;
-
-        this.setLayerName(fileInfo.layerName);
-        details.headers = [];
-        let ext = fileInfo.fileExtension;
+    setFileInfo() {
+        let state = this.props.state;
+        let ext = state.fileExtension;
         if (ext === 'csv') {
-            details.content = fileInfo.content;
-            details.headers = fileInfo.headers;
-            details.delimiter = fileInfo.delimiter;
-            details.fileExtension = ext;
-            this.setState({
-                uploadDetails: details
-            });
             this.nextStep();
         }
         else {
-            details.fileExtension = ext;
             if (ext === 'geojson')
-                details.geoJSON = JSON.parse(fileInfo.content);
+                state.layer.geoJSON = JSON.parse(state.content);
             else if (ext === 'kml' || ext === 'gpx' || ext === 'wkt')
-                details.geoJSON = _fileModel.ParseToGeoJSON(fileInfo.content, ext)
-            let props = details.geoJSON.features ? details.geoJSON.features[0].properties : {};
+                state.layer.geoJSON = _fileModel.ParseToGeoJSON(state.content, ext)
+            let props = state.layer.geoJSON.features ? state.layer.geoJSON.features[0].properties : {};
             for (let h of Object.keys(props)) {
-                details.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
+                state.layer.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
             }
-            this.setState({
-                uploadDetails: details
-            });
-            if (loadDemo)
-                this.submit()
-            else
-                this.nextStep();
+            this.nextStep();
         }
     }
 
     setFileDetails(fileDetails) {
-        let details = this.state.uploadDetails;
+        let details = this.props.state;
 
         details.latitudeField = fileDetails.latitudeField;
         details.longitudeField = fileDetails.longitudeField;
         details.coordinateSystem = fileDetails.coordinateSystem;
-        this.setState({
-            uploadDetails: details
-        });
         this.submit();
     }
 
     setLayerName(name: string) {
-        let details = this.state.uploadDetails;
-
-        details.layerName = name;
-        this.setState({
-            uploadDetails: details,
-        });
+        this.props.state.layer.layerName = name;
     }
     cancel() {
         this.props.cancel();
@@ -103,51 +67,41 @@ export class LayerImportWizard extends React.Component<ILayerImportProps, ILayer
      * @return {void}
      */
     submit() {
-        let details = this.state.uploadDetails;
+        let state = this.props.state;
 
-        if (!details.geoJSON && details.fileExtension === 'csv') {
-            details.geoJSON = _fileModel.ParseCSVToGeoJSON(details.content,
-                details.latitudeField,
-                details.longitudeField,
-                details.delimiter,
-                details.coordinateSystem,
-                details.headers);
+        if (!state.layer.geoJSON && state.fileExtension === 'csv') {
+            state.layer.geoJSON = _fileModel.ParseCSVToGeoJSON(state.content,
+                state.latitudeField,
+                state.longitudeField,
+                state.delimiter,
+                state.coordinateSystem,
+                state.layer.headers);
         }
-        else if (details.coordinateSystem && details.coordinateSystem !== 'WGS84') {
-            details.geoJSON = _fileModel.ProjectCoords(details.geoJSON, details.coordinateSystem);
+        else if (state.coordinateSystem && state.coordinateSystem !== 'WGS84') {
+            state.layer.geoJSON = _fileModel.ProjectCoords(state.layer.geoJSON, state.coordinateSystem);
         }
-        this.setState({ uploadDetails: details });
-        let submitData: ILayerData = {
-            id: -1,
-            layerName: details.layerName,
-            geoJSON: details.geoJSON,
-            layerType: details.layerType,
-            headers: details.headers,
-            heatMapVariable: details.heatMapVariable,
-        };
-        this.props.submit(submitData);
+        this.props.submit(state.layer);
     }
     getCurrentView() {
-        switch (this.state.step) {
+        switch (this.props.state.step) {
             case 0:
                 return <div style={{ minWidth: 1000 }}>
                     <LayerTypeSelectView
-                        saveValues={this.setLayerType.bind(this) }
+                        state = {this.props.state}
                         cancel = {this.cancel.bind(this) }
                         />
                 </div>
             case 1:
                 return <FileUploadView
+                    state={this.props.state}
                     saveValues={this.setFileInfo.bind(this) }
                     goBack={this.previousStep.bind(this) }
                     />
             case 2:
                 return <FileDetailsView
-                    headers={this.state.uploadDetails.headers}
+                    state={this.props.state}
                     saveValues={this.setFileDetails.bind(this) }
                     goBack = {this.previousStep.bind(this) }
-                    isHeatMap={this.state.uploadDetails.layerType === LayerTypes.HeatMap}
-                    isGeoJSON={this.state.uploadDetails.geoJSON ? true : false}
                     />
         }
     }

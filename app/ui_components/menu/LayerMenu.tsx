@@ -1,25 +1,30 @@
 import * as React from 'react';
 let Sortable = require('react-sortablejs')
-export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates>{
-    constructor(props: ILayerMenuProps) {
-        super(props);
+import {AppState, Layer} from '../Stores';
+import {observer} from 'mobx-react';
 
-        this.state =
-            {
-                order: this.getOriginalOrder()
-            };
-    }
-    shouldComponentUpdate(nextProps: ILayerMenuProps, nextState: ILayerMenuStates) {
-        return this.props.isVisible !== nextProps.isVisible ||
-            this.props.layers !== nextProps.layers ||
-            this.areOrdersDifferent(this.state.order, nextState.order);
-    }
+@observer
+export class LayerMenu extends React.Component<{
+    state: AppState,
+    /** Function to signal the opening of the layer import wizard. Triggered by button press*/
+    addNewLayer: () => void,
+    /** Function to remove a layer from the map. Triggered by button press*/
+    deleteLayer: (id: number) => void,
+    /** Save the current order to the map. Triggered by button press*/
+    saveOrder: (order: number[]) => void,
+}, {}>{
+    private UIState = this.props.state.layerMenuState;
+    // shouldComponentUpdate(nextProps: ILayerMenuProps, nextState: ILayerMenuStates) {
+    //     return this.props.isVisible !== nextProps.isVisible ||
+    //         this.props.layers !== nextProps.layers ||
+    //         this.areOrdersDifferent(this.state.order, nextState.order);
+    // }
 
-    componentWillReceiveProps(nextProps: ILayerMenuProps) {
-        this.setState({
-            order: this.getOriginalOrder(nextProps.layers)
-        })
-    }
+    // componentWillReceiveProps(nextProps: ILayerMenuProps) {
+    //     this.setState({
+    //         order: this.getOriginalOrder(nextProps.layers)
+    //     })
+    // }
 
     areOrdersDifferent(first: { name: string, id: number }[], second: { name: string, id: number }[]) {
         if (first.length !== second.length)
@@ -31,8 +36,8 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
         }
         return false;
     }
-    getOriginalOrder(layers?: ILayerData[]) {
-        if (!layers) layers = this.props.layers;
+    getOriginalOrder(layers?: Layer[]) {
+        if (!layers) layers = this.props.state.layers;
 
         let arr = [];
         for (let lyr of layers) {
@@ -51,7 +56,7 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
 
     }
     getLayerInfoById(id: string) {
-        for (let lyr of this.state.order) {
+        for (let lyr of this.UIState.order) {
             if (lyr.id === +id) {
                 return lyr;
             }
@@ -65,10 +70,10 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
     }
     saveOrder() {
         let arr: number[] = [];
-        for (let lyr of this.state.order) {
+        for (let lyr of this.UIState.order) {
             arr.push(lyr.id);
         }
-        this.props.saveOrder(arr);
+        this.props.saveOrder(arr); //unnecessary? just set the state?
     }
     render() {
         let layerStyle = {
@@ -83,11 +88,11 @@ export class LayerMenu extends React.Component<ILayerMenuProps, ILayerMenuStates
             textAlign: 'center',
             lineHeight: '20px',
         }
-        return (!this.props.isVisible ? null :
+        return (this.props.state.visibleMenu !== 1 ? null :
             <div className="mapify-options">
                 <label>Drag and drop to reorder</label>
                 <Sortable className='layerList' onChange={this.handleSort.bind(this) }>
-                    {this.state.order.map(function(layer) {
+                    {this.UIState.order.map(function(layer) {
                         return <div style={layerStyle} key={layer.id} data-id={layer.id} >
                             {layer.name}
                             <i className="fa fa-times" onClick = {this.deleteLayer.bind(this, layer.id) }/>

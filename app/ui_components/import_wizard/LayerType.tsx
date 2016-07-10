@@ -4,7 +4,20 @@ import {LayerTypes} from "../common_items/common";
 /**
  * The component shown in the map type selection window
  */
-export class LayerType extends React.Component<ILayerTypeProps, {}>{
+export class LayerType extends React.Component<{
+    /** The name of the map type; i.e. Choropleth Map*/
+    name: string,
+    /** The layer type as defined in Common.LayerTypes  */
+    type: LayerTypes,
+    /** A short description of the map's appearance and common use cases*/
+    description: string,
+    /** The url of an example image*/
+    imageURL: string,
+    /** The selection event */
+    onClick: (type: LayerTypes) => void,
+    /** Is the layer type currently selected */
+    selected: boolean,
+}, {}>{
     render() {
         let style = {
             float: 'left',

@@ -1,7 +1,9 @@
 declare var require: any;
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import {observer} from 'mobx-react';
 
+import {AppState, ImportWizardState, Layer, VisualizationOptions, ColorOptions, SymbolOptions, SaveState} from './Stores';
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
@@ -25,41 +27,16 @@ let _currentFilterId: number = 0;
 let _map: L.Map;
 
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
+const state = new AppState();
+@observer
+export class MapMain extends React.Component<{}, {}>{
 
-export class MapMain extends React.Component<{}, IMapMainStates>{
-
-
-    private defaultColorOptions: IColorOptions = {
-        fillColor: '#E0E62D',
-        fillOpacity: 0.8,
-        opacity: 0.8,
-        color: '#000',
-        choroplethField: '',
-        colorScheme: 'Greys',
-        steps: 7,
-        mode: 'q',
-        iconTextColor: '#FFF',
-        revert: false
-    }
-    private defaultVisOptions: IVisualizationOptions = {
-        colorOptions: this.defaultColorOptions,
-        symbolOptions: { symbolType: SymbolTypes.Circle },
-        onEachFeature: this.addPopupsToLayer,
-        pointToLayer: function(feature, latlng: L.LatLng) {
-            return L.circleMarker(latlng, this.defaultColorOptions)
-        }.bind(this),
-    }
-    constructor() {
-        super();
-        this.state = {
-            welcomeShown: true,
-            importWizardShown: false,
-            menuShown: false,
-            layers: null,
-            filters: []
-        };
-
-    }
+    // private defaultVisOptions: VisualizationOptions = {
+    //     onEachFeature: this.addPopupsToLayer,
+    //     pointToLayer: function(feature, latlng: L.LatLng) {
+    //         return L.circleMarker(latlng, this.defaultColorOptions)
+    //     }.bind(this),
+    // }
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
@@ -80,17 +57,13 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
 
     }
     startLayerImport() {
-        this.setState({
-            importWizardShown: true,
-            welcomeShown: false,
-        })
+        state.importWizardShown = true;
+        state.welcomeShown = false;
     }
 
     cancelLayerImport() {
-        this.setState({
-            importWizardShown: false,
-            menuShown: true,
-        })
+        state.importWizardShown = false;
+        state.menuShown = true;
     }
 
     /**
@@ -98,11 +71,16 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      *
      * @param  {ILayerData} layerData contains layer name and GeoJSON object
      */
-    layerImportSubmit(layerData: ILayerData) {
+    layerImportSubmit(layerData: Layer) {
         let layer;
-        layerData.visOptions = JSON.parse(JSON.stringify(this.defaultVisOptions));
-        layerData.visOptions.onEachFeature = this.defaultVisOptions.onEachFeature;
-        layerData.visOptions.pointToLayer = this.defaultVisOptions.pointToLayer;
+        let visOptions = new VisualizationOptions();
+        visOptions.pointToLayer = function(feature, latlng: L.LatLng) {
+            return L.circleMarker(latlng, this.defaultColorOptions)
+        }.bind(this);
+        visOptions.onEachFeature = this.addPopupsToLayer;
+        layerData.visOptions = visOptions;// JSON.parse(JSON.stringify(visOptions));
+        layerData.visOptions.onEachFeature = visOptions.onEachFeature;
+        layerData.visOptions.pointToLayer = visOptions.pointToLayer;
         layerData.id = _currentLayerId;
         _currentLayerId++;
         if (layerData.layerType === LayerTypes.ChoroplethMap) {
@@ -118,13 +96,11 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         layer.addTo(_map);
         _map.fitBounds(layerData.layerType === LayerTypes.HeatMap ? (layer as any)._latlngs : layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
 
-        var lyrs = this.state.layers ? this.state.layers : [];
-        lyrs.push(layerData);
-        this.setState({
-            layers: lyrs,
-            importWizardShown: false,
-            menuShown: true,
-        });
+        state.layers.push(layerData);
+        state.importWizardShown = false;
+        state.editingLayer = layerData;
+        state.menuShown = true;
+
     }
 
 
@@ -143,7 +119,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     }
 
     getLayerInfoById(id: number) {
-        for (let lyr of this.state.layers) {
+        for (let lyr of state.layers) {
             if (lyr.id == id) {
                 return lyr;
             }
@@ -154,24 +130,23 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  layerData  The layer to update
      * @param  wasImported  Was layer imported from a previously saved map
      */
-    reloadLayer(layerData: ILayerData, wasImported: boolean = false) {
-        if (layerData) {
-            let filter = this.state.filters.filter((f) => { return f.layerDataId === layerData.id })[0];
-            let col = layerData.visOptions.colorOptions;
-            let sym = layerData.visOptions.symbolOptions;
+    reloadLayer(layer: Layer, wasImported: boolean = false) {
+        if (layer) {
+            let filter = state.filters.filter((f) => { return f.layerDataId === layer.id })[0];
+            let col = layer.visOptions.colorOptions;
+            let sym = layer.visOptions.symbolOptions;
             if (!wasImported)
-                _map.removeLayer(layerData.layer);
+                _map.removeLayer(layer.layer);
 
-
-            if (layerData.layerType !== LayerTypes.HeatMap) {
-                if (layerData.layerType === LayerTypes.SymbolMap) {
-                    let opt = layerData.visOptions.symbolOptions;
+            if (layer.layerType !== LayerTypes.HeatMap) {
+                if (layer.layerType === LayerTypes.SymbolMap) {
+                    let opt = layer.visOptions.symbolOptions;
                     //if needs to scale and is of scalable type
                     if (opt.sizeXVar || opt.sizeYVar && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle || opt.symbolType === SymbolTypes.Blocks)) {
                         getMaxValues(opt);
                     }
                 }
-                layerData.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
+                layer.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
                     let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]);
                     let borderColor = col.color;
                     switch (sym.symbolType) {
@@ -234,51 +209,46 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                             return L.marker(latlng, { icon: blockMarker });
                     }
 
-                    return L.circleMarker(latlng, layerData.visOptions.colorOptions);
+                    return L.circleMarker(latlng, layer.visOptions.colorOptions);
 
                 });
             }
-            let layer;
-            if (layerData.layerType === LayerTypes.HeatMap) {
-                layer = this.createHeatLayer(layerData);
+            let lyr;
+            if (layer.layerType === LayerTypes.HeatMap) {
+                lyr = this.createHeatLayer(layer);
             }
-            else if (layerData.layerType === LayerTypes.ChoroplethMap || col.choroplethField !== '') {
-                layer = this.createChoroplethLayer(layerData);
+            else if (layer.layerType === LayerTypes.ChoroplethMap || col.choroplethField !== '') {
+                lyr = this.createChoroplethLayer(layer);
             }
-            else if (layerData.layerType === LayerTypes.SymbolMap) {
-                layer = L.geoJson(layerData.geoJSON, layerData.visOptions);
+            else if (layer.layerType === LayerTypes.SymbolMap) {
+                lyr = L.geoJson(layer.geoJSON, layer.visOptions);
             }
 
-            layer.addTo(_map);
+            lyr.addTo(_map);
 
             if (wasImported)
-                _map.fitBounds(layerData.layerType === LayerTypes.HeatMap ? (layer as any)._latlngs : layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
+                _map.fitBounds(layer.layerType === LayerTypes.HeatMap ? (layer as any)._latlngs : lyr.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
 
-            layerData.layer = layer;
-            if (layerData.layerType === LayerTypes.SymbolMap && sym.symbolType === SymbolTypes.Circle && sym.sizeXVar) {
+            layer.layer = lyr;
+            if (layer.layerType === LayerTypes.SymbolMap && sym.symbolType === SymbolTypes.Circle && sym.sizeXVar) {
                 setCircleMarkerRadius(sym);
             }
-            let layers = this.state.layers ? this.state.layers.filter((lyr) => { return lyr.id != layerData.id }) : [];
+            let currentIndex = state.layers.map(function(e) { return e.id; }).indexOf(layer.id);
 
-            layers.push(layerData);
-            this.setState({
-                layers: layers,
-            });
-
-
+            state.layers[currentIndex == -1 ? 0 : currentIndex] = layer;
             if (filter)
                 this.saveFilter(filter, true);
         }
 
-        function setCircleMarkerRadius(sym: ISymbolOptions) {
-            (layerData.layer as any).eachLayer(function(layer) {
+        function setCircleMarkerRadius(sym: SymbolOptions) {
+            (layer.layer as any).eachLayer(function(layer) {
                 layer.setRadius(GetSymbolSize(layer.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
 
             });
         }
 
-        function getMaxValues(opt: ISymbolOptions) {
-            (layerData.layer as any).eachLayer(function(layer) {
+        function getMaxValues(opt: SymbolOptions) {
+            (layer.layer as any).eachLayer(function(layer) {
                 let xVal = layer.feature.properties[opt.sizeXVar];
                 let yVal = layer.feature.properties[opt.sizeYVar];
                 let r = 10;
@@ -442,18 +412,18 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  layerData    the data containing the GeoJSON string and the color variable
      * @return {L.GeoJSON}  the GeoJSON layer coloured according to the visOptions
      */
-    createChoroplethLayer(layerData: ILayerData) {
-        let opts = layerData.visOptions.colorOptions;
+    createChoroplethLayer(layer: Layer) {
+        let opts = layer.visOptions.colorOptions;
         if (opts.choroplethField === '') {
-            layerData.headers.map(function(h) {
+            layer.headers.map(function(h) {
                 if (h.type == 'number') {
                     opts.choroplethField = h.label;
                 }
             })
             if (opts.choroplethField === '')
-                opts.choroplethField = layerData.headers[0].label;
+                opts.choroplethField = layer.headers[0].label;
         }
-        let values = (layerData.geoJSON as any).features.map(function(item) {
+        let values = (layer.geoJSON as any).features.map(function(item) {
             return item.properties[opts.choroplethField];
         });
         if (!opts.limits)
@@ -472,12 +442,12 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
 
         let options: L.GeoJSONOptions = {
-            pointToLayer: layerData.visOptions.pointToLayer.bind(this),
-            onEachFeature: layerData.visOptions.onEachFeature ? layerData.visOptions.onEachFeature : this.defaultVisOptions.onEachFeature,
+            pointToLayer: layer.visOptions.pointToLayer.bind(this),
+            onEachFeature: layer.visOptions.onEachFeature,
             style: style.bind(this),
         }
 
-        return L.geoJson(layerData.geoJSON, options);
+        return L.geoJson(layer.geoJSON, options);
     }
 
     getChoroplethColor(limits: any[], colors: string[], value: number) {
@@ -493,8 +463,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
         }
     }
 
-
-    createHeatLayer(layerData: ILayerData) {
+    createHeatLayer(layerData: Layer) {
         let arr: number[][] = [];
         let max = 0;
         layerData.geoJSON.features.map(function(feat) {
@@ -532,10 +501,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      *
      */
     addNewLayer() {
-        this.setState({
-            importWizardShown: true,
-            menuShown: false,
-        });
+        state.importWizardShown = true;
+        state.menuShown = false;
     }
 
     /**
@@ -546,13 +513,8 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     deleteLayer(id: number) {
         let layerInfo = this.getLayerInfoById(id);
         if (layerInfo) {
-            let currLayers = this.state.layers.filter((lyr) => { return lyr.id != id });
+            state.layers = state.layers.filter((lyr) => { return lyr.id != id });
             _map.removeLayer(layerInfo.layer);
-            this.setState({
-                layers: currLayers,
-                importWizardShown: false,
-                menuShown: true,
-            })
         }
 
     }
@@ -565,14 +527,13 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  layerUpdate   Was the update triggered by layer refresh? If so, do not reset filter
      */
     saveFilter(info: IFilter, layerUpdate: boolean = false) {
-        let layerData = this.state.layers.filter((lyr) => { return lyr.id === info.layerDataId })[0];
-        let filters: IFilter[] = this.state.filters;
+        let layerData = state.layers.filter((lyr) => { return lyr.id === info.layerDataId })[0];
         if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Chart || layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon)
             info.remove = true; //force removal if type requires it
         let id;
         if (info.id != -1) { //existing filter being updated
             id = info.id;
-            filters = filters.filter((f) => { return f.id !== id });
+            state.filters = state.filters.filter((f) => { return f.id !== id });
         }
         else {
             id = _currentFilterId++;
@@ -592,7 +553,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     filterValues[val] = [layer];
             });
         }
-        filters.push(
+        state.filters.push(
             {
                 id: id,
                 title: info.title,
@@ -607,11 +568,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                 filteredIndices: [],
                 remove: info.remove,
             });
-        this.setState({
-            filters: filters,
-            importWizardShown: this.state.importWizardShown,
-            menuShown: this.state.menuShown,
-        });
         return id;
 
     }
@@ -622,12 +578,10 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  id  The id of the layer to delete
      */
     deleteFilter(id: number) {
-        let filterToDelete = this.state.filters.filter(function(f) { return f.id === id })[0];
+        let filterToDelete = state.filters.filter(function(f) { return f.id === id })[0];
         this.filterLayer(id, filterToDelete.totalMin, filterToDelete.totalMax); //reset filter
-        let filters = this.state.filters.filter(function(f) { return f.id !== id });
-        this.setState({
-            filters: filters,
-        });
+        state.filters = state.filters.filter(function(f) { return f.id !== id });
+
     }
 
     /**
@@ -638,68 +592,70 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      * @param  upperLimit Current max value. Hide every value above this
      */
     filterLayer(filterId: number, lowerLimit: any, upperLimit: any) {
-        let filter: IFilter = this.state.filters.filter((f) => { return f.id === filterId })[0];
-        filter.currentMin = lowerLimit;
-        filter.currentMax = upperLimit;
-        let layerData: ILayerData = this.state.layers.filter((lyr) => { return lyr.id === filter.layerDataId })[0];
-        if (layerData.layerType !== LayerTypes.HeatMap) {
-            for (let val in filter.filterValues) {
-                let filteredIndex = filter.filteredIndices.indexOf(+val); //is filtered?
-                if (filteredIndex === -1 && (val < lowerLimit || val > upperLimit)) { //If not yet filtered and values over thresholds
-                    filter.filterValues[val].map(function(lyr) {
-                        if (filter.remove)
-                            layerData.layer.removeLayer(lyr);
-                        else {
-
-                            if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) { //for divIcons - replace existing with a copy with new opacity
-                                let icon = (lyr as any).options.icon;
-                                let html = icon.options.html.replace('opacity:' + layerData.visOptions.colorOptions.fillOpacity + ';', 'opacity:0.2;');
-
-                                icon.options.html = html;
-                                (lyr as any).setIcon(icon);
-                            }
-                            else {
-                                (lyr as any).setStyle({ fillOpacity: 0.2, opacity: 0.2 })
-                            }
-                        }
-                    });
-                    filter.filteredIndices.push(+val); //mark as filtered
-                }
-                else if (filteredIndex > -1 && (val >= lowerLimit && val <= upperLimit)) { //If filtered and withing thresholds
-                    filter.filterValues[val].map(function(lyr) {
-                        if (shouldLayerBeAdded.call(this, lyr)) {
+        let filter: IFilter = state.filters.filter((f) => { return f.id === filterId })[0];
+        if (filter) {
+            filter.currentMin = lowerLimit;
+            filter.currentMax = upperLimit;
+            let layerData: Layer = state.layers.filter((lyr) => { return lyr.id === filter.layerDataId })[0];
+            if (layerData.layerType !== LayerTypes.HeatMap) {
+                for (let val in filter.filterValues) {
+                    let filteredIndex = filter.filteredIndices.indexOf(+val); //is filtered?
+                    if (filteredIndex === -1 && (val < lowerLimit || val > upperLimit)) { //If not yet filtered and values over thresholds
+                        filter.filterValues[val].map(function(lyr) {
                             if (filter.remove)
-                                layerData.layer.addLayer(lyr);
-                            else
-                                if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
+                                layerData.layer.removeLayer(lyr);
+                            else {
+
+                                if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) { //for divIcons - replace existing with a copy with new opacity
                                     let icon = (lyr as any).options.icon;
-                                    let html = icon.options.html.replace('opacity:0.2;', 'opacity:' + layerData.visOptions.colorOptions.fillOpacity + ';');
+                                    let html = icon.options.html.replace('opacity:' + layerData.visOptions.colorOptions.fillOpacity + ';', 'opacity:0.2;');
 
                                     icon.options.html = html;
                                     (lyr as any).setIcon(icon);
                                 }
                                 else {
-                                    (lyr as any).setStyle({ fillOpacity: layerData.visOptions.colorOptions.fillOpacity, opacity: layerData.visOptions.colorOptions.opacity });
+                                    (lyr as any).setStyle({ fillOpacity: 0.2, opacity: 0.2 })
                                 }
-                        }
-                    }, this);
-                    filter.filteredIndices.splice(filteredIndex, 1);
+                            }
+                        });
+                        filter.filteredIndices.push(+val); //mark as filtered
+                    }
+                    else if (filteredIndex > -1 && (val >= lowerLimit && val <= upperLimit)) { //If filtered and withing thresholds
+                        filter.filterValues[val].map(function(lyr) {
+                            if (shouldLayerBeAdded.call(this, lyr)) {
+                                if (filter.remove)
+                                    layerData.layer.addLayer(lyr);
+                                else
+                                    if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Rectangle) {
+                                        let icon = (lyr as any).options.icon;
+                                        let html = icon.options.html.replace('opacity:0.2;', 'opacity:' + layerData.visOptions.colorOptions.fillOpacity + ';');
 
+                                        icon.options.html = html;
+                                        (lyr as any).setIcon(icon);
+                                    }
+                                    else {
+                                        (lyr as any).setStyle({ fillOpacity: layerData.visOptions.colorOptions.fillOpacity, opacity: layerData.visOptions.colorOptions.opacity });
+                                    }
+                            }
+                        }, this);
+                        filter.filteredIndices.splice(filteredIndex, 1);
+
+                    }
                 }
+
             }
-
-        }
-        else {
-            let arr: number[][] = [];
-            layerData.geoJSON.features.map(function(feat) {
-                if (feat.properties[filter.fieldToFilter] > lowerLimit && feat.properties[filter.fieldToFilter] < upperLimit) {
-                    let pos = [];
-                    pos.push(feat.geometry.coordinates[1]);
-                    pos.push(feat.geometry.coordinates[0]);
-                    arr.push(pos);
-                }
-            });
-            layerData.layer.setLatLngs(arr);
+            else {
+                let arr: number[][] = [];
+                layerData.geoJSON.features.map(function(feat) {
+                    if (feat.properties[filter.fieldToFilter] > lowerLimit && feat.properties[filter.fieldToFilter] < upperLimit) {
+                        let pos = [];
+                        pos.push(feat.geometry.coordinates[1]);
+                        pos.push(feat.geometry.coordinates[0]);
+                        arr.push(pos);
+                    }
+                });
+                layerData.layer.setLatLngs(arr);
+            }
         }
 
 
@@ -709,7 +665,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
          * @return {type}  description
          */
         function shouldLayerBeAdded(layer) {
-            let filters: IFilter[] = this.state.filters.filter((f) => { return f.id !== filterId });
+            let filters: IFilter[] = state.filters.filter((f) => { return f.id !== filterId });
             let canUnFilter = true;
             for (let i in filters) {
                 let filter = filters[i];
@@ -729,40 +685,34 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
      */
     getFilters() {
         let arr: JSX.Element[] = [];
-        for (let key in this.state.filters) {
-            arr.push(<Filter
-                id = {this.state.filters[key].id}
-                title={this.state.filters[key].title}
-                valueChanged={this.filterLayer.bind(this) }
-                key={key} maxValue={this.state.filters[key].totalMax}
-                minValue={this.state.filters[key].totalMin}
-                steps={this.state.filters[key].steps}/>)
-        }
+        if (state.filters.length > 0)
+            for (let key in state.filters) {
+                arr.push(<Filter
+                    id = {state.filters[key].id}
+                    title={state.filters[key].title}
+                    valueChanged={this.filterLayer.bind(this) }
+                    key={key} maxValue={state.filters[key].totalMax}
+                    minValue={state.filters[key].totalMin}
+                    steps={state.filters[key].steps}/>)
+            }
         return arr;
     }
 
 
-    legendPropsChanged(legend: ILegend) {
-        this.setState({
-            legend: legend,
-            menuShown: this.state.menuShown,
-            importWizardShown: this.state.importWizardShown,
-        })
+    legendPropsChanged(legend: ILegend) { //unnecessary?
+        state.legend = legend;
     }
 
     showLegend() {
-        if (this.state.legend && this.state.legend.visible) {
+        if (state.legend && state.legend.visible) {
             return <Legend
-                title={this.state.legend.title}
-                meta ={this.state.legend.meta}
-                mapLayers={this.state.layers}
-                horizontal={this.state.legend.horizontal}
-                showPercentages={this.state.legend.showPercentages}/>
+                state={state}/>
 
         }
     }
 
-    saveImage(options: IExportMenuStates) {
+    saveImage() {
+        let options = state.exportMenuState;
         function filter(node) {
             if (!node.className || !node.className.indexOf)
                 return true;
@@ -780,60 +730,39 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
     }
 
     saveFile() {
-        let saveLayers: ILayerSaveData[] = [];
-        for (let i of this.state.layers) {
-            let lyr: ILayerSaveData = {
-                id: i.id,
-                layerName: i.layerName,
-                layerType: i.layerType,
-                headers: i.headers,
-                visOptions: i.visOptions,
-                heatMapVariable: i.heatMapVariable,
-                //topoJSON: topojson.topology(i.geoJSON),
-                geoJSON: i.geoJSON,
-
-
-            }
-            saveLayers.push(lyr)
-        }
-        let filters: IFilter[] = [];
-        for (let i of this.state.filters) {
-            let filter: IFilter = {
-                id: i.id,
-                title: i.title,
-                layerDataId: i.layerDataId,
-                fieldToFilter: i.fieldToFilter,
-                currentMax: i.currentMax,
-                currentMin: i.currentMin,
-                totalMax: i.totalMax,
-                totalMin: i.totalMin,
-                steps: i.steps,
-                remove: i.remove,
-                filteredIndices: i.filteredIndices,
-            }
-            filters.push(filter)
-        }
-        let saveData: ISaveData = {
-            layers: saveLayers,
-            legend: this.state.legend,
-            filters: filters,
+        let saveData: SaveState = {
+            layers: state.layers,
+            legend: state.legend,
+            filters: state.filters,
 
         };
         let blob = new Blob([JSON.stringify(saveData)], { type: "text/plain;charset=utf-8" });
         (window as any).saveAs(blob, 'map.mapify');
     }
 
-    loadSavedMap(saveData: ISaveData) {
+    loadSavedMap(saveData: SaveState) {
         for (let i in saveData.layers) {
-            this.reloadLayer(saveData.layers[i], true)
+            let lyr = saveData.layers[i];
+            let newLayer = new Layer();
+            console.log(lyr)
+            newLayer.id = lyr.id;
+            newLayer.layerName = lyr.layerName
+            newLayer.headers = lyr.headers;
+            newLayer.popupHeaders = lyr.popupHeaders;
+            newLayer.geoJSON = lyr.geoJSON;
+            newLayer.layerType = lyr.layerType;
+            newLayer.heatMapVariable = lyr.heatMapVariable;
+            newLayer.layer = lyr.layer;
+            newLayer.visOptions = lyr.visOptions;
 
+            this.reloadLayer(newLayer, true)
         }
-        this.setState({
-            welcomeShown: false,
-            menuShown: true,
-            legend: saveData.legend,
-            filters: saveData.filters,
-        })
+        state.welcomeShown = false;
+        state.editingLayer = state.layers[0];
+        state.menuShown = true;
+        state.legend = saveData.legend;
+        state.filters = saveData.filters;
+
     }
     render() {
         let modalStyle = {
@@ -847,7 +776,7 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
             <div>
                 <div id='map'/>
                 <Modal
-                    isOpen={this.state.welcomeShown}
+                    isOpen={state.welcomeShown}
                     style = {modalStyle}>
                     <WelcomeScreen
                         loadMap={this.loadSavedMap.bind(this) }
@@ -855,17 +784,17 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                         />
                 </Modal>
                 <Modal
-                    isOpen={this.state.importWizardShown}
+                    isOpen={state.importWizardShown}
                     style = {modalStyle}>
                     <LayerImportWizard
+                        state={new ImportWizardState() }
                         submit={this.layerImportSubmit.bind(this) }
                         cancel={this.cancelLayerImport.bind(this) }
 
                         />
                 </Modal>
                 <MapifyMenu
-                    layers = {this.state.layers}
-                    filters={this.state.filters}
+                    state = {state}
                     refreshMap={this.reloadLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
@@ -873,7 +802,6 @@ export class MapMain extends React.Component<{}, IMapMainStates>{
                     deleteFilter={this.deleteFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
-                    visible={this.state.menuShown}
                     saveImage ={this.saveImage}
                     saveFile = {this.saveFile.bind(this) }
                     />

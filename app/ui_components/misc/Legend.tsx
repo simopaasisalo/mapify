@@ -1,17 +1,20 @@
 import * as React from 'react';
 let Draggable = require('react-draggable');
 import {SymbolTypes} from '../common_items/common';
+import {AppState, Layer, VisualizationOptions, SymbolOptions} from '../Stores';
+import {observer} from 'mobx-react';
 
-export class Legend extends React.Component<IOnScreenLegendProps, {}>{
+@observer
+export class Legend extends React.Component<{ state: AppState }, {}>{
 
-    shouldComponentUpdate(nextProps: IOnScreenLegendProps, nextState: {}) {
-        return nextProps.title !== this.props.title ||
-            nextProps.meta !== this.props.meta ||
-            nextProps.mapLayers !== this.props.mapLayers ||
-            nextProps.horizontal !== this.props.horizontal ||
-            nextProps.showPercentages !== this.props.showPercentages;
-    }
-    createChoroplethLegend(options: IVisualizationOptions, percentages) {
+    // shouldComponentUpdate(nextProps: IOnScreenLegendProps, nextState: {}) {
+    //     return nextProps.title !== this.props.state.legend.title ||
+    //         nextProps.meta !== this.props.state.legend.meta ||
+    //         nextProps.mapLayers !== this.props.state.legend.mapLayers ||
+    //         nextProps.horizontal !== this.props.state.legend.horizontal ||
+    //         nextProps.showPercentages !== this.props.state.legend.showPercentages;
+    // }
+    createChoroplethLegend(options: VisualizationOptions, percentages) {
         let divs = [];
         let limits = options.colorOptions.limits;
         let colors = options.colorOptions.colors;
@@ -23,27 +26,27 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                 minHeight: '20px',
             }
 
-            divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
+            divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
                 <div style={colorStyle} />
 
                 <span style={{ marginLeft: '3px', marginRight: '3px' }}>
 
-                    {limits[i].toFixed(0) + '-'} {this.props.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
-                    {this.props.showPercentages ? <br/> : null}
-                    {this.props.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
+                    {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
+                    {this.props.state.legend.showPercentages ? <br/> : null}
+                    {this.props.state.legend.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
                 </span>
 
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
             { options.colorOptions.choroplethField }
-            <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+            <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
             </div >
         </div >;
     }
 
-    createScaledSizeLegend(options: IVisualizationOptions) {
+    createScaledSizeLegend(options: VisualizationOptions) {
         let symbolType = options.symbolOptions.symbolType;
         let opt = options.symbolOptions;
         let xVar = opt.sizeXVar;
@@ -53,7 +56,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         let style = {
             float: 'left',
             margin: 5,
-            clear: this.props.horizontal ? 'both' : ''
+            clear: this.props.state.legend.horizontal ? 'both' : ''
         }
         if (symbolType === SymbolTypes.Circle) {
             return circleLegend.call(this);
@@ -92,26 +95,26 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                     width: square ? l : y ? 10 : l,
                     height: square ? l : y ? l : 10,
                     backgroundColor: options.colorOptions.fillColor,
-                    display: this.props.horizontal ? '' : 'inline-block',
+                    display: this.props.state.legend.horizontal ? '' : 'inline-block',
                     border: '1px solid gray',
-                    marginLeft: this.props.horizontal || y ? 'auto' : margin, //center values
-                    marginRight: this.props.horizontal || y ? 'auto' : margin, //center values
-                    marginTop: this.props.horizontal && y ? margin : 'auto',
-                    marginBottom: this.props.horizontal && y ? margin : 'auto',
+                    marginLeft: this.props.state.legend.horizontal || y ? 'auto' : margin, //center values
+                    marginRight: this.props.state.legend.horizontal || y ? 'auto' : margin, //center values
+                    marginTop: this.props.state.legend.horizontal && y ? margin : 'auto',
+                    marginBottom: this.props.state.legend.horizontal && y ? margin : 'auto',
                 }
 
                 let parentDivStyle = {
-                    float: this.props.horizontal ? 'left' : '',
-                    marginRight: this.props.horizontal ? 5 : 0,
+                    float: this.props.state.legend.horizontal ? 'left' : '',
+                    marginRight: this.props.state.legend.horizontal ? 5 : 0,
                 }
                 divs.push(
                     <div key={i} style={parentDivStyle}>
                         <div style={style} />
-                        <span style={{ display: 'inline-block', width: this.props.horizontal ? '' : textWidth * 10 }}>{ values[i]}</span>
+                        <span style={{ display: 'inline-block', width: this.props.state.legend.horizontal ? '' : textWidth * 10 }}>{ values[i]}</span>
                     </div >);
             }
 
-            return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
+            return <div style= {{ float: this.props.state.legend.horizontal ? '' : 'left', textAlign: 'center' }}>
                 {y ? options.symbolOptions.sizeYVar : options.symbolOptions.sizeXVar}
                 <div>
                     {divs.map(function(d) { return d }) }
@@ -135,29 +138,29 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                     width: l,
                     height: l,
                     backgroundColor: options.colorOptions.fillColor,
-                    float: this.props.horizontal ? '' : 'left',
+                    float: this.props.state.legend.horizontal ? '' : 'left',
                     border: '1px solid gray',
                     borderRadius: '50%',
-                    marginLeft: this.props.horizontal ? 2 : margin, //center values
-                    marginRight: this.props.horizontal ? 2 : margin, //center values
-                    marginTop: this.props.horizontal ? margin : 2,
-                    marginBottom: this.props.horizontal ? margin : 2,
+                    marginLeft: this.props.state.legend.horizontal ? 2 : margin, //center values
+                    marginRight: this.props.state.legend.horizontal ? 2 : margin, //center values
+                    marginTop: this.props.state.legend.horizontal ? margin : 2,
+                    marginBottom: this.props.state.legend.horizontal ? margin : 2,
                 }
                 let parentDivStyle = {
-                    float: this.props.horizontal ? 'left' : '',
+                    float: this.props.state.legend.horizontal ? 'left' : '',
                     minHeight: '15px',
-                    overflow: this.props.horizontal ? 'none' : 'auto',
-                    lineHeight: this.props.horizontal ? '' : Math.max(2 * radii[i] + 4, 15) + 'px',
+                    overflow: this.props.state.legend.horizontal ? 'none' : 'auto',
+                    lineHeight: this.props.state.legend.horizontal ? '' : Math.max(2 * radii[i] + 4, 15) + 'px',
 
                 }
                 divs.push(
                     <div key={i} style={parentDivStyle}>
                         <div style={style} />
-                        <span style={{ marginRight: this.props.horizontal ? 15 : '' }}>{ values[i]}</span>
+                        <span style={{ marginRight: this.props.state.legend.horizontal ? 15 : '' }}>{ values[i]}</span>
                     </div>);
             }
 
-            return <div style= {{ float: this.props.horizontal ? '' : 'left', textAlign: 'center' }}>
+            return <div style= {{ float: this.props.state.legend.horizontal ? '' : 'left', textAlign: 'center' }}>
                 {options.symbolOptions.sizeXVar}
                 <div>
                     {divs.map(function(d) { return d }) }
@@ -167,7 +170,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
 
     }
 
-    createChartSymbolLegend(options: ISymbolOptions) {
+    createChartSymbolLegend(options: SymbolOptions) {
         let divs = [];
         let headers = options.chartFields;
         let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
@@ -178,7 +181,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                 minWidth: '20px',
                 minHeight: '20px',
             }
-            divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
+            divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
                 <div style={colorStyle} />
                 <span style={{ marginLeft: '3px', marginRight: '3px' }}>
                     { headers[i].label}
@@ -186,13 +189,13 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left' }}>
-            <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+            <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
             </div >
         </div >;
     }
 
-    createIconLegend(options: IVisualizationOptions, percentages, layerName: string) {
+    createIconLegend(options: VisualizationOptions, percentages, layerName: string) {
         let divs = [];
         let limits = options.symbolOptions.iconLimits;
         let icons: IIcon[] = options.symbolOptions.icons;
@@ -200,18 +203,18 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         if (limits && limits.length > 0) {
             for (let i = 0; i < limits.length - 1; i++) {
 
-                divs.push(<div key={i} style={{ display: this.props.horizontal ? 'initial' : 'flex' }}>
+                divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
                     {getIcon(icons[i].shape, icons[i].fa, col.color, col.choroplethField === options.symbolOptions.iconField ? col.colors[i] : col.fillColor, options.colorOptions.iconTextColor) }
                     <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-                        {limits[i].toFixed(0) + '-'} {this.props.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
-                        {this.props.showPercentages ? <br/> : null}
-                        {this.props.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
+                        {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
+                        {this.props.state.legend.showPercentages ? <br/> : null}
+                        {this.props.state.legend.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
                     </span>
                 </div >);
             }
             return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
                 { options.symbolOptions.iconField }
-                <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+                <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                     { divs.map(function(d) { return d }) }
                 </div >
             </div >;
@@ -219,7 +222,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         else {
             return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
                 { layerName}
-                <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+                <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                     {getIcon(icons[0].shape, icons[0].fa, options.colorOptions.color, options.colorOptions.fillColor, options.colorOptions.iconTextColor) }
                 </div >
             </div >;
@@ -279,26 +282,26 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         }
     }
 
-    createBlockLegend(options: IVisualizationOptions) {
+    createBlockLegend(options: VisualizationOptions) {
         let style = {
             width: 10,
             height: 10,
             backgroundColor: options.colorOptions.fillColor,
-            float: this.props.horizontal ? '' : 'left',
+            float: this.props.state.legend.horizontal ? '' : 'left',
             border: '1px solid ' + options.colorOptions.color,
             margin: 'auto',
         }
         let parentDivStyle = {
-            float: this.props.horizontal ? 'left' : '',
+            float: this.props.state.legend.horizontal ? 'left' : '',
             minHeight: '15px',
-            overflow: this.props.horizontal ? 'none' : 'auto',
-            lineHeight: this.props.horizontal ? '' : 24 + 'px',
+            overflow: this.props.state.legend.horizontal ? 'none' : 'auto',
+            lineHeight: this.props.state.legend.horizontal ? '' : 24 + 'px',
 
         }
         return (
             <div style={{ margin: '5px', float: 'left' }}>
                 {options.symbolOptions.sizeXVar}
-                <div style= {{ display: 'flex', flexDirection: this.props.horizontal ? 'row' : 'column', flex: '1' }}>
+                <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                     <div style={style} />
                     =
                     <span style={{ display: 'inline-block' }}>{ options.symbolOptions.blockValue}</span>
@@ -333,13 +336,13 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
         return counts;
     }
 
-    createLegend(layer: ILayerData) {
+    createLegend(layer: Layer) {
         let choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
         let options = layer.visOptions;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
         if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.choroplethField)) {
-            let percentages = this.props.showPercentages ? this.getStepPercentages(layer.geoJSON, col.choroplethField, col.limits) : {};
+            let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.choroplethField, col.limits) : {};
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
         if (sym.symbolType === SymbolTypes.Chart) {
@@ -349,7 +352,7 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
             scaledLegend = this.createScaledSizeLegend(options);
         }
         if (sym.symbolType === SymbolTypes.Icon) {
-            let percentages = this.props.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
+            let percentages = this.props.state.legend.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
             iconLegend = this.createIconLegend(options, percentages, layer.layerName);
         }
         if (sym.symbolType === SymbolTypes.Blocks) {
@@ -375,13 +378,13 @@ export class Legend extends React.Component<IOnScreenLegendProps, {}>{
                     width: 'auto',
                     textAlign: 'center'
                 }}>
-                    <h2 className='draggableHeader legendHeader'>{this.props.title}</h2>
+                    <h2 className='draggableHeader legendHeader'>{this.props.state.legend.title}</h2>
                     <div>
-                        {this.props.mapLayers.map(function(m) {
+                        {this.props.state.layers.map(function(m) {
                             return this.createLegend(m);
                         }, this) }
                     </div>
-                    <p style={{ clear: 'both', maxWidth: this.props.horizontal ? 500 : 200 }}>{this.props.meta}</p>
+                    <p style={{ clear: 'both', maxWidth: this.props.state.legend.horizontal ? 500 : 200 }}>{this.props.state.legend.meta}</p>
                     <div className='dragOverlay' style={
                         {
                             position: 'absolute',

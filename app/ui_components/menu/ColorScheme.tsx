@@ -1,6 +1,11 @@
 import * as React from 'react';
 
-export class ColorScheme extends React.Component<IColorSchemeProps, {}>{
+export class ColorScheme extends React.Component<{
+    /** The ColorBrewer color scheme name*/
+    gradientName: string,
+    /** Should the scheme be reversed*/
+    revert: boolean,
+}, {}>{
     private brewerColors =
     {
         OrRd: ['#fff7ec', '#fee8c8', '#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f', '#b30000', '#7f0000'],

@@ -46,109 +46,7 @@ interface IHeader extends ISelectData {
     type: string,
 }
 
-/** The main data object to pass between components. */
-interface ILayerData {
-    /** The unique identification. Is used for example to delete items*/
-    id: number,
-    /** The name of the layer. Will be shown in the UI*/
-    layerName: string,
-    /** The GeoJSON representation of the data.*/
-    geoJSON?: { features: any[], type: string },
-    /** The type of the layer. Will affect the options available.*/
-    layerType: LayerTypes,
-    /** The data property names.*/
-    headers: IHeader[],
-    /** The variable by which to create the heat map*/
-    heatMapVariable?: string,
-    /** The Leaflet layer. Will be modified by changing options*/
-    layer?: any,
-    /** The active visualization options configuration*/
-    visOptions?: IVisualizationOptions
-}
 
-interface IMapMainStates {
-    /** Is the welcome screen visible*/
-    welcomeShown?: boolean,
-    /** Is the import wizard visible*/
-    importWizardShown?: boolean,
-    /** Is the options menu visible*/
-    menuShown?: boolean,
-    /** The layers of the map. If you remove a layer from the map, remember to update this list as well.*/
-    layers?: ILayerData[],
-    /** The data filters of the map.*/
-    filters?: IFilter[],
-    /** The active legend of the map*/
-    legend?: ILegend
-}
-
-
-/** The color options to transfer between the menu and the main app */
-interface IColorOptions extends L.PathOptions {
-    /** If not empty, use choropleth coloring */
-    choroplethField: string,
-    /** Is the scale user-made?*/
-    useCustomScheme?: boolean,
-    /** Color name array to use in choropleth*/
-    colors?: string[],
-    /** Value array to use in choropleth*/
-    limits?: number[],
-    /** The color scheme name to use in choropleth*/
-    colorScheme?: string,
-    /** The amount of colors to use in choropleth*/
-    steps: number,
-    /** Is the scheme reversed. This is used only to keep the menu selection synced with map*/
-    revert: boolean,
-    /** The Chroma-js method to calculate colors. Default q->quantiles*/
-    mode: string,
-    /** The color of the icon in symbol maps */
-    iconTextColor?: string,
-}
-/** Symbol specific options - size, icon etc. */
-interface ISymbolOptions {
-    /** The type of the symbol*/
-    symbolType?: SymbolTypes,
-    /** The list of icons to use. Default: one IIcon with shape='circle' and iconFA='anchor'*/
-    icons?: IIcon[],
-    /** Name of the field by which to calculate icon values*/
-    iconField?: string,
-    /** The steps of the field values by which to choose the icons */
-    iconLimits?: number[],
-    /** The name of the field to scale size x-axis by*/
-    sizeXVar?: string,
-    /** The name of the field to scale size y-axis by*/
-    sizeYVar?: string,
-    /** The minimum allowed size when scaling*/
-    sizeLowLimit?: number,
-    /** The maximum allowed size when scaling*/
-    sizeUpLimit?: number,
-    /** The multiplier to scale the value by*/
-    sizeMultiplier?: number,
-    /** Currently selected chart fields*/
-    chartFields?: IHeader[],
-    /** The type of chart to draw*/
-    chartType?: 'pie' | 'donut',
-    /** How many units does a single block represent*/
-    blockValue?: number,
-    /** If symbol is of scalable type, the minimum of all the x-values being calculated. Is used in the legend */
-    actualMinXValue?: number,
-    /** If symbol is of scalable type, the minimum of all the y-values being calculated. Is used in the legend */
-    actualMinYValue?: number,
-    /** If symbol is of scalable type, the minimum of all the x(pixels) being calculated. Is used in the legend */
-    actualMinX?: number,
-    /** If symbol is of scalable type, the minimum of all the y(pixels) being calculated. Is used in the legend */
-    actualMinY?: number,
-    /** If symbol is of scalable type, the maximum of all the x-values being calculated. Is used in the legend */
-    actualMaxXValue?: number,
-    /** If symbol is of scalable type, the maximum of all the y-values being calculated. Is used in the legend */
-    actualMaxYValue?: number,
-    /** If symbol is of scalable type, the maximum of all the x being calculated. Is used in the legend */
-    actualMaxX?: number,
-    /** If symbol is of scalable type, the maximum of all the y being calculated. Is used in the legend */
-    actualMaxY?: number,
-
-
-
-}
 
 interface IIcon {
     /** If creating Icon symbols, the font-awesome class name to display*/
@@ -214,17 +112,6 @@ interface IFilter {
 
 }
 
-/** The complete visual options object to be transferred between Menu<->Map */
-interface IVisualizationOptions {
-    /** The function to run on every feature of the layer. Is used to place pop-ups to map features */
-    onEachFeature?: (feature: any, layer: L.GeoJSON) => void,
-    /** The function to convert a geojson point to a layer. Is used in symbol maps ie. to convert a point to a circle marker */
-    pointToLayer: (featureData: any, latlng: L.LatLng) => any,
-    /** The coloring options of the layer. Contains ie. border color and opacity */
-    colorOptions: IColorOptions,
-    /**  The symbol options for symbol layers. Contains ie. symbol type  */
-    symbolOptions: ISymbolOptions,
-}
 /** The object interface of the map legend */
 interface ILegend {
     /** The name of the legend. Is shown in the UI */
@@ -238,18 +125,9 @@ interface ILegend {
     showPercentages?: boolean,
 }
 
-/** The React properties of the map legend */
-interface IOnScreenLegendProps extends ILegend {
-    /** The layers from which to draw the legend */
-    mapLayers: ILayerData[],
-}
-
-interface ILayerSaveData extends ILayerData {
-    //topoJSON: Object,
-}
 
 interface ISaveData {
-    layers: ILayerSaveData[],
+    //layers: ILayerData[],
     legend: ILegend,
     filters: IFilter[],
 }

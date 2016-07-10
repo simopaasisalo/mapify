@@ -53,7 +53,7 @@ export class FilePreProcessModel {
      * @return           GeoJSON object
      */
     public ParseCSVToGeoJSON(input: string, latField: string, lonField: string, delim: string, coordSystem: string, headers: IHeader[]) {
-        let geoJSON: L.GeoJSON = null;
+        let geoJSON: { features: any[], type: string } = null;
         csv2geojson.csv2geojson(input, {
             latfield: latField,
             lonfield: lonField,
@@ -80,7 +80,7 @@ export class FilePreProcessModel {
 
 
     public ParseToGeoJSON(input: string, fileFormat: string) {
-        let geoJSON: L.GeoJSON = null;
+        let geoJSON: { features: any[], type: string } = null;
 
         if (fileFormat === 'kml') {
             let xml = this.stringToXML(input);

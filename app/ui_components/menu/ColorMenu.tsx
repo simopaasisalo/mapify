@@ -4,136 +4,124 @@ let ColorPicker = require('react-color');
 import {ColorScheme} from './ColorScheme';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
+import {AppState, Layer, ColorOptions} from '../Stores';
+import {observer} from 'mobx-react';
 
-export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates>{
-    constructor(props: IColorMenuProps) {
-        super(props);
-        this.getPreviousOptions(props.prevOptions, true)
-    }
-    getPreviousOptions(prev: IColorOptions, initial: boolean) {
-        let state: IColorMenuStates = {
-            fillColor: prev.fillColor ? prev.fillColor : '#E0E62D',
-            iconTextColor: prev.iconTextColor ? prev.iconTextColor : '#FFF',
-            borderColor: prev.color ? prev.color : '#000',
-            opacity: prev.opacity ? prev.opacity : 0.8,
-            colorSchemeFieldName: prev.choroplethField ? prev.choroplethField : '',
-            colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
-            useMultipleFillColors: (prev.choroplethField || this.props.isChoropleth) ? true : false,
-            revertColorScheme: prev.revert ? prev.revert : false,
-            steps: prev.steps ? prev.steps : 7,
-            mode: prev.mode ? prev.mode : 'q',
-            useCustomScheme: prev.useCustomScheme ? prev.useCustomScheme : false,
-            colors: prev.colors ? prev.colors : [],
-            limits: prev.limits ? prev.limits : [],
-        };
-        initial ? this.state = state : this.setState(state)
-    }
-    componentWillReceiveProps(nextProps: IColorMenuProps) {
-        this.getPreviousOptions(nextProps.prevOptions, false);
+@observer
+export class ColorMenu extends React.Component<{
+    state: AppState,
+    visible: boolean,
+    /** Save the current options to the layer*/
+    saveValues: (values: ColorOptions) => void,
+    /** layer being edited*/
+}, {}>{
 
-    }
+    private activeLayer = this.props.state.editingLayer;
+    private colorOptions = this.activeLayer.visOptions.colorOptions;
+    private UIState = this.props.state.colorMenuState;
+    // getPreviousOptions(prev: IColorOptions, initial: boolean) {
+    //     let state: IColorMenuStates = {
+    //         fillColor: prev.fillColor ? prev.fillColor : '#E0E62D',
+    //         iconTextColor: prev.iconTextColor ? prev.iconTextColor : '#FFF',
+    //         borderColor: prev.color ? prev.color : '#000',
+    //         opacity: prev.opacity ? prev.opacity : 0.8,
+    //         choroplethField: prev.choroplethField ? prev.choroplethField : '',
+    //         colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
+    //         useMultipleFillColors: (prev.choroplethField || this.props.isChoropleth) ? true : false,
+    //         revertColorScheme: prev.revert ? prev.revert : false,
+    //         steps: prev.steps ? prev.steps : 7,
+    //         mode: prev.mode ? prev.mode : 'q',
+    //         useCustomScheme: prev.useCustomScheme ? prev.useCustomScheme : false,
+    //         colors: prev.colors ? prev.colors : [],
+    //         limits: prev.limits ? prev.limits : [],
+    //     };
+    //     initial ? this.state = state : this.setState(state)
+    // }
+    // componentWillReceiveProps(nextProps: IColorMenuProps) {
+    //     this.getPreviousOptions(nextProps.prevOptions, false);
+    //
+    // }
 
     colorSelect(color) {
-        let step = this.state.editing.indexOf('step') !== -1 ? this.state.editing.substring(4) : -1;//Check if editing a custom made step, get step index
-        let colors = this.state.colors;
+        let hex = '#' + color.hex;
+        let step = this.UIState.editing.indexOf('step') !== -1 ? this.UIState.editing.substring(4) : -1;//Check if editing a custom made step, get step index
+        if (step != -1)
+            this.colorOptions.colors[step] = hex;
 
-        if (step !== -1) {
-            colors[step] = '#' + color.hex;
+
+        switch (this.UIState.editing) {
+            case 'fillColor':
+                this.colorOptions.fillColor = hex;
+                break;
+            case 'borderColor':
+                this.colorOptions.color = hex;
+                break;
+            case 'iconTextColor':
+                this.colorOptions.iconTextColor = hex;
+                break;
         }
 
-        this.setState({
-            startColor: '#' + color.hex,
-            fillColor: this.state.editing === 'fillColor' ? '#' + color.hex : this.state.fillColor,
-            borderColor: this.state.editing === 'borderColor' ? '#' + color.hex : this.state.borderColor,
-            iconTextColor: this.state.editing === 'iconTextColor' ? '#' + color.hex : this.state.iconTextColor,
-            colors: colors,
-        });
     }
-    choroVariableChanged(e) {
-        let name = e.value;
-        this.setState({
-            colorSchemeFieldName: name,
-        });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, this.state.steps, this.state.colorScheme, name, this.state.revertColorScheme);
+    onChoroVariableChange = (e) => {
+        this.colorOptions.choroplethField = e.name;
+        this.calculateValues();
+    }
+    onSchemeChange = (e) => {
+        this.colorOptions.colorScheme = e.value;
+        this.calculateValues();
+    }
+    onOpacityChange = (e) => {
+        this.colorOptions.opacity = e.target.valueAsNumber;
+    }
+    onStepsChange = (e) => {
+        this.colorOptions.steps = e.target.valueAsNumber;
+        this.calculateValues();
+    }
+    onModeChange = (mode) => {
+        this.colorOptions.mode = mode;
+        this.calculateValues();
 
     }
-    schemeChanged(e) {
-        let scheme = e.value;
-        this.setState({
-            colorScheme: scheme
-        });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, this.state.steps, scheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
+    onMultipleColorsChange = (e) => {
+        this.UIState.useMultipleFillColors = e.target.checked;
     }
-    opacityChanged(e) {
-        this.setState({
-            opacity: e.target.valueAsNumber,
-        });
-    }
-    stepsChanged(e) {
-        let steps = e.target.valueAsNumber;
-        this.setState({
-            steps: steps,
-        });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : this.state.mode, steps, this.state.colorScheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
-    }
-    modeChanged(mode) {
-        this.setState({
-            mode: mode,
-        });
-        this.calculateValues(this.state.useCustomScheme ? 'q' : mode, this.state.steps, this.state.colorScheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
+    onRevertChange = (e) => {
+
+        this.colorOptions.revert = e.target.checked,
+            this.calculateValues();
 
     }
-    multipleColorsChanged(e) {
-        this.setState({
-            useMultipleFillColors: e.target.checked
-        });
-    }
-    revertChanged(e) {
-        this.setState({
-            revertColorScheme: e.target.checked,
-        });
-        this.calculateValues(this.state.mode, this.state.steps, this.state.colorScheme, this.state.colorSchemeFieldName, e.target.checked);
-
-    }
-    customSchemeChanged(e) {
+    onCustomSchemeChange = (e) => {
         let use: boolean = e.target.checked;
-        let steps: number = use ? this.state.steps : this.state.steps > 10 ? 10 : this.state.steps; //If switching back from custom steps, force the steps to be under the limit
-        this.setState({
-            useCustomScheme: use,
-            steps: steps
-        });
-        this.calculateValues(use ? 'q' : this.state.mode, steps, this.state.colorScheme, this.state.colorSchemeFieldName, this.state.revertColorScheme);
+        let steps: number = use ? this.colorOptions.steps : this.colorOptions.steps > 10 ? 10 : this.colorOptions.steps; //If switching back from custom steps, force the steps to be under the limit
+
+        this.colorOptions.useCustomScheme = use;
+        this.colorOptions.steps = steps;
+        this.calculateValues();
     }
-    toggleColorPick(property: string) {
-        this.setState({
-            colorSelectOpen: this.state.editing !== property ? true : !this.state.colorSelectOpen,
-            editing: property,
-        });
+    toggleColorPick = (property: string) => {
+
+        this.UIState.colorSelectOpen = this.UIState.editing !== property ? true : !this.UIState.colorSelectOpen;
+        this.UIState.editing = property;
     }
-    renderScheme(option) {
-        return <ColorScheme gradientName={option.value} revert={this.state.revertColorScheme}/>;
+    renderScheme = (option: IHeader) => {
+        return <ColorScheme gradientName={option.value} revert={this.colorOptions.revert}/>;
     }
 
     /**
      * calculateValues - Performs the chroma-js calculation to get colors and steps
-     *
-     * @param  mode      chroma-js mode to calculate classes
-     * @param  steps     amount of classes
-     * @param  scheme    selected color scheme
-     * @param  fieldName feature property by which to color
-     * @param  revert   is the scheme reversed
      */
-    calculateValues(mode: string, steps: number, scheme: string, fieldName: string, revert: boolean) {
-        let lyr = this.props.layer;
+    calculateValues = () => {
+        let lyr: Layer = this.activeLayer;
+        let choroField = this.colorOptions.choroplethField;
         let values = (lyr.geoJSON as any).features.map(function(feat) {
-            return feat.properties[fieldName];
+            return feat.properties[choroField];
         });
-        let limits: number[] = chroma.limits(values, mode, steps);
-        let colors: string[] = chroma.scale(scheme).colors(limits.length - 1);
-        this.setState({
-            limits: limits,
-            colors: revert ? colors.reverse() : colors,
-        })
+        let limits: number[] = chroma.limits(values, this.colorOptions.mode, this.colorOptions.steps);
+        let colors: string[] = chroma.scale(this.colorOptions.colorScheme).colors(limits.length - 1);
+
+        this.colorOptions.limits = limits;
+        this.colorOptions.colors = this.colorOptions.revert ? colors.reverse() : colors;
     }
 
     /**
@@ -142,7 +130,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
      * @param   color Color(hex) to compare
      * @return  Opposite color code(hex)
      */
-    getOppositeColor(color: string) {
+    getOppositeColor = (color: string) => {
         if (color.toLowerCase() === '#fff' || color === '#ffffff' || color === 'white') {
             return '#000';
         }
@@ -153,40 +141,40 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
 
     }
 
-    getStepValues() {
-        if (!this.state.useMultipleFillColors)
+    getStepValues = () => {
+        if (!this.UIState.useMultipleFillColors)
             return [];
         let limits: number[] = [];
-        for (let i = 0; i < this.state.steps; i++) {
+        for (let i = 0; i < this.colorOptions.steps; i++) {
             let step: number = +(document.getElementById(i + 'min') as any).value
             limits.push(step)
         }
-        limits.push(this.state.limits[this.state.limits.length - 1]);
+        limits.push(this.colorOptions.limits[this.colorOptions.limits.length - 1]);
         return limits;
     }
-    saveOptions() {
-        this.props.saveValues({
-            choroplethField: this.state.useMultipleFillColors ? this.state.colorSchemeFieldName : '',
-            steps: this.state.steps,
-            colorScheme: this.state.useMultipleFillColors ? this.state.colorScheme : '',
-            mode: this.state.mode,
-            fillOpacity: this.state.opacity,
-            opacity: this.state.opacity,
-            fillColor: this.state.useMultipleFillColors ? '' : this.state.fillColor,
-            iconTextColor: this.state.iconTextColor,
-            color: this.state.borderColor,
-            revert: this.state.revertColorScheme,
-            limits: this.state.useCustomScheme ? this.getStepValues() : this.state.limits,
-            colors: this.state.useMultipleFillColors ? this.state.colors : [],
-            useCustomScheme: this.state.useCustomScheme,
-        });
+    saveOptions = () => {
+        // this.props.saveValues({
+        //     choroplethField: this.colorOptions.useMultipleFillColors ? this.colorOptions.choroplethField : '',
+        //     steps: this.colorOptions.steps,
+        //     colorScheme: this.colorOptions.useMultipleFillColors ? this.colorOptions.colorScheme : '',
+        //     mode: this.colorOptions.mode,
+        //     fillOpacity: this.colorOptions.opacity,
+        //     opacity: this.colorOptions.opacity,
+        //     fillColor: this.colorOptions.useMultipleFillColors ? '' : this.colorOptions.fillColor,
+        //     iconTextColor: this.colorOptions.iconTextColor,
+        //     color: this.colorOptions.borderColor,
+        //     revert: this.colorOptions.revertColorScheme,
+        //     limits: this.colorOptions.useCustomScheme ? this.getStepValues() : this.colorOptions.limits,
+        //     colors: this.colorOptions.useMultipleFillColors ? this.colorOptions.colors : [],
+        //     useCustomScheme: this.colorOptions.useCustomScheme,
+        // });
     }
     renderSteps() {
         let rows = [];
         let steps: number[] = [];
-        for (let i in this.state.limits) {
-            if (+i !== this.state.limits.length - 1) {
-                let step: number = this.state.limits[i];
+        for (let i in this.colorOptions.limits) {
+            if (+i !== this.colorOptions.limits.length - 1) {
+                let step: number = this.colorOptions.limits[i];
                 steps.push(step);
             }
         }
@@ -194,7 +182,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
         for (let i of steps) {
             rows.push(
                 <li key={i}
-                    style={{ background: this.state.colors[row] ? this.state.colors[row] : '#FFF', }}
+                    style={{ background: this.colorOptions.colors[row] ? this.colorOptions.colors[row] : '#FFF', }}
                     onClick={this.toggleColorPick.bind(this, 'step' + row) }>
                     <input
                         id={row + 'min'}
@@ -215,20 +203,20 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
     }
     render() {
         let fillColorBlockStyle = {
-            background: this.state.fillColor,
-            color: this.getOppositeColor(this.state.fillColor),
-            border: '1px solid ' + this.state.borderColor,
+            background: this.colorOptions.fillColor,
+            color: this.getOppositeColor(this.colorOptions.fillColor),
+            border: '1px solid ' + this.colorOptions.color,
         }
         let borderColorBlockStyle = {
-            background: this.state.borderColor,
-            color: this.getOppositeColor(this.state.borderColor),
-            border: '1px solid ' + this.state.borderColor,
+            background: this.colorOptions.color,
+            color: this.getOppositeColor(this.colorOptions.color),
+            border: '1px solid ' + this.colorOptions.color,
         }
         let iconTextColorBlockStyle = {
 
-            background: this.state.iconTextColor,
-            color: this.getOppositeColor(this.state.iconTextColor),
-            border: '1px solid ' + this.state.borderColor,
+            background: this.colorOptions.iconTextColor,
+            color: this.getOppositeColor(this.colorOptions.iconTextColor),
+            border: '1px solid ' + this.colorOptions.color,
         }
         let colorSelectStyle = {
             overlay: {
@@ -254,31 +242,31 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                 left: '',
             }
         }
-        return (!this.props.isVisible ? null :
+        return (!this.props.visible ? null :
             <div className="mapify-options">
-                {this.props.isChoropleth ? null :
+                {this.props.state.editingLayer.visOptions.colorOptions.choroplethField != '' ? null :
                     <div>
                         <label htmlFor='multipleSelect'>Use multiple fill colors</label>
-                        <input id='multipleSelect' type='checkbox' onChange={this.multipleColorsChanged.bind(this) } checked={this.state.useMultipleFillColors}/>
+                        <input id='multipleSelect' type='checkbox' onChange={this.onMultipleColorsChange } checked={this.UIState.useMultipleFillColors}/>
                     </div>
                 }
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
-                    {this.state.useMultipleFillColors ?
+                    {this.UIState.useMultipleFillColors ?
                         null :
                         <div className='colorBlock' style={fillColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'fillColor') }>Fill</div>
                     }
                     <div className='colorBlock' style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor') }>Border</div>
-                    {this.props.isIconSymbol ?
+                    {this.props.state.editingLayer.visOptions.symbolOptions.iconField != '' ?
                         <div className='colorBlock' style={iconTextColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'iconTextColor') }>Icon text</div>
                         : null
                     }
 
                 </div>
                 <label>Opacity</label>
-                <input type='number' max={1} min={0} step={0.1} onChange={this.opacityChanged.bind(this) } value={this.state.opacity}/>
+                <input type='number' max={1} min={0} step={0.1} onChange={this.onOpacityChange } value={this.colorOptions.opacity}/>
 
                 <Modal
-                    isOpen={this.state.colorSelectOpen}
+                    isOpen={this.UIState.colorSelectOpen}
                     style={colorSelectStyle}
                     >
 
@@ -286,35 +274,35 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                         width={300}
                         height={600}
                         overlowY='auto'
-                        color={ this.state.startColor}
-                        onChange={this.colorSelect.bind(this) }
+                        color={ this.UIState.startColor}
+                        onChange={this.colorSelect }
                         />
                     <button
                         className='primaryButton'
-                        onClick={this.toggleColorPick.bind(this, this.state.editing) }
+                        onClick={this.toggleColorPick.bind(this, this.UIState.editing) }
                         style={{ position: 'absolute', left: 80 }}>OK</button>
                 </Modal>
                 {
-                    this.state.useMultipleFillColors ?
+                    this.UIState.useMultipleFillColors ?
                         <div>
                             <label>Select the variable to color by</label>
                             <Select
-                                options={this.props.layer.headers.filter(function(val) { return val.type === 'number' }) }
-                                onChange={this.choroVariableChanged.bind(this) }
-                                value={this.state.colorSchemeFieldName}
+                                options={this.activeLayer.numberHeaders}
+                                onChange={this.onChoroVariableChange }
+                                value={this.colorOptions.choroplethField}
                                 clearable={false}
                                 />
-                            {this.state.colorSchemeFieldName ?
+                            {this.colorOptions.choroplethField ?
 
                                 <div>
                                     <label htmlFor='customScale'>Set custom scheme</label>
                                     <input
                                         id='customScale'
                                         type='checkbox'
-                                        onChange={this.customSchemeChanged.bind(this) }
-                                        checked={this.state.useCustomScheme}/>
+                                        onChange={this.onCustomSchemeChange }
+                                        checked={this.colorOptions.useCustomScheme}/>
                                     <br/>
-                                    {this.state.useCustomScheme ?
+                                    {this.colorOptions.useCustomScheme ?
                                         null :
                                         <div>
                                             Or
@@ -324,28 +312,28 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                                 clearable = {false}
                                                 searchable = {false}
                                                 options = {_gradientOptions}
-                                                optionRenderer={this.renderScheme.bind(this) }
-                                                valueRenderer = {this.renderScheme.bind(this) }
-                                                onChange={this.schemeChanged.bind(this) }
-                                                value={this.state.colorScheme}
+                                                optionRenderer={this.renderScheme }
+                                                valueRenderer = {this.renderScheme }
+                                                onChange={this.onSchemeChange }
+                                                value={this.colorOptions.colorScheme}
                                                 />
                                             <label htmlFor='revertSelect'>Revert</label>
                                             <input
                                                 id='revertSelect'
                                                 type='checkbox'
-                                                onChange={this.revertChanged.bind(this) }
-                                                checked={this.state.revertColorScheme}/>
+                                                onChange={this.onRevertChange }
+                                                checked={this.colorOptions.revert}/>
                                         </div>
                                     }
                                     <label>Steps</label>
                                     <input
                                         type='number'
-                                        max={this.state.useCustomScheme ? 100 : 10}
+                                        max={this.colorOptions.useCustomScheme ? 100 : 10}
                                         min={2}
                                         step={1}
-                                        onChange={this.stepsChanged.bind(this) }
-                                        value={this.state.steps}/>
-                                    {this.state.useCustomScheme ?
+                                        onChange={this.onStepsChange }
+                                        value={this.colorOptions.steps}/>
+                                    {this.colorOptions.useCustomScheme ?
                                         <div>
                                             Set the <i>lower limit</i> for each step and a color to match
                                             {this.renderSteps() }
@@ -356,8 +344,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                                 Quantiles
                                                 <input
                                                     type='radio'
-                                                    onChange={this.modeChanged.bind(this, 'q') }
-                                                    checked={this.state.mode === 'q'}
+                                                    onChange={this.onModeChange.bind(this, 'q') }
+                                                    checked={this.colorOptions.mode === 'q'}
                                                     name='mode'
                                                     id='quantiles'
                                                     />
@@ -367,8 +355,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                                 K-means
                                                 <input
                                                     type='radio'
-                                                    onChange={this.modeChanged.bind(this, 'k') }
-                                                    checked={this.state.mode === 'k'}
+                                                    onChange={this.onModeChange.bind(this, 'k') }
+                                                    checked={this.colorOptions.mode === 'k'}
                                                     name='mode'
                                                     id='kmeans'
                                                     />
@@ -379,8 +367,8 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                                                 Equidistant
                                                 <input
                                                     type='radio'
-                                                    onChange={this.modeChanged.bind(this, 'e') }
-                                                    checked={this.state.mode === 'e'}
+                                                    onChange={this.onModeChange.bind(this, 'e') }
+                                                    checked={this.colorOptions.mode === 'e'}
                                                     name='mode'
                                                     id='equidistant'
                                                     />
@@ -394,7 +382,7 @@ export class ColorMenu extends React.Component<IColorMenuProps, IColorMenuStates
                         </div>
                         : null
                 }
-                <button className='menuButton' onClick={this.saveOptions.bind(this) }>Refresh map</button>
+                <button className='menuButton' onClick={this.saveOptions }>Refresh map</button>
             </div >
         );
     }

@@ -4,23 +4,23 @@ import {FilePreProcessModel} from '../../models/FilePreProcessModel';
 
 let _fileModel = new FilePreProcessModel();
 let _allowedFileTypes = ['geojson', 'csv', 'gpx', 'kml', 'wkt'];
+import {ImportWizardState} from '../Stores';
+import {observer} from 'mobx-react';
 
-export class FileUploadView extends React.Component<IFileUploadProps, IFileUploadStates>{
-    constructor() {
-        super();
-        this.state =
-            {
-                layerName: '',
-                content: '',
-                headers: [],
-                delimiter: '',
-                fileExtension: '',
-            };
-    }
-    shouldComponentUpdate(nextProps: IFileUploadProps, nextState: IFileUploadStates) {
-        return this.state.layerName !== nextState.layerName;
-    }
-    onDrop(files) {
+@observer
+export class FileUploadView extends React.Component<{
+    state: ImportWizardState,
+    /** Saves the filename, string content, delimiter and the headers/column names to the import wizard */
+    saveValues: () => void,
+    /** Go back to the previous step of the wizard */
+    goBack: () => void
+}, {}>{
+    private activeLayer = this.props.state.layer;
+
+    // shouldComponentUpdate(nextProps: IFileUploadProps, nextState: IFileUploadStates) {
+    //     return this.state.layerName !== nextState.layerName;
+    // }
+    onDrop = (files) => {
         let reader = new FileReader();
         let fileName, content;
         reader.onload = contentUploaded.bind(this);
@@ -32,39 +32,34 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
             let contents: any = e.target;
             let ext: string = fileName.split('.').pop().toLowerCase();
             if (_allowedFileTypes.indexOf(ext) !== -1) {
-                this.setState({
-                    content: contents.result,
-                    fileName: fileName,
-                    layerName: fileName,
-                    fileExtension: ext
-                });
+                this.props.state.content = contents.result;
+                this.props.state.fileName = fileName;
+                this.activeLayer.layerName = fileName;
+                this.props.state.fileExtension = ext;
             }
             else {
                 alert('File type not yet supported!');
             }
-
         }
     }
 
-    layerNameChanged(e) {
-        this.setState({ layerName: e.target.value })
+    onLayerNameChange = (e) => {
+        this.activeLayer.layerName = e.target.value;
     }
-    goBack() {
+    goBack = () => {
         this.props.goBack();
     }
-    proceed() {
-        if (this.state.fileExtension === 'csv') {
+    proceed = () => {
+        if (this.props.state.fileExtension === 'csv') {
             let head, delim;
-            let headers = [];
-            [head, delim] = _fileModel.ParseHeadersFromCSV(this.state.content);
+            [head, delim] = _fileModel.ParseHeadersFromCSV(this.props.state.content);
             for (let i of head) {
-                headers.push({ value: i.name, label: i.name, type: i.type });
+                this.activeLayer.headers.push({ value: i.name, label: i.name, type: i.type });
             }
-            this.state.headers = headers; //direct manipulate state because the values are passed instantly to the saveValues-method
-            this.state.delimiter = delim;
+            this.props.state.delimiter = delim;
         }
-        if (this.state.content) {
-            this.props.saveValues(this.state);
+        if (this.props.state.content) {
+            this.props.saveValues();
 
         }
         else {
@@ -74,7 +69,7 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
     render() {
         let dropStyle = {
             height: 100,
-            border: this.state.fileName ? '1px solid #549341' : '1px dotted #549341',
+            border: this.props.state.fileName ? '1px solid #549341' : '1px dotted #549341',
             borderRadius: 15,
             margin: 5,
             textAlign: 'center',
@@ -95,14 +90,14 @@ export class FileUploadView extends React.Component<IFileUploadProps, IFileUploa
                         onDrop={this.onDrop.bind(this) }
                         accept={_allowedFileTypes.map(function(type) { return '.' + type }).join(', ') }>
 
-                        {this.state.fileName ? <span><i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/> {this.state.fileName} </span> : <span>Drop file or click to open upload menu</span> }
+                        {this.props.state.fileName ? <span><i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/> {this.props.state.fileName} </span> : <span>Drop file or click to open upload menu</span> }
                     </Dropzone>
                     <label>Give a name to the layer</label>
-                    <input type="text" onChange={this.layerNameChanged.bind(this) } value={this.state.layerName}/>
+                    <input type="text" onChange={this.onLayerNameChange } value={this.activeLayer.layerName}/>
 
                 </div>
                 <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this) }>Previous</button>
-                <button className='primaryButton' disabled={this.state.content === '' || this.state.layerName === ''}  style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Continue</button>
+                <button className='primaryButton' disabled={this.props.state.content === '' || this.activeLayer.layerName === ''}  style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this) }>Continue</button>
             </div>
         );
     }

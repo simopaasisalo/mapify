@@ -7,111 +7,110 @@ import {LegendMenu} from './LegendMenu';
 import {PopUpMenu} from './PopUpMenu';
 import {ExportMenu} from './ExportMenu';
 import {LayerTypes, SymbolTypes} from '../common_items/common';
+import {AppState, Layer, ColorOptions, SymbolOptions} from '../Stores';
+import {observer} from 'mobx-react';
 
 let Select = require('react-select');
 let Menu = require('impromptu-react-sidemenu');
 
-export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
+@observer
+export class MapifyMenu extends React.Component<{
+    /** Application state*/
+    state: AppState,
+    /** Update the selected layer with new options*/
+    refreshMap: (options: Layer) => void,
+    /** Reorder the layers on the map*/
+    changeLayerOrder: (order: number[]) => void,
+    /** Add a new layer (by opening import wizard)*/
+    addLayer: () => void,
+    /** Remove a layer from the map*/
+    deleteLayer: (id: number) => void,
+    /** Create a new filter or replace an existing one. Returns id*/
+    saveFilter: (info: IFilter) => number,
+    /** Remove a filter from the map */
+    deleteFilter: (id: number) => void,
+    /** Update the map legend*/
+    legendStatusChanged: (info: ILegend) => void,
+    /** Export map as .png */
+    saveImage: () => void,
+    /** Export map as .mapify*/
+    saveFile: () => void,
+}, {}>{
     componentWillMount() {
-        this.state = {
-            visibleOptions: 0,
-            activeLayer: this.props.layers ? this.props.layers[this.props.layers.length - 1] : null,
-        };
+        this.props.state.visibleMenu = 0;
+        this.props.state.editingLayer = this.props.state.layers ? this.props.state.layers[this.props.state.layers.length - 1] : null;
     }
-    componentWillReceiveProps(nextProps: IMenuProps) {
-        this.setState({
-            activeLayer: this.state.activeLayer ? this.state.activeLayer : nextProps.layers ? nextProps.layers[0] : null
-        });
+    // componentWillReceiveProps(nextProps: IMenuProps) {
+    //     this.setState({
+    //         selectedLayer: this.props.state.selectedLayer ? this.props.state.selectedLayer : nextProps.layers ? nextProps.layers[0] : null
+    //     });
+    // }
+    // shouldComponentUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
+    //     return this.props.layers !== nextProps.layers ||
+    //         this.props.visible !== nextProps.visible ||
+    //         this.props.state.visibleMenu !== nextState.visibleMenu ||
+    //         this.props.state.selectedLayer !== nextState.selectedLayer;
+    // }
+    //
+    // componentWillUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
+    //     if (nextProps.layers.length === 0) {
+    //         this.setState({
+    //             selectedLayer: null,
+    //         })
+    //     }
+    // }
+
+    onActiveMenuChange = (item: number) => {
+        this.props.state.visibleMenu = this.props.state.visibleMenu === item ? 0 : item;
     }
-    shouldComponentUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
-        return this.props.layers !== nextProps.layers ||
-            this.props.visible !== nextProps.visible ||
-            this.state.visibleOptions !== nextState.visibleOptions ||
-            this.state.activeLayer !== nextState.activeLayer;
+    onLayerSelectionChange = (val: { label: string, value: Layer }) => {
+        this.props.state.visibleMenu = 0;
+        this.props.state.editingLayer = val.value;
     }
 
-    componentWillUpdate(nextProps: IMenuProps, nextState: IMenuStates) {
-        if (nextProps.layers.length === 0) {
-            this.setState({
-                activeLayer: null,
-            })
-        }
-    }
-
-    changeActiveMenu(item) {
-        if (this.state.visibleOptions === item) {
-            this.setState({
-                visibleOptions: 0
-            });
-        }
-        else {
-            this.setState({
-                visibleOptions: item
-            });
-        }
-
-    }
-    activeLayerChanged(val: { label: string, value: ILayerData }) {
-        this.setState({
-            visibleOptions: 0,
-            activeLayer: val.value,
-        });
-
-    }
-
-    deleteLayer(id: number) {
+    deleteLayer = (id: number) => {
         this.props.deleteLayer(id);
     }
-    addNewLayer() {
-        this.setState({
-            activeLayer: null,
-            visibleOptions: 0,
-
-        });
+    addNewLayer = () => {
+        this.props.state.editingLayer = null;
+        this.props.state.visibleMenu = 0;
         this.props.addLayer();
     }
-    refreshColorOptions(options: IColorOptions) {
-        let lyr: ILayerData = this.state.activeLayer;
-        lyr.visOptions.colorOptions = options;
-        this.setState({
-            activeLayer: lyr
-        })
-        this.refreshMap();
-    }
-    refreshSymbolOptions(options: ISymbolOptions) {
-        let lyr: ILayerData = this.state.activeLayer;
-        lyr.visOptions.symbolOptions = options;
+    refreshColorOptions = (options: ColorOptions) => {
 
-        this.setState({
-            activeLayer: lyr
-        })
+        this.props.state.editingLayer.visOptions.colorOptions = options;;
+
         this.refreshMap();
     }
-    refreshMap() {
-        this.props.refreshMap(this.state.activeLayer);
+    refreshSymbolOptions = () => {
+        this.refreshMap();
     }
-    layerOrderChanged(order: number[]) {
+    refreshMap = () => {
+        this.props.refreshMap(this.props.state.editingLayer);
+    }
+    onLayerOrderChange = (order: number[]) => {
         this.props.changeLayerOrder(order);
     }
-    showLayerNameOnMenu(option) {
+    showLayerNameOnMenu = (option) => {
 
         return option ? option.layerName : '';
     }
 
-    addFilterToMap(info: IFilter) {
+    addFilterToMap = (info: IFilter) => {
         return this.props.saveFilter(info);
     }
 
-    deleteFilter(id: number) {
+    deleteFilter = (id: number) => {
         this.props.deleteFilter(id);
     }
 
-    legendStatusChanged(info: ILegend) {
+    onLegendStatusChange = (info: ILegend) => {
         this.props.legendStatusChanged(info);
     }
 
-    changePopUpHeaders(headers: IHeader[]) {
-        let lyr: ILayerData = this.state.activeLayer;
+    changePopUpHeaders = () => {
+        let lyr: Layer = this.props.state.editingLayer;
+        let headers = this.props.state.editingLayer.popupHeaders;
         lyr.visOptions.onEachFeature = addPopupsToLayer;
 
         function addPopupsToLayer(feature, layer: L.GeoJSON) {
@@ -127,80 +126,75 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 layer.bindPopup(popupContent);
         }
         this.setState({
-            activeLayer: lyr
+            selectedLayer: lyr
         })
         this.refreshMap();
     }
-    saveImage(options: IExportMenuStates) {
-        this.props.saveImage(options);
+    saveImage = () => {
+        this.props.saveImage();
     }
-    saveFile() {
+    saveFile = () => {
         this.props.saveFile();
     }
 
     render() {
         let layers = [];
-        if (this.props.layers) {
-            for (let layer of this.props.layers) {
+        if (this.props.state.layers) {
+            for (let layer of this.props.state.layers) {
                 layers.push({ value: layer, label: layer.layerName });
             }
         }
 
-        return (!this.props.visible ? null :
+        return (!this.props.state.menuShown ? null :
             <Menu.Menu showDividers={true}>
 
                 <Menu.Brand>
                     Options
                 </Menu.Brand>
-                <Menu.Item style={{ backgroundColor: this.state.visibleOptions === 1 ? '#1a263f' : '#293c60' }}>
+                <Menu.Item style={{ backgroundColor: this.props.state.visibleMenu === 1 ? '#1a263f' : '#293c60' }}>
                     <p
                         className="menuHeader fa fa-bars"
-                        onClick = {this.changeActiveMenu.bind(this, 1) }
+                        onClick = {this.onActiveMenuChange.bind(this, 1) }
                         > Layers </p>
                     <LayerMenu
-                        isVisible = {this.state.visibleOptions === 1}
-                        layers={this.props.layers}
-                        saveOrder={this.layerOrderChanged.bind(this) }
-                        addNewLayer = {this.addNewLayer.bind(this) }
-                        deleteLayer = {this.deleteLayer.bind(this) }
+                        state={this.props.state}
+                        saveOrder={this.onLayerOrderChange }
+                        addNewLayer = {this.addNewLayer }
+                        deleteLayer = {this.deleteLayer }
                         />
 
                 </Menu.Item>
                 <Select
                     options={layers}
-                    onChange = {this.activeLayerChanged.bind(this) }
-                    value = {this.state.activeLayer}
+                    onChange = {this.onLayerSelectionChange }
+                    value = {this.props.state.editingLayer}
                     valueRenderer = {this.showLayerNameOnMenu}
                     clearable={false}
                     />
-                {this.state.activeLayer && this.state.activeLayer.layerType !== LayerTypes.HeatMap ?
+                {this.props.state.editingLayer && this.props.state.editingLayer.layerType !== LayerTypes.HeatMap ?
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-paint-brush"
-                            onClick = {this.changeActiveMenu.bind(this, 2) }
-                            style={{ backgroundColor: this.state.visibleOptions === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
+                            onClick = {this.onActiveMenuChange.bind(this, 2) }
+                            style={{ backgroundColor: this.props.state.visibleMenu === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
                         <ColorMenu
-                            layer = {this.state.activeLayer}
-                            saveValues = {this.refreshColorOptions.bind(this) }
-                            isVisible = {this.state.visibleOptions === 2}
-                            prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.colorOptions : null}
-                            isChoropleth = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.ChoroplethMap : false}
-                            isIconSymbol = {this.state.activeLayer ? this.state.activeLayer.layerType === LayerTypes.SymbolMap && this.state.activeLayer.visOptions.symbolOptions.symbolType === SymbolTypes.Icon : false}
+                            state = {this.props.state}
+                            saveValues = {this.refreshColorOptions }
+                            visible = {this.props.state.visibleMenu === 2}
                             />
                     </Menu.Item>
                     : <div/>
                 }
-                {this.state.activeLayer && this.state.activeLayer.layerType !== LayerTypes.ChoroplethMap && this.state.activeLayer.layerType !== LayerTypes.HeatMap ?
+                {this.props.state.editingLayer && this.props.state.editingLayer.layerType !== LayerTypes.ChoroplethMap && this.props.state.editingLayer.layerType !== LayerTypes.HeatMap ?
                     <Menu.Item >
                         <p
                             className="menuHeader fa fa-map-marker"
-                            onClick = {this.changeActiveMenu.bind(this, 3) }
-                            style={{ backgroundColor: this.state.visibleOptions === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
+                            onClick = {this.onActiveMenuChange.bind(this, 3) }
+                            style={{ backgroundColor: this.props.state.visibleMenu === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
                         <SymbolMenu
-                            layer = {this.state.activeLayer}
-                            saveValues = {this.refreshSymbolOptions.bind(this) }
-                            isVisible = {this.state.visibleOptions === 3}
-                            prevOptions = {this.state.activeLayer ? this.state.activeLayer.visOptions.symbolOptions : null}
+                            state = {this.props.state}
+                            saveValues = {this.refreshSymbolOptions }
+
                             />
                     </Menu.Item>
                     : <div/>
@@ -208,50 +202,49 @@ export class MapifyMenu extends React.Component<IMenuProps, IMenuStates>{
                 < Menu.Item >
                     <p
                         className="menuHeader fa fa-sliders"
-                        onClick = {this.changeActiveMenu.bind(this, 4) }
-                        style={{ backgroundColor: this.state.visibleOptions === 4 ? '#1a263f' : '#293c60' }}> Filters </p>
+                        onClick = {this.onActiveMenuChange.bind(this, 4) }
+                        style={{ backgroundColor: this.props.state.visibleMenu === 4 ? '#1a263f' : '#293c60' }}> Filters </p>
 
                     <FilterMenu
-                        filters={this.props.filters}
-                        layer = {this.state.activeLayer}
-                        addFilterToMap = {this.addFilterToMap.bind(this) }
-                        deleteFilter={this.deleteFilter.bind(this) }
-                        isVisible = {this.state.activeLayer && this.state.visibleOptions === 4}/>
+                        state={this.props.state}
+                        addFilterToMap = {this.addFilterToMap }
+                        deleteFilter={this.deleteFilter }
+                        />
                 </Menu.Item>
                 <Menu.Item>
                     <p
                         className="menuHeader fa fa-map-o"
-                        onClick = {this.changeActiveMenu.bind(this, 5) }
-                        style={{ backgroundColor: this.state.visibleOptions === 5 ? '#1a263f' : '#293c60' }}> Legend </p>
+                        onClick = {this.onActiveMenuChange.bind(this, 5) }
+                        style={{ backgroundColor: this.props.state.visibleMenu === 5 ? '#1a263f' : '#293c60' }}> Legend </p>
                     <LegendMenu
-                        valuesChanged={this.legendStatusChanged.bind(this) }
-                        isVisible = {this.state.visibleOptions === 5}/>
-
+                        state = {this.props.state}
+                        valuesChanged={this.onLegendStatusChange }
+                        />
 
                 </Menu.Item >
-                {this.state.activeLayer && this.state.activeLayer.layerType !== LayerTypes.HeatMap ?
+                {this.props.state.editingLayer && this.props.state.editingLayer.layerType !== LayerTypes.HeatMap ?
 
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-newspaper-o"
-                            onClick = {this.changeActiveMenu.bind(this, 6) }
-                            style={{ backgroundColor: this.state.visibleOptions === 6 ? '#1a263f' : '#293c60' }}> Pop-ups </p>
+                            onClick = {this.onActiveMenuChange.bind(this, 6) }
+                            style={{ backgroundColor: this.props.state.visibleMenu === 6 ? '#1a263f' : '#293c60' }}> Pop-ups </p>
                         <PopUpMenu
-                            headers = {this.state.activeLayer ? this.state.activeLayer.headers : []}
-                            saveSelection = {this.changePopUpHeaders.bind(this) }
-                            isVisible = {this.state.visibleOptions === 6}/>
+                            state = {this.props.state}
+                            saveSelection = {this.changePopUpHeaders}
+                            />
                     </Menu.Item>
                     : <div/>
                 }
                 <Menu.Item>
                     <p
                         className="menuHeader fa fa-download"
-                        onClick = {this.changeActiveMenu.bind(this, 7) }
-                        style={{ backgroundColor: this.state.visibleOptions === 7 ? '#1a263f' : '#293c60' }}> Export map </p>
+                        onClick = {this.onActiveMenuChange.bind(this, 7) }
+                        style={{ backgroundColor: this.props.state.visibleMenu === 7 ? '#1a263f' : '#293c60' }}> Export map </p>
                     <ExportMenu
-                        isVisible = {this.state.visibleOptions === 7}
-                        saveImage = {this.saveImage.bind(this) }
-                        saveFile = {this.saveFile.bind(this) }
+                        state={this.props.state}
+                        saveImage = {this.saveImage }
+                        saveFile = {this.saveFile }
                         />
                 </Menu.Item>
             </Menu.Menu >
