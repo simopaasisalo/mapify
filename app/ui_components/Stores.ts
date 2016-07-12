@@ -12,6 +12,10 @@ export class AppState {
     @observable layers: Layer[] = [];
     /** The data filters of the map.*/
     @observable filters: IFilter[] = [];
+
+    @computed get nextFilterId() {
+        return this.filters.length > 0 ? this.filters[this.filters.length - 1].id + 1 : 0;
+    }
     /** The active legend of the map*/
     @observable legend: ILegend = new Legend();
     /** Currently selected layer on the menu*/
@@ -26,7 +30,8 @@ export class AppState {
     @observable filterMenuState: FilterMenuState = new FilterMenuState();
 
     @computed get editingFilter() {
-        return this.filters.filter(function(f) { return f.id === this.filterMenuState.selectedFilterId })[0];
+        let selectedId = this.filterMenuState.selectedFilterId;
+        return this.filters.filter(function(f) { return f.id === selectedId })[0];
     }
 
     @observable layerMenuState: LayerMenuState = new LayerMenuState();
@@ -87,6 +92,33 @@ export class Legend implements ILegend {
     @observable showPercentages: boolean;
 }
 
+export class Filter implements IFilter {
+    /** The unique id of the filter */
+    @observable id: number;
+    /** The name of the filter. Will be shown on the map*/
+    @observable title: string;
+    /** Layer Id to filter*/
+    @observable layerId: number;
+    /** The name of the field to filter*/
+    @observable fieldToFilter: string;
+    /** Dictionary containing lists of layers by the value being filtered*/
+    @observable filterValues: { [value: number]: L.ILayer[] } = {};
+    /** Current maximum value */
+    @observable currentMax: number;
+    /** Current min value */
+    @observable currentMin: number;
+    /** Original maximum value */
+    @observable totalMax: number;
+    /** Original min value */
+    @observable totalMin: number;
+    /** User defined steps*/
+    @observable steps: [number, number][] = [];
+    /** Whether to remove the filtered layer completely or change opacity*/
+    @observable remove: boolean;
+    /** The storage of already filtered indices */
+    @observable filteredIndices: number[] = [];
+}
+
 export class Layer {
     /** The unique identification. Is used for example to delete items*/
     id: number;
@@ -104,15 +136,12 @@ export class Layer {
     }
 
     @observable popupHeaders: IHeader[] = [];
-
     /** The variable by which to create the heat map*/
     @observable heatMapVariable: string;
     /** The Leaflet layer. Will be modified by changing options*/
     @observable layer: any;
     /** The active visualization options configuration*/
     @observable visOptions: VisualizationOptions = new VisualizationOptions();
-
-
 }
 
 export class VisualizationOptions {
@@ -128,7 +157,7 @@ export class VisualizationOptions {
 
 export class ColorOptions implements L.PathOptions {
     /** If not empty, use choropleth coloring */
-    @observable choroplethField: string;
+    @observable colorField: string;
     /** Is the scale user-made?*/
     @observable useCustomScheme: boolean;
     /** Color name array to use in choropleth*/
@@ -153,13 +182,16 @@ export class ColorOptions implements L.PathOptions {
     @observable fillOpacity: number = 0.8;
     /** Border opacity. Default 0.8*/
     @observable opacity: number = 0.8;
+
+    @observable useMultipleFillColors: boolean;
+
 }
 
 export class SymbolOptions {
     /** The type of the symbol. Default circle*/
     @observable symbolType: SymbolTypes = SymbolTypes.Circle;
     /** The list of icons to use. Default: one IIcon with shape='circle' and fa='anchor'*/
-    @observable icons: IIcon[] = [{ shape: 'circle', fa: 'anchor' }];
+    @observable icons: IIcon[] = [{ shape: 'circle', fa: 'fa-anchor' }];
 
     /** Name of the field by which to calculate icon values*/
     @observable iconField: string;
@@ -206,9 +238,6 @@ export class ColorMenuState {
     @observable startColor: string;
     /** Should the color display be rendered*/
     @observable colorSelectOpen: boolean;
-
-    @observable useMultipleFillColors: boolean;
-
 }
 
 export class SymbolMenuState {
@@ -223,7 +252,7 @@ export class SymbolMenuState {
 
 export class FilterMenuState {
     /** Currently selected filter*/
-    @observable selectedFilterId: number;
+    @observable selectedFilterId: number = -1;
     /** Currently selected field to filter*/
     @observable selectedField: string;
     /** The title of the filter to be rendered*/
@@ -236,12 +265,6 @@ export class FilterMenuState {
     @observable customSteps: [number, number][] = [];
     /** Use distinct values as steps*/
     @observable useDistinctValues: boolean;
-    /** Layer's feature's minimum value*/
-    @observable minVal: number;
-    /** Layer's feature's maximum value*/
-    @observable maxVal: number;
-    /** Whether to remove the filtered layer completely or change opacity*/
-    @observable remove: boolean;
 }
 
 export class LayerMenuState {

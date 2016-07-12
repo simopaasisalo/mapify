@@ -5,49 +5,30 @@ import {ColorScheme} from './ColorScheme';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
 import {AppState, Layer, ColorOptions} from '../Stores';
+import {LayerTypes, SymbolTypes} from "../common_items/common";
 import {observer} from 'mobx-react';
 
 @observer
 export class ColorMenu extends React.Component<{
     state: AppState,
-    visible: boolean,
     /** Save the current options to the layer*/
-    saveValues: (values: ColorOptions) => void,
+    saveValues: () => void,
     /** layer being edited*/
 }, {}>{
-
     private activeLayer = this.props.state.editingLayer;
     private colorOptions = this.activeLayer.visOptions.colorOptions;
     private UIState = this.props.state.colorMenuState;
-    // getPreviousOptions(prev: IColorOptions, initial: boolean) {
-    //     let state: IColorMenuStates = {
-    //         fillColor: prev.fillColor ? prev.fillColor : '#E0E62D',
-    //         iconTextColor: prev.iconTextColor ? prev.iconTextColor : '#FFF',
-    //         borderColor: prev.color ? prev.color : '#000',
-    //         opacity: prev.opacity ? prev.opacity : 0.8,
-    //         choroplethField: prev.choroplethField ? prev.choroplethField : '',
-    //         colorScheme: prev.colorScheme ? prev.colorScheme : 'Greys',
-    //         useMultipleFillColors: (prev.choroplethField || this.props.isChoropleth) ? true : false,
-    //         revertColorScheme: prev.revert ? prev.revert : false,
-    //         steps: prev.steps ? prev.steps : 7,
-    //         mode: prev.mode ? prev.mode : 'q',
-    //         useCustomScheme: prev.useCustomScheme ? prev.useCustomScheme : false,
-    //         colors: prev.colors ? prev.colors : [],
-    //         limits: prev.limits ? prev.limits : [],
-    //     };
-    //     initial ? this.state = state : this.setState(state)
-    // }
-    // componentWillReceiveProps(nextProps: IColorMenuProps) {
-    //     this.getPreviousOptions(nextProps.prevOptions, false);
-    //
-    // }
 
-    colorSelect(color) {
+    componentWillUpdate() {
+        if (this.props.state.autoRefresh)
+            this.props.saveValues();
+    }
+    onColorSelect = (color) => {
         let hex = '#' + color.hex;
+
         let step = this.UIState.editing.indexOf('step') !== -1 ? this.UIState.editing.substring(4) : -1;//Check if editing a custom made step, get step index
         if (step != -1)
             this.colorOptions.colors[step] = hex;
-
 
         switch (this.UIState.editing) {
             case 'fillColor':
@@ -60,10 +41,11 @@ export class ColorMenu extends React.Component<{
                 this.colorOptions.iconTextColor = hex;
                 break;
         }
+        this.UIState.startColor = hex;
 
     }
     onChoroVariableChange = (e) => {
-        this.colorOptions.choroplethField = e.name;
+        this.colorOptions.colorField = e.label;
         this.calculateValues();
     }
     onSchemeChange = (e) => {
@@ -72,6 +54,7 @@ export class ColorMenu extends React.Component<{
     }
     onOpacityChange = (e) => {
         this.colorOptions.opacity = e.target.valueAsNumber;
+        this.colorOptions.fillOpacity = e.target.valueAsNumber;
     }
     onStepsChange = (e) => {
         this.colorOptions.steps = e.target.valueAsNumber;
@@ -80,16 +63,13 @@ export class ColorMenu extends React.Component<{
     onModeChange = (mode) => {
         this.colorOptions.mode = mode;
         this.calculateValues();
-
     }
     onMultipleColorsChange = (e) => {
-        this.UIState.useMultipleFillColors = e.target.checked;
+        this.colorOptions.useMultipleFillColors = e.target.checked;
     }
     onRevertChange = (e) => {
-
-        this.colorOptions.revert = e.target.checked,
-            this.calculateValues();
-
+        this.colorOptions.revert = e.target.checked;
+        this.calculateValues();
     }
     onCustomSchemeChange = (e) => {
         let use: boolean = e.target.checked;
@@ -100,7 +80,6 @@ export class ColorMenu extends React.Component<{
         this.calculateValues();
     }
     toggleColorPick = (property: string) => {
-
         this.UIState.colorSelectOpen = this.UIState.editing !== property ? true : !this.UIState.colorSelectOpen;
         this.UIState.editing = property;
     }
@@ -113,7 +92,7 @@ export class ColorMenu extends React.Component<{
      */
     calculateValues = () => {
         let lyr: Layer = this.activeLayer;
-        let choroField = this.colorOptions.choroplethField;
+        let choroField = this.colorOptions.colorField;
         let values = (lyr.geoJSON as any).features.map(function(feat) {
             return feat.properties[choroField];
         });
@@ -142,7 +121,7 @@ export class ColorMenu extends React.Component<{
     }
 
     getStepValues = () => {
-        if (!this.UIState.useMultipleFillColors)
+        if (!this.colorOptions.useMultipleFillColors)
             return [];
         let limits: number[] = [];
         for (let i = 0; i < this.colorOptions.steps; i++) {
@@ -153,36 +132,24 @@ export class ColorMenu extends React.Component<{
         return limits;
     }
     saveOptions = () => {
-        // this.props.saveValues({
-        //     choroplethField: this.colorOptions.useMultipleFillColors ? this.colorOptions.choroplethField : '',
-        //     steps: this.colorOptions.steps,
-        //     colorScheme: this.colorOptions.useMultipleFillColors ? this.colorOptions.colorScheme : '',
-        //     mode: this.colorOptions.mode,
-        //     fillOpacity: this.colorOptions.opacity,
-        //     opacity: this.colorOptions.opacity,
-        //     fillColor: this.colorOptions.useMultipleFillColors ? '' : this.colorOptions.fillColor,
-        //     iconTextColor: this.colorOptions.iconTextColor,
-        //     color: this.colorOptions.borderColor,
-        //     revert: this.colorOptions.revertColorScheme,
-        //     limits: this.colorOptions.useCustomScheme ? this.getStepValues() : this.colorOptions.limits,
-        //     colors: this.colorOptions.useMultipleFillColors ? this.colorOptions.colors : [],
-        //     useCustomScheme: this.colorOptions.useCustomScheme,
-        // });
+        this.props.saveValues();
     }
     renderSteps() {
         let rows = [];
         let steps: number[] = [];
-        for (let i in this.colorOptions.limits) {
+        for (let i in this.colorOptions.limits.slice()) {
             if (+i !== this.colorOptions.limits.length - 1) {
                 let step: number = this.colorOptions.limits[i];
+
                 steps.push(step);
             }
         }
         let row = 0;
+
         for (let i of steps) {
             rows.push(
                 <li key={i}
-                    style={{ background: this.colorOptions.colors[row] ? this.colorOptions.colors[row] : '#FFF', }}
+                    style={{ background: this.colorOptions.colors[row] ? this.colorOptions.colors[row] : '#FFF' }}
                     onClick={this.toggleColorPick.bind(this, 'step' + row) }>
                     <input
                         id={row + 'min'}
@@ -242,22 +209,27 @@ export class ColorMenu extends React.Component<{
                 left: '',
             }
         }
-        return (!this.props.visible ? null :
+        return (this.props.state.visibleMenu !== 2 ? null :
             <div className="mapify-options">
-                {this.props.state.editingLayer.visOptions.colorOptions.choroplethField != '' ? null :
+                {this.props.state.editingLayer.layerType === LayerTypes.ChoroplethMap ? null :
                     <div>
-                        <label htmlFor='multipleSelect'>Use multiple fill colors</label>
-                        <input id='multipleSelect' type='checkbox' onChange={this.onMultipleColorsChange } checked={this.UIState.useMultipleFillColors}/>
+                        <label htmlFor='multipleSelect'>Use multiple fill colors
+                            <input
+                                id='multipleSelect'
+                                type='checkbox'
+                                onChange={this.onMultipleColorsChange }
+                                checked={this.colorOptions.useMultipleFillColors}/>
+                        </label>
                     </div>
                 }
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
-                    {this.UIState.useMultipleFillColors ?
+                    {this.colorOptions.useMultipleFillColors || this.activeLayer.layerType === LayerTypes.ChoroplethMap ?
                         null :
                         <div className='colorBlock' style={fillColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'fillColor') }>Fill</div>
                     }
                     <div className='colorBlock' style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor') }>Border</div>
-                    {this.props.state.editingLayer.visOptions.symbolOptions.iconField != '' ?
-                        <div className='colorBlock' style={iconTextColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'iconTextColor') }>Icon text</div>
+                    {this.activeLayer.layerType === LayerTypes.SymbolMap && this.activeLayer.visOptions.symbolOptions.symbolType === SymbolTypes.Icon ?
+                        <div className='colorBlock' style={iconTextColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'iconTextColor') }>Icon</div>
                         : null
                     }
 
@@ -275,7 +247,7 @@ export class ColorMenu extends React.Component<{
                         height={600}
                         overlowY='auto'
                         color={ this.UIState.startColor}
-                        onChange={this.colorSelect }
+                        onChange={this.onColorSelect }
                         />
                     <button
                         className='primaryButton'
@@ -283,16 +255,16 @@ export class ColorMenu extends React.Component<{
                         style={{ position: 'absolute', left: 80 }}>OK</button>
                 </Modal>
                 {
-                    this.UIState.useMultipleFillColors ?
+                    this.colorOptions.useMultipleFillColors || this.activeLayer.layerType === LayerTypes.ChoroplethMap ?
                         <div>
                             <label>Select the variable to color by</label>
                             <Select
                                 options={this.activeLayer.numberHeaders}
                                 onChange={this.onChoroVariableChange }
-                                value={this.colorOptions.choroplethField}
+                                value={this.colorOptions.colorField}
                                 clearable={false}
                                 />
-                            {this.colorOptions.choroplethField ?
+                            {this.colorOptions.colorField ?
 
                                 <div>
                                     <label htmlFor='customScale'>Set custom scheme</label>
@@ -382,7 +354,9 @@ export class ColorMenu extends React.Component<{
                         </div>
                         : null
                 }
-                <button className='menuButton' onClick={this.saveOptions }>Refresh map</button>
+                {this.props.state.autoRefresh ? null :
+                    <button className='menuButton' onClick={this.saveOptions }>Refresh map</button>
+                }
             </div >
         );
     }

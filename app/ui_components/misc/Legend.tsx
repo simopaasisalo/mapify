@@ -39,7 +39,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-            { options.colorOptions.choroplethField }
+            { options.colorOptions.colorField }
             <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
             </div >
@@ -204,7 +204,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             for (let i = 0; i < limits.length - 1; i++) {
 
                 divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
-                    {getIcon(icons[i].shape, icons[i].fa, col.color, col.choroplethField === options.symbolOptions.iconField ? col.colors[i] : col.fillColor, options.colorOptions.iconTextColor) }
+                    {getIcon(icons[i].shape, icons[i].fa, col.color, col.colorField === options.symbolOptions.iconField ? col.colors[i] : col.fillColor, options.colorOptions.iconTextColor) }
                     <span style={{ marginLeft: '3px', marginRight: '3px' }}>
                         {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
                         {this.props.state.legend.showPercentages ? <br/> : null}
@@ -341,8 +341,8 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
         let options = layer.visOptions;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
-        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.choroplethField)) {
-            let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.choroplethField, col.limits) : {};
+        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
+            let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.colorField, col.limits) : {};
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
         if (sym.symbolType === SymbolTypes.Chart) {

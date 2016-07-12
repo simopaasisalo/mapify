@@ -76,7 +76,11 @@ export class LayerImportWizard extends React.Component<{
                 state.delimiter,
                 state.coordinateSystem,
                 state.layer.headers);
+
+            state.layer.headers = state.layer.headers.filter(function(val) { return val.label !== state.longitudeField && val.label !== state.latitudeField });
+
         }
+
         else if (state.coordinateSystem && state.coordinateSystem !== 'WGS84') {
             state.layer.geoJSON = _fileModel.ProjectCoords(state.layer.geoJSON, state.coordinateSystem);
         }

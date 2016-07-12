@@ -26,7 +26,7 @@ export class MapifyMenu extends React.Component<{
     /** Remove a layer from the map*/
     deleteLayer: (id: number) => void,
     /** Create a new filter or replace an existing one. Returns id*/
-    saveFilter: (info: IFilter) => number,
+    saveFilter: () => number,
     /** Remove a filter from the map */
     deleteFilter: (id: number) => void,
     /** Update the map legend*/
@@ -76,15 +76,6 @@ export class MapifyMenu extends React.Component<{
         this.props.state.visibleMenu = 0;
         this.props.addLayer();
     }
-    refreshColorOptions = (options: ColorOptions) => {
-
-        this.props.state.editingLayer.visOptions.colorOptions = options;;
-
-        this.refreshMap();
-    }
-    refreshSymbolOptions = () => {
-        this.refreshMap();
-    }
     refreshMap = () => {
         this.props.refreshMap(this.props.state.editingLayer);
     }
@@ -96,8 +87,8 @@ export class MapifyMenu extends React.Component<{
         return option ? option.layerName : '';
     }
 
-    addFilterToMap = (info: IFilter) => {
-        return this.props.saveFilter(info);
+    addFilterToMap = () => {
+        return this.props.saveFilter();
     }
 
     deleteFilter = (id: number) => {
@@ -179,8 +170,7 @@ export class MapifyMenu extends React.Component<{
                             style={{ backgroundColor: this.props.state.visibleMenu === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
                         <ColorMenu
                             state = {this.props.state}
-                            saveValues = {this.refreshColorOptions }
-                            visible = {this.props.state.visibleMenu === 2}
+                            saveValues = {this.refreshMap }
                             />
                     </Menu.Item>
                     : <div/>
@@ -193,7 +183,7 @@ export class MapifyMenu extends React.Component<{
                             style={{ backgroundColor: this.props.state.visibleMenu === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
                         <SymbolMenu
                             state = {this.props.state}
-                            saveValues = {this.refreshSymbolOptions }
+                            saveValues = {this.refreshMap }
 
                             />
                     </Menu.Item>
@@ -231,7 +221,7 @@ export class MapifyMenu extends React.Component<{
                             style={{ backgroundColor: this.props.state.visibleMenu === 6 ? '#1a263f' : '#293c60' }}> Pop-ups </p>
                         <PopUpMenu
                             state = {this.props.state}
-                            saveSelection = {this.changePopUpHeaders}
+                            saveValues = {this.changePopUpHeaders}
                             />
                     </Menu.Item>
                     : <div/>

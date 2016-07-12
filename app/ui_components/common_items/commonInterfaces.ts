@@ -89,11 +89,11 @@ interface IFilter {
     /** The name of the filter. Will be shown on the map*/
     title: string,
     /** Initialized as the unfiltered data when Filter created. Filtering changes this layer*/
-    layerDataId?: number,
+    layerId?: number,
     /** The name of the field to filter*/
     fieldToFilter: string,
     /** Dictionary containing lists of layers by the value being filtered*/
-    filterValues?: { [value: number]: L.ILayer[] },
+    filterValues?: { [index: number]: L.ILayer[] },
     /** Current maximum value */
     currentMax?: number,
     /** Current min value */

@@ -18,36 +18,32 @@ export class SymbolMenu extends React.Component<{
         if (this.props.state.autoRefresh)
             this.props.saveValues();
     }
-
     onTypeChange = (type: SymbolTypes) => {
         this.symbolOptions.symbolType = type;
         this.symbolOptions.sizeXVar = this.symbolOptions.sizeXVar ? this.symbolOptions.sizeXVar : this.activeLayer.numberHeaders[0] ? this.activeLayer.numberHeaders[0].label : undefined;
+        this.symbolOptions.iconField = this.symbolOptions.iconField ? this.symbolOptions.iconField : this.activeLayer.numberHeaders[0] ? this.activeLayer.numberHeaders[0].label : undefined;
+        this.symbolOptions.chartFields = this.symbolOptions.chartFields.length > 0 ? this.symbolOptions.chartFields : this.activeLayer.numberHeaders;
+
     }
     onXVariableChange = (val) => {
         this.symbolOptions.sizeXVar = val ? val.value : '';
     }
-
     onYVariableChange = (val) => {
         this.symbolOptions.sizeYVar = val ? val.value : '';
     }
     onSizeMultiplierChange = (e) => {
-
         this.symbolOptions.sizeMultiplier = e.currentTarget.valueAsNumber;
     }
     onSizeLowLimitChange = (e) => {
-
         this.symbolOptions.sizeLowLimit = e.currentTarget.valueAsNumber;
     }
     onSizeUpLimitChange = (e) => {
-
         this.symbolOptions.sizeUpLimit = e.currentTarget.valueAsNumber;
     }
     onBlockValueChange = (e) => {
-
         this.symbolOptions.blockValue = e.currentTarget.valueAsNumber;
     }
     onFAIconChange = (e) => {
-
         if (e.currentTarget) { //if event triggered from input
             e = e.currentTarget.value
         }
@@ -61,38 +57,38 @@ export class SymbolMenu extends React.Component<{
         this.symbolOptions.chartType = type;
     }
     onChartFieldsChange = (e: IHeader[]) => {
+        let headers = this.symbolOptions.chartFields;
         if (e === null)
             e = [];
-
-        this.symbolOptions.chartFields = e;
+        headers.splice(0, headers.length) //empty headers
+        for (let i in e) { //add new headers
+            headers.push(e[i]);
+        }
     }
     toggleIconSelect = (index: number) => {
-
         this.UIState.iconSelectOpen = index !== this.UIState.currentIconIndex ? true : !this.UIState.iconSelectOpen;
         this.UIState.currentIconIndex = index;
     }
     onUseIconStepsChange = (e) => {
         let use = e.target.checked;
-
         this.UIState.useIconSteps = use;
-        this.symbolOptions.icons = use ? this.symbolOptions.icons : [this.symbolOptions.icons[0]],
-            this.symbolOptions.iconLimits = use ? this.symbolOptions.iconLimits : [];
+        this.symbolOptions.icons = use ? this.symbolOptions.icons : [this.symbolOptions.icons.slice()[0]];
+        this.symbolOptions.iconLimits = use ? this.symbolOptions.iconLimits : [];
         if (use) {
-            this.calculateValues(this.symbolOptions.iconField, this.UIState.iconStepCount)
+            this.calculateIconValues(this.symbolOptions.iconField, this.UIState.iconStepCount)
         }
 
     }
     onIconFieldChange = (val: IHeader) => {
-
         this.symbolOptions.iconField = val.value;
-        this.calculateValues(val.value, this.UIState.iconStepCount);
+        this.calculateIconValues(val.value, this.UIState.iconStepCount);
     }
     changeIconStepsCount = (amount: number) => {
-        let newVal = this.UIState.iconStepCount + amount;
+        let newVal = this.UIState.iconStepCount ? this.UIState.iconStepCount + amount : 1;
         if (newVal > 0) {
 
             this.UIState.iconStepCount = newVal;
-            this.calculateValues(this.symbolOptions.iconField, newVal)
+            this.calculateIconValues(this.symbolOptions.iconField, newVal)
         }
     }
     saveOptions = () => {
@@ -155,11 +151,12 @@ export class SymbolMenu extends React.Component<{
         </div>
 
     }
-    calculateValues(fieldName: string, steps: number) {
-        let lyr: Layer = this.activeLayer;
+    calculateIconValues(fieldName: string, steps: number) {
+
         let max, min;
-        let values = (lyr.geoJSON as any).features.map(function(feat) {
+        let values = (this.activeLayer.geoJSON as any).features.map(function(feat) {
             let val = feat.properties[fieldName];
+
             if (!max && !min) {
                 max = val;
                 min = val;
@@ -170,18 +167,17 @@ export class SymbolMenu extends React.Component<{
                 min = val;
             return val;
         });
-        let limits: number[] = [];
-        let icons: IIcon[] = [];
         let index = 0;
+        this.symbolOptions.iconLimits.splice(0, this.symbolOptions.iconLimits.length)
+
         for (let i = min; i < max; i += (max - min) / steps) {
-            limits.push(i);
-            icons.push(this.symbolOptions.icons.slice()[index] ? this.symbolOptions.icons.slice()[index] : { fa: 'fa-anchor', shape: 'circle' })
+            this.symbolOptions.iconLimits.push(i);
+            if (!this.symbolOptions.icons[index]) {
+                this.symbolOptions.icons.push({ fa: 'fa-anchor', shape: 'circle' })
+            }
             index++;
         }
-        limits.push(max)
-
-        this.symbolOptions.iconLimits = limits;
-        this.symbolOptions.icons = icons;
+        this.symbolOptions.iconLimits.push(max)
     }
 
     render() {
@@ -349,7 +345,7 @@ export class SymbolMenu extends React.Component<{
                                 options={this.activeLayer.numberHeaders}
                                 multi
                                 onChange={this.onChartFieldsChange }
-                                value={this.symbolOptions.chartFields}
+                                value={this.symbolOptions.chartFields.slice() }
                                 />
                             Chart type
                             <br/>
@@ -485,15 +481,15 @@ export class SymbolMenu extends React.Component<{
     renderSteps() {
         let rows = [];
         let steps: number[] = [];
-        for (let i in this.symbolOptions.iconLimits) {
-            if (+i !== this.symbolOptions.iconLimits.length - 1) {
-
+        for (let i in this.symbolOptions.iconLimits.slice()) {
+            if (+i !== this.symbolOptions.iconLimits.slice().length - 1) {
                 let step: number = this.symbolOptions.iconLimits[i];
                 steps.push(step);
             }
         }
         let row = 0;
         for (let i of steps) {
+
             rows.push(
                 <li key={i} style={{ lineHeight: 0 }}>
                     <input

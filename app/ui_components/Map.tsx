@@ -22,7 +22,6 @@ let topojson = require('topojson');
 let reactDOMServer = require('react-dom/server');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
-let _currentFilterId: number = 0;
 
 let _map: L.Map;
 
@@ -31,12 +30,6 @@ const state = new AppState();
 @observer
 export class MapMain extends React.Component<{}, {}>{
 
-    // private defaultVisOptions: VisualizationOptions = {
-    //     onEachFeature: this.addPopupsToLayer,
-    //     pointToLayer: function(feature, latlng: L.LatLng) {
-    //         return L.circleMarker(latlng, this.defaultColorOptions)
-    //     }.bind(this),
-    // }
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
@@ -74,13 +67,12 @@ export class MapMain extends React.Component<{}, {}>{
     layerImportSubmit(layerData: Layer) {
         let layer;
         let visOptions = new VisualizationOptions();
+
         visOptions.pointToLayer = function(feature, latlng: L.LatLng) {
-            return L.circleMarker(latlng, this.defaultColorOptions)
-        }.bind(this);
+            return L.circleMarker(latlng, visOptions.colorOptions)
+        };
         visOptions.onEachFeature = this.addPopupsToLayer;
         layerData.visOptions = visOptions;// JSON.parse(JSON.stringify(visOptions));
-        layerData.visOptions.onEachFeature = visOptions.onEachFeature;
-        layerData.visOptions.pointToLayer = visOptions.pointToLayer;
         layerData.id = _currentLayerId;
         _currentLayerId++;
         if (layerData.layerType === LayerTypes.ChoroplethMap) {
@@ -100,7 +92,6 @@ export class MapMain extends React.Component<{}, {}>{
         state.importWizardShown = false;
         state.editingLayer = layerData;
         state.menuShown = true;
-
     }
 
 
@@ -132,7 +123,7 @@ export class MapMain extends React.Component<{}, {}>{
      */
     reloadLayer(layer: Layer, wasImported: boolean = false) {
         if (layer) {
-            let filter = state.filters.filter((f) => { return f.layerDataId === layer.id })[0];
+            let filter = state.filters.filter((f) => { return f.layerId === layer.id })[0];
             let col = layer.visOptions.colorOptions;
             let sym = layer.visOptions.symbolOptions;
             if (!wasImported)
@@ -140,20 +131,20 @@ export class MapMain extends React.Component<{}, {}>{
 
             if (layer.layerType !== LayerTypes.HeatMap) {
                 if (layer.layerType === LayerTypes.SymbolMap) {
-                    let opt = layer.visOptions.symbolOptions;
                     //if needs to scale and is of scalable type
-                    if (opt.sizeXVar || opt.sizeYVar && (opt.symbolType === SymbolTypes.Circle || opt.symbolType === SymbolTypes.Rectangle || opt.symbolType === SymbolTypes.Blocks)) {
-                        getMaxValues(opt);
+                    if (sym.sizeXVar || sym.sizeYVar && (sym.symbolType === SymbolTypes.Circle || sym.symbolType === SymbolTypes.Rectangle || sym.symbolType === SymbolTypes.Blocks)) {
+                        getMaxValues(sym);
                     }
                 }
+
                 layer.visOptions.pointToLayer = (function(feature, latlng: L.LatLng) {
-                    let fillColor = col.fillColor ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.choroplethField]);
+                    let fillColor = col.colors.slice().length == 0 ? col.fillColor : this.getChoroplethColor(col.limits, col.colors, feature.properties[col.colorField]);
                     let borderColor = col.color;
                     switch (sym.symbolType) {
                         case SymbolTypes.Icon:
                             let icon, shape, val;
-                            for (let i in sym.iconLimits) {
-                                if (+i !== sym.iconLimits.length - 1) {
+                            for (let i in sym.iconLimits.slice()) {
+                                if (+i !== sym.iconLimits.slice().length - 1) {
                                     val = feature.properties[sym.iconField];
                                     if (val < sym.iconLimits[i]) {
                                         icon = sym.icons[i].fa;
@@ -210,14 +201,15 @@ export class MapMain extends React.Component<{}, {}>{
                     }
 
                     return L.circleMarker(latlng, layer.visOptions.colorOptions);
-
                 });
             }
             let lyr;
             if (layer.layerType === LayerTypes.HeatMap) {
                 lyr = this.createHeatLayer(layer);
             }
-            else if (layer.layerType === LayerTypes.ChoroplethMap || col.choroplethField !== '') {
+            else if (layer.layerType === LayerTypes.ChoroplethMap || col.colors.slice().length > 0) {
+                debugger;
+
                 lyr = this.createChoroplethLayer(layer);
             }
             else if (layer.layerType === LayerTypes.SymbolMap) {
@@ -236,8 +228,8 @@ export class MapMain extends React.Component<{}, {}>{
             let currentIndex = state.layers.map(function(e) { return e.id; }).indexOf(layer.id);
 
             state.layers[currentIndex == -1 ? 0 : currentIndex] = layer;
-            if (filter)
-                this.saveFilter(filter, true);
+            // if (filter)
+            //     this.saveFilter(filter, true);
         }
 
         function setCircleMarkerRadius(sym: SymbolOptions) {
@@ -414,17 +406,17 @@ export class MapMain extends React.Component<{}, {}>{
      */
     createChoroplethLayer(layer: Layer) {
         let opts = layer.visOptions.colorOptions;
-        if (opts.choroplethField === '') {
+        if (opts.colorField === '') {
             layer.headers.map(function(h) {
                 if (h.type == 'number') {
-                    opts.choroplethField = h.label;
+                    opts.colorField = h.label;
                 }
             })
-            if (opts.choroplethField === '')
-                opts.choroplethField = layer.headers[0].label;
+            if (opts.colorField === '')
+                opts.colorField = layer.headers[0].label;
         }
         let values = (layer.geoJSON as any).features.map(function(item) {
-            return item.properties[opts.choroplethField];
+            return item.properties[opts.colorField];
         });
         if (!opts.limits)
             opts.limits = chroma.limits(values, opts.mode, opts.steps);
@@ -435,7 +427,7 @@ export class MapMain extends React.Component<{}, {}>{
             return {
                 fillOpacity: opts.fillOpacity,
                 opacity: opts.opacity,
-                fillColor: this.getChoroplethColor(opts.limits, opts.colors, feature.properties[opts.choroplethField]),
+                fillColor: this.getChoroplethColor(opts.limits, opts.colors, feature.properties[opts.colorField]),
                 color: opts.color,
                 weight: 1,
             }
@@ -523,52 +515,37 @@ export class MapMain extends React.Component<{}, {}>{
     /**
      * saveFilter - Creates a new filter or updates an existing one
      *
-     * @param  info   The IFilter description of the new filter
      * @param  layerUpdate   Was the update triggered by layer refresh? If so, do not reset filter
      */
-    saveFilter(info: IFilter, layerUpdate: boolean = false) {
-        let layerData = state.layers.filter((lyr) => { return lyr.id === info.layerDataId })[0];
-        if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Chart || layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon)
-            info.remove = true; //force removal if type requires it
-        let id;
-        if (info.id != -1) { //existing filter being updated
-            id = info.id;
-            state.filters = state.filters.filter((f) => { return f.id !== id });
-        }
-        else {
-            id = _currentFilterId++;
-        }
-        let filterValues: { [index: number]: L.ILayer[] };
-        if (info.id !== -1 && !layerUpdate) {
-
-            this.filterLayer(info.id, info.currentMin, info.currentMax); //hack-ish way to make sure that all of the layers are displayed after update
-        }
-        filterValues = {}
+    saveFilter(layerUpdate: boolean = false) {
+        let filter = state.editingFilter;
+        let layerData = state.layers.filter((lyr) => { return lyr.id === filter.layerId })[0];
+        // if (layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Chart || layerData.visOptions.symbolOptions.symbolType === SymbolTypes.Icon)
+        //     info.remove = true; //force removal if type requires it
+        // let id;
+        // if (info.id != -1) { //existing filter being updated
+        //     id = info.id;
+        //     state.filters = state.filters.filter((f) => { return f.id !== id });
+        // }
+        // else {
+        //     id = _currentFilterId++;
+        // }
+        filter.filterValues = {};
+        // if (info.id !== -1 && !layerUpdate) {
+        //
+        //     this.filterLayer(filter.id, filter.currentMin, filter.currentMax); //hack-ish way to make sure that all of the layers are displayed after update
+        // }
         if (layerData.layerType !== LayerTypes.HeatMap) {
             layerData.layer.eachLayer(function(layer) {
-                let val = (layer as any).feature.properties[info.fieldToFilter];
-                if (filterValues[val])
-                    filterValues[val].push(layer);
+                let val = (layer as any).feature.properties[filter.fieldToFilter];
+                if (filter.filterValues[val])
+                    filter.filterValues[val].push(layer);
                 else
-                    filterValues[val] = [layer];
+                    filter.filterValues[val] = [layer];
             });
         }
-        state.filters.push(
-            {
-                id: id,
-                title: info.title,
-                layerDataId: info.layerDataId,
-                filterValues: filterValues,
-                fieldToFilter: info.fieldToFilter,
-                currentMin: info.currentMin,
-                currentMax: info.currentMax,
-                totalMin: info.totalMin,
-                totalMax: info.totalMax,
-                steps: info.steps,
-                filteredIndices: [],
-                remove: info.remove,
-            });
-        return id;
+
+        return filter.id;
 
     }
 
@@ -596,7 +573,7 @@ export class MapMain extends React.Component<{}, {}>{
         if (filter) {
             filter.currentMin = lowerLimit;
             filter.currentMax = upperLimit;
-            let layerData: Layer = state.layers.filter((lyr) => { return lyr.id === filter.layerDataId })[0];
+            let layerData: Layer = state.layers.filter((lyr) => { return lyr.id === filter.layerId })[0];
             if (layerData.layerType !== LayerTypes.HeatMap) {
                 for (let val in filter.filterValues) {
                     let filteredIndex = filter.filteredIndices.indexOf(+val); //is filtered?
@@ -686,14 +663,15 @@ export class MapMain extends React.Component<{}, {}>{
     getFilters() {
         let arr: JSX.Element[] = [];
         if (state.filters.length > 0)
-            for (let key in state.filters) {
-                arr.push(<Filter
-                    id = {state.filters[key].id}
-                    title={state.filters[key].title}
-                    valueChanged={this.filterLayer.bind(this) }
-                    key={key} maxValue={state.filters[key].totalMax}
-                    minValue={state.filters[key].totalMin}
-                    steps={state.filters[key].steps}/>)
+            for (let key in state.filters.slice()) {
+                if (Object.keys(state.filters[key].filterValues).length !== 0) //if filter has been properly initialized
+                    arr.push(<Filter
+                        id = {state.filters[key].id}
+                        title={state.filters[key].title}
+                        valueChanged={this.filterLayer.bind(this) }
+                        key={key} maxValue={state.filters[key].totalMax}
+                        minValue={state.filters[key].totalMin}
+                        steps={state.filters[key].steps}/>)
             }
         return arr;
     }
@@ -734,7 +712,6 @@ export class MapMain extends React.Component<{}, {}>{
             layers: state.layers,
             legend: state.legend,
             filters: state.filters,
-
         };
         let blob = new Blob([JSON.stringify(saveData)], { type: "text/plain;charset=utf-8" });
         (window as any).saveAs(blob, 'map.mapify');
@@ -744,7 +721,6 @@ export class MapMain extends React.Component<{}, {}>{
         for (let i in saveData.layers) {
             let lyr = saveData.layers[i];
             let newLayer = new Layer();
-            console.log(lyr)
             newLayer.id = lyr.id;
             newLayer.layerName = lyr.layerName
             newLayer.headers = lyr.headers;
