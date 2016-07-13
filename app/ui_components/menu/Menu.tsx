@@ -7,7 +7,9 @@ import {LegendMenu} from './LegendMenu';
 import {PopUpMenu} from './PopUpMenu';
 import {ExportMenu} from './ExportMenu';
 import {LayerTypes, SymbolTypes} from '../common_items/common';
-import {AppState, Layer, ColorOptions, SymbolOptions} from '../Stores';
+import {AppState} from '../Stores/States';
+import {Layer, ColorOptions, SymbolOptions} from '../Stores/Layer';
+
 import {observer} from 'mobx-react';
 
 let Select = require('react-select');
@@ -102,7 +104,7 @@ export class MapifyMenu extends React.Component<{
     changePopUpHeaders = () => {
         let lyr: Layer = this.props.state.editingLayer;
         let headers = this.props.state.editingLayer.popupHeaders;
-        lyr.visOptions.onEachFeature = addPopupsToLayer;
+        lyr.onEachFeature = addPopupsToLayer;
 
         function addPopupsToLayer(feature, layer: L.GeoJSON) {
             var popupContent = '';

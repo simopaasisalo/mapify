@@ -1,6 +1,6 @@
 import * as React from 'react';
 let Select = require('react-select');
-import {AppState} from '../Stores';
+import {AppState} from '../Stores/States';
 import {observer} from 'mobx-react';
 
 @observer

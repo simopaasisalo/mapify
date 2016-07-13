@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {AppState, ExportMenuState} from '../Stores';
+import {AppState, ExportMenuState} from '../Stores/States';
 import {observer} from 'mobx-react';
 
 @observer
@@ -10,12 +10,11 @@ export class ExportMenu extends React.Component<{
     /** Save map as a .mapify file*/
     saveFile: () => void,
 }, {}>{
-    private UIState = this.props.state.exportMenuState;
     onShowLegendChange = (e) => {
-        this.UIState.showLegend = e.currentTarget.checked;
+        this.props.state.exportMenuState.showLegend = e.currentTarget.checked;
     }
     onShowFiltersChange = (e) => {
-        this.UIState.showFilters = e.currentTarget.checked;
+        this.props.state.exportMenuState.showFilters = e.currentTarget.checked;
     }
     onSaveImage = () => {
         this.props.saveImage();
@@ -28,10 +27,10 @@ export class ExportMenu extends React.Component<{
             this.props.state.visibleMenu === 7 ?
                 <div>
                     <label htmlFor='showLegend'>Show legend on the image</label>
-                    <input id='showLegend' type='checkbox' checked={this.UIState.showLegend} onChange={this.onShowLegendChange }/>
+                    <input id='showLegend' type='checkbox' checked={this.props.state.exportMenuState.showLegend} onChange={this.onShowLegendChange }/>
                     <br/>
                     <label htmlFor='showFilters'>Show filters on the image</label>
-                    <input id='showFilters' type='checkbox' checked={this.UIState.showFilters} onChange={this.onShowFiltersChange }/>
+                    <input id='showFilters' type='checkbox' checked={this.props.state.exportMenuState.showFilters} onChange={this.onShowFiltersChange }/>
                     <br/>
                     <button className='menuButton' onClick={this.onSaveImage }>Export map as image</button>
                     <br/>

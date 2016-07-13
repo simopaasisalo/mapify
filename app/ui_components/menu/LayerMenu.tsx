@@ -1,6 +1,7 @@
 import * as React from 'react';
 let Sortable = require('react-sortablejs')
-import {AppState, Layer} from '../Stores';
+import {AppState} from '../Stores/States';
+import {Layer} from '../Stores/Layer';
 import {observer} from 'mobx-react';
 
 @observer
@@ -13,7 +14,6 @@ export class LayerMenu extends React.Component<{
     /** Save the current order to the map. Triggered by button press*/
     saveOrder: (order: number[]) => void,
 }, {}>{
-    private UIState = this.props.state.layerMenuState;
     // shouldComponentUpdate(nextProps: ILayerMenuProps, nextState: ILayerMenuStates) {
     //     return this.props.isVisible !== nextProps.isVisible ||
     //         this.props.layers !== nextProps.layers ||
@@ -56,7 +56,7 @@ export class LayerMenu extends React.Component<{
 
     }
     getLayerInfoById(id: string) {
-        for (let lyr of this.UIState.order) {
+        for (let lyr of this.props.state.layerMenuState.order) {
             if (lyr.id === +id) {
                 return lyr;
             }
@@ -70,7 +70,7 @@ export class LayerMenu extends React.Component<{
     }
     saveOrder() {
         let arr: number[] = [];
-        for (let lyr of this.UIState.order) {
+        for (let lyr of this.props.state.layerMenuState.order) {
             arr.push(lyr.id);
         }
         this.props.saveOrder(arr); //unnecessary? just set the state?
@@ -92,7 +92,7 @@ export class LayerMenu extends React.Component<{
             <div className="mapify-options">
                 <label>Drag and drop to reorder</label>
                 <Sortable className='layerList' onChange={this.handleSort.bind(this) }>
-                    {this.UIState.order.map(function(layer) {
+                    {this.props.state.layerMenuState.order.map(function(layer) {
                         return <div style={layerStyle} key={layer.id} data-id={layer.id} >
                             {layer.name}
                             <i className="fa fa-times" onClick = {this.deleteLayer.bind(this, layer.id) }/>

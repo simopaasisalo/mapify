@@ -8,12 +8,13 @@ import {LayerTypes} from "../common_items/common";
 
 let _fileModel = new FilePreProcessModel();
 
-import {ImportWizardState} from '../Stores';
+import {ImportWizardState} from '../Stores/States';
 import {observer} from 'mobx-react';
 
 @observer
 export class LayerImportWizard extends React.Component<{
     state: ImportWizardState,
+    map: L.Map,
     /** Function to upload the data to the map */
     submit: (Layer) => void,
     /** Function to signal the cancellation of the import.  */
@@ -92,6 +93,7 @@ export class LayerImportWizard extends React.Component<{
                 return <div style={{ minWidth: 1000 }}>
                     <LayerTypeSelectView
                         state = {this.props.state}
+                        map= {this.props.map}
                         cancel = {this.cancel.bind(this) }
                         />
                 </div>

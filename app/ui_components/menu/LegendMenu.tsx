@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {AppState} from '../Stores';
+import {AppState} from '../Stores/States';
 import {observer} from 'mobx-react';
 @observer
 export class LegendMenu extends React.Component<{
@@ -8,21 +8,20 @@ export class LegendMenu extends React.Component<{
     valuesChanged: (values: ILegend) => void,
 }, {}>{
 
-    private legend = this.props.state.legend;
     onTitleChange = (e) => {
-        this.legend.title = e.target.value;
+        this.props.state.legend.title = e.target.value;
     }
     onMetaChange = (e) => {
-        this.legend.meta = e.target.value;
+        this.props.state.legend.meta = e.target.value;
     }
     onVisibleChange = (e) => {
-        this.legend.visible = e.currentTarget.checked;
+        this.props.state.legend.visible = e.currentTarget.checked;
     }
     onHorizontalChange = (e) => {
-        this.legend.horizontal = e.currentTarget.checked;
+        this.props.state.legend.horizontal = e.currentTarget.checked;
     }
     onPercentageChange = (e) => {
-        this.legend.showPercentages = e.currentTarget.checked;
+        this.props.state.legend.showPercentages = e.currentTarget.checked;
     }
     // componentDidUpdate() {
     //     let info: ILegend = {
@@ -38,25 +37,25 @@ export class LegendMenu extends React.Component<{
         return (this.props.state.visibleMenu !== 5 ? null :
             <div className="mapify-options">
                 <label htmlFor='showLegend'>Show legend
-                    <input id='showLegend' type='checkbox' checked={this.legend.visible} onChange={this.onVisibleChange }/>
+                    <input id='showLegend' type='checkbox' checked={this.props.state.legend.visible} onChange={this.onVisibleChange }/>
                 </label>
                 <br/>
                 <label>Title</label>
-                <input type='text' style={{ width: '100%' }} value={this.legend.title} onChange={this.onTitleChange }/>
+                <input type='text' style={{ width: '100%' }} value={this.props.state.legend.title} onChange={this.onTitleChange }/>
                 <br/>
                 <label>Meta</label>
                 <textarea
                     style={{ width: '100%', height: 50 }}
                     rows={5}
-                    value={this.legend.meta}
+                    value={this.props.state.legend.meta}
                     onChange={this.onMetaChange }/>
                 <br/>
                 <label htmlFor='showPercentages'>Show distribution
-                    <input id='showPercentages' type='checkbox' checked={this.legend.showPercentages} onChange={this.onPercentageChange }/>
+                    <input id='showPercentages' type='checkbox' checked={this.props.state.legend.showPercentages} onChange={this.onPercentageChange }/>
                 </label>
                 <br/>
                 <label htmlFor='makeHorizontal'>Align horizontally
-                    <input id='makeHorizontal' type='checkbox' checked={this.legend.horizontal} onChange={this.onHorizontalChange }/>
+                    <input id='makeHorizontal' type='checkbox' checked={this.props.state.legend.horizontal} onChange={this.onHorizontalChange }/>
                 </label>
                 <br/>
                 <i>TIP: drag the legend on screen to place it where you wish</i>

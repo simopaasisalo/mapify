@@ -1,7 +1,9 @@
 import * as React from 'react';
 let Draggable = require('react-draggable');
 import {SymbolTypes} from '../common_items/common';
-import {AppState, Layer, VisualizationOptions, SymbolOptions} from '../Stores';
+import {AppState} from '../Stores/States';
+import {Layer, SymbolOptions} from '../Stores/Layer';
+
 import {observer} from 'mobx-react';
 
 @observer
@@ -14,14 +16,14 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
     //         nextProps.horizontal !== this.props.state.legend.horizontal ||
     //         nextProps.showPercentages !== this.props.state.legend.showPercentages;
     // }
-    createChoroplethLegend(options: VisualizationOptions, percentages) {
+    createChoroplethLegend(layer: Layer, percentages) {
         let divs = [];
-        let limits = options.colorOptions.limits;
-        let colors = options.colorOptions.colors;
+        let limits = layer.colorOptions.limits;
+        let colors = layer.colorOptions.colors;
         for (let i = 0; i < limits.length - 1; i++) {
             let colorStyle = {
                 background: colors[i],
-                opacity: options.colorOptions.fillOpacity,
+                opacity: layer.colorOptions.fillOpacity,
                 minWidth: '20px',
                 minHeight: '20px',
             }
@@ -39,16 +41,16 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-            { options.colorOptions.colorField }
+            { layer.colorOptions.colorField }
             <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                 { divs.map(function(d) { return d }) }
             </div >
         </div >;
     }
 
-    createScaledSizeLegend(options: VisualizationOptions) {
-        let symbolType = options.symbolOptions.symbolType;
-        let opt = options.symbolOptions;
+    createScaledSizeLegend(layer: Layer) {
+        let symbolType = layer.symbolOptions.symbolType;
+        let opt = layer.symbolOptions;
         let xVar = opt.sizeXVar;
         let yVar = opt.sizeYVar;
         let square = xVar && yVar && xVar === yVar;
@@ -94,7 +96,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
                 let style = {
                     width: square ? l : y ? 10 : l,
                     height: square ? l : y ? l : 10,
-                    backgroundColor: options.colorOptions.fillColor,
+                    backgroundColor: layer.colorOptions.fillColor,
                     display: this.props.state.legend.horizontal ? '' : 'inline-block',
                     border: '1px solid gray',
                     marginLeft: this.props.state.legend.horizontal || y ? 'auto' : margin, //center values
@@ -115,7 +117,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             }
 
             return <div style= {{ float: this.props.state.legend.horizontal ? '' : 'left', textAlign: 'center' }}>
-                {y ? options.symbolOptions.sizeYVar : options.symbolOptions.sizeXVar}
+                {y ? layer.symbolOptions.sizeYVar : layer.symbolOptions.sizeXVar}
                 <div>
                     {divs.map(function(d) { return d }) }
                 </div>
@@ -137,7 +139,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
                 let style = {
                     width: l,
                     height: l,
-                    backgroundColor: options.colorOptions.fillColor,
+                    backgroundColor: layer.colorOptions.fillColor,
                     float: this.props.state.legend.horizontal ? '' : 'left',
                     border: '1px solid gray',
                     borderRadius: '50%',
@@ -161,7 +163,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             }
 
             return <div style= {{ float: this.props.state.legend.horizontal ? '' : 'left', textAlign: 'center' }}>
-                {options.symbolOptions.sizeXVar}
+                {layer.symbolOptions.sizeXVar}
                 <div>
                     {divs.map(function(d) { return d }) }
                 </div>
@@ -195,16 +197,16 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
         </div >;
     }
 
-    createIconLegend(options: VisualizationOptions, percentages, layerName: string) {
+    createIconLegend(layer: Layer, percentages, layerName: string) {
         let divs = [];
-        let limits = options.symbolOptions.iconLimits;
-        let icons: IIcon[] = options.symbolOptions.icons;
-        let col = options.colorOptions;
+        let limits = layer.symbolOptions.iconLimits;
+        let icons: IIcon[] = layer.symbolOptions.icons;
+        let col = layer.colorOptions;
         if (limits && limits.length > 0) {
             for (let i = 0; i < limits.length - 1; i++) {
 
                 divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
-                    {getIcon(icons[i].shape, icons[i].fa, col.color, col.colorField === options.symbolOptions.iconField ? col.colors[i] : col.fillColor, options.colorOptions.iconTextColor) }
+                    {getIcon(icons[i].shape, icons[i].fa, col.color, col.colorField === layer.symbolOptions.iconField ? col.colors[i] : col.fillColor, layer.colorOptions.iconTextColor) }
                     <span style={{ marginLeft: '3px', marginRight: '3px' }}>
                         {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
                         {this.props.state.legend.showPercentages ? <br/> : null}
@@ -213,7 +215,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
                 </div >);
             }
             return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-                { options.symbolOptions.iconField }
+                { layer.symbolOptions.iconField }
                 <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                     { divs.map(function(d) { return d }) }
                 </div >
@@ -223,7 +225,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
                 { layerName}
                 <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
-                    {getIcon(icons[0].shape, icons[0].fa, options.colorOptions.color, options.colorOptions.fillColor, options.colorOptions.iconTextColor) }
+                    {getIcon(icons[0].shape, icons[0].fa, layer.colorOptions.color, layer.colorOptions.fillColor, layer.colorOptions.iconTextColor) }
                 </div >
             </div >;
         }
@@ -282,13 +284,13 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
         }
     }
 
-    createBlockLegend(options: VisualizationOptions) {
+    createBlockLegend(layer: Layer) {
         let style = {
             width: 10,
             height: 10,
-            backgroundColor: options.colorOptions.fillColor,
+            backgroundColor: layer.colorOptions.fillColor,
             float: this.props.state.legend.horizontal ? '' : 'left',
-            border: '1px solid ' + options.colorOptions.color,
+            border: '1px solid ' + layer.colorOptions.color,
             margin: 'auto',
         }
         let parentDivStyle = {
@@ -300,11 +302,11 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
         }
         return (
             <div style={{ margin: '5px', float: 'left' }}>
-                {options.symbolOptions.sizeXVar}
+                {layer.symbolOptions.sizeXVar}
                 <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                     <div style={style} />
                     =
-                    <span style={{ display: 'inline-block' }}>{ options.symbolOptions.blockValue}</span>
+                    <span style={{ display: 'inline-block' }}>{ layer.symbolOptions.blockValue}</span>
 
                 </div >
             </div >);
@@ -338,7 +340,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
 
     createLegend(layer: Layer) {
         let choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
-        let options = layer.visOptions;
+        let options = layer;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
         if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
