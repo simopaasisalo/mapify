@@ -1,18 +1,18 @@
 import * as React from 'react';
 import {LayerType} from "./LayerType";
 import {LayerTypes} from "../common_items/common";
-import {ImportWizardState} from '../Stores/States';
+import {ImportWizardState, AppState} from '../Stores/States';
 import {Layer} from '../Stores/Layer';
 import {observer} from 'mobx-react';
 
 @observer
 export class LayerTypeSelectView extends React.Component<{
     state: ImportWizardState,
-    map: L.Map,
+    appState: AppState,
     /** cancels the layer import wizard */
     cancel: () => void,
 }, {}>{
-    private activeLayer = this.props.state.layer = new Layer(this.props.map);
+    private activeLayer = this.props.state.layer = new Layer(this.props.appState);
 
     onMapTypeClick = (type: LayerTypes) => {
         this.activeLayer.layerType = type;

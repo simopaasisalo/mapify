@@ -37,6 +37,7 @@
     "wellknown": "^0.4.2"
   },
   "devDependencies": {
+    "mobx-react-devtools": "^4.2.2",
     "typescript": "^1.8.10",
     "typings": "^0.7.12",
     "webpack": "^1.13.0"

@@ -65,8 +65,6 @@ interface IOnScreenFilterProps {
     minValue: number,
     /** The maximum of the value being filtered */
     maxValue: number,
-    /** The event for following the current values  */
-    valueChanged: (id: number, lowerLimit: number, upperLimit: number) => void,
     steps: [number, number][],
 }
 /** The React statuses of the filters shown on the map */
@@ -82,35 +80,7 @@ interface IOnScreenFilterStates {
     lockDistance?: boolean,
 }
 
-/** The filter information*/
-interface IFilter {
-    /** The unique id of the filter */
-    id: number,
-    /** The name of the filter. Will be shown on the map*/
-    title: string,
-    /** Initialized as the unfiltered data when Filter created. Filtering changes this layer*/
-    layerId?: number,
-    /** The name of the field to filter*/
-    fieldToFilter: string,
-    /** Dictionary containing lists of layers by the value being filtered*/
-    filterValues?: { [index: number]: L.ILayer[] },
-    /** Current maximum value */
-    currentMax?: number,
-    /** Current min value */
-    currentMin?: number,
-    /** Original maximum value */
-    totalMax?: number,
-    /** Original min value */
-    totalMin?: number,
-    /** User defined steps*/
-    steps?: [number, number][],
-    /** Whether to remove the filtered layer completely or change opacity*/
-    remove?: boolean,
-    /** The storage of already filtered indices */
-    filteredIndices?: number[],
 
-
-}
 
 /** The object interface of the map legend */
 interface ILegend {
@@ -128,8 +98,8 @@ interface ILegend {
 
 interface ISaveData {
     //layers: ILayerData[],
-    legend: ILegend,
-    filters: IFilter[],
+    //legend: ILegend,
+    //filters: Filter[],
 }
 
 interface IWelcomeScreenProps {

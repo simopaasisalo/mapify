@@ -15,7 +15,7 @@ export class AppState {
     /** The layers of the map.*/
     @observable layers: Layer[] = [];
     /** The data filters of the map.*/
-    @observable filters: IFilter[] = [];
+    @observable filters: Filter[] = [];
 
     @computed get nextFilterId() {
         return this.filters.length > 0 ? this.filters[this.filters.length - 1].id + 1 : 0;
@@ -52,7 +52,7 @@ export class SaveState {
     /** The layers of the map.*/
     layers: Layer[] = [];
     /** The data filters of the map.*/
-    filters: IFilter[] = [];
+    filters: Filter[] = [];
     /** The active legend of the map*/
     legend: ILegend = new Legend();
 }

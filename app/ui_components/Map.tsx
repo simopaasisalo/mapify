@@ -2,14 +2,14 @@ declare var require: any;
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {observer} from 'mobx-react';
-
+import DevTools from 'mobx-react-devtools';
 import {AppState, ImportWizardState, SaveState} from './Stores/States';
 import {Layer, ColorOptions, SymbolOptions} from './Stores/Layer';
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
 import {LayerTypes, SymbolTypes, GetSymbolSize} from './common_items/common';
-import {Filter} from './misc/Filter';
+import {OnScreenFilter} from './misc/OnScreenFilter';
 import {Legend} from './misc/Legend';
 import {WelcomeScreen} from './misc/WelcomeScreen';
 import 'leaflet';
@@ -33,7 +33,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         _mapInitModel.InitCustomProjections();
         this.initMap();
     }
-
     /**
      * initMap - Initializes the map with basic options
      *
@@ -64,7 +63,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      * @param  {ILayerData} layerData contains layer name and GeoJSON object
      */
     layerImportSubmit(layerData: Layer) {
-        layerData.map = this.props.state.map;
+        layerData.appState = this.props.state;
         layerData.id = _currentLayerId++;
         this.props.state.layers.push(layerData);
         this.props.state.importWizardShown = false;
@@ -128,147 +127,18 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     }
 
     /**
-     * saveFilter - Creates a new filter or updates an existing one
-     *
-     * @param  layerUpdate   Was the update triggered by layer refresh? If so, do not reset filter
-     */
-    saveFilter(layerUpdate: boolean = false) {
-        let filter = this.props.state.editingFilter;
-        let layerData = this.props.state.layers.filter((lyr) => { return lyr.id === filter.layerId })[0];
-        // if (layerData.symbolOptions.symbolType === SymbolTypes.Chart || layerData.symbolOptions.symbolType === SymbolTypes.Icon)
-        //     info.remove = true; //force removal if type requires it
-        // let id;
-        // if (info.id != -1) { //existing filter being updated
-        //     id = info.id;
-        //     this.props.state.filters = this.props.state.filters.filter((f) => { return f.id !== id });
-        // }
-        // else {
-        //     id = _currentFilterId++;
-        // }
-        filter.filterValues = {};
-        // if (info.id !== -1 && !layerUpdate) {
-        //
-        //     this.filterLayer(filter.id, filter.currentMin, filter.currentMax); //hack-ish way to make sure that all of the layers are displayed after update
-        // }
-        if (layerData.layerType !== LayerTypes.HeatMap) {
-            layerData.layer.eachLayer(function(layer) {
-                let val = (layer as any).feature.properties[filter.fieldToFilter];
-                if (filter.filterValues[val])
-                    filter.filterValues[val].push(layer);
-                else
-                    filter.filterValues[val] = [layer];
-            });
-        }
-
-        return filter.id;
-
-    }
-
-    /**
      * deleteFilter - Removes a filter from the map
      *
      * @param  id  The id of the layer to delete
      */
     deleteFilter(id: number) {
         let filterToDelete = this.props.state.filters.filter(function(f) { return f.id === id })[0];
-        this.filterLayer(id, filterToDelete.totalMin, filterToDelete.totalMax); //reset filter
+        //this.filterLayer(id, filterToDelete.totalMin, filterToDelete.totalMax); //reset filter
         this.props.state.filters = this.props.state.filters.filter(function(f) { return f.id !== id });
 
     }
 
-    /**
-     * filterLayer - Remove or show items based on changes on a filter
-     *
-     * @param  id   The filter to change
-     * @param  lowerLimit Current minimum value. Hide every value below this
-     * @param  upperLimit Current max value. Hide every value above this
-     */
-    filterLayer(filterId: number, lowerLimit: any, upperLimit: any) {
-        let filter: IFilter = this.props.state.filters.filter((f) => { return f.id === filterId })[0];
-        if (filter) {
-            filter.currentMin = lowerLimit;
-            filter.currentMax = upperLimit;
-            let layerData: Layer = this.props.state.layers.filter((lyr) => { return lyr.id === filter.layerId })[0];
-            if (layerData.layerType !== LayerTypes.HeatMap) {
-                for (let val in filter.filterValues) {
-                    let filteredIndex = filter.filteredIndices.indexOf(+val); //is filtered?
-                    if (filteredIndex === -1 && (val < lowerLimit || val > upperLimit)) { //If not yet filtered and values over thresholds
-                        filter.filterValues[val].map(function(lyr) {
-                            if (filter.remove)
-                                layerData.layer.removeLayer(lyr);
-                            else {
 
-                                if (layerData.symbolOptions.symbolType === SymbolTypes.Rectangle) { //for divIcons - replace existing with a copy with new opacity
-                                    let icon = (lyr as any).options.icon;
-                                    let html = icon.options.html.replace('opacity:' + layerData.colorOptions.fillOpacity + ';', 'opacity:0.2;');
-
-                                    icon.options.html = html;
-                                    (lyr as any).setIcon(icon);
-                                }
-                                else {
-                                    (lyr as any).setStyle({ fillOpacity: 0.2, opacity: 0.2 })
-                                }
-                            }
-                        });
-                        filter.filteredIndices.push(+val); //mark as filtered
-                    }
-                    else if (filteredIndex > -1 && (val >= lowerLimit && val <= upperLimit)) { //If filtered and withing thresholds
-                        filter.filterValues[val].map(function(lyr) {
-                            if (shouldLayerBeAdded.call(this, lyr)) {
-                                if (filter.remove)
-                                    layerData.layer.addLayer(lyr);
-                                else
-                                    if (layerData.symbolOptions.symbolType === SymbolTypes.Rectangle) {
-                                        let icon = (lyr as any).options.icon;
-                                        let html = icon.options.html.replace('opacity:0.2;', 'opacity:' + layerData.colorOptions.fillOpacity + ';');
-
-                                        icon.options.html = html;
-                                        (lyr as any).setIcon(icon);
-                                    }
-                                    else {
-                                        (lyr as any).setStyle({ fillOpacity: layerData.colorOptions.fillOpacity, opacity: layerData.colorOptions.opacity });
-                                    }
-                            }
-                        }, this);
-                        filter.filteredIndices.splice(filteredIndex, 1);
-
-                    }
-                }
-
-            }
-            else {
-                let arr: number[][] = [];
-                layerData.geoJSON.features.map(function(feat) {
-                    if (feat.properties[filter.fieldToFilter] > lowerLimit && feat.properties[filter.fieldToFilter] < upperLimit) {
-                        let pos = [];
-                        pos.push(feat.geometry.coordinates[1]);
-                        pos.push(feat.geometry.coordinates[0]);
-                        arr.push(pos);
-                    }
-                });
-                layerData.layer.setLatLngs(arr);
-            }
-        }
-
-
-        /**
-         * shouldLayerBeAdded - Checks every active filter to see if a layer can be un-filtered
-         *
-         * @return {type}  description
-         */
-        function shouldLayerBeAdded(layer) {
-            let filters: IFilter[] = this.props.state.filters.filter((f) => { return f.id !== filterId });
-            let canUnFilter = true;
-            for (let i in filters) {
-                let filter = filters[i];
-                let val = layer.feature.properties[filter.fieldToFilter];
-                canUnFilter = val <= filter.currentMax && val >= filter.currentMin;
-
-            }
-            return canUnFilter;
-
-        }
-    }
 
     /**
      * getFilters - Gets the currently active filters for rendering
@@ -279,14 +149,11 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         let arr: JSX.Element[] = [];
         if (this.props.state.filters.length > 0)
             for (let key in this.props.state.filters.slice()) {
-                if (Object.keys(this.props.state.filters[key].filterValues).length !== 0) //if filter has been properly initialized
-                    arr.push(<Filter
-                        id = {this.props.state.filters[key].id}
-                        title={this.props.state.filters[key].title}
-                        valueChanged={this.filterLayer.bind(this) }
-                        key={key} maxValue={this.props.state.filters[key].totalMax}
-                        minValue={this.props.state.filters[key].totalMin}
-                        steps={this.props.state.filters[key].steps}/>)
+                if (Object.keys(this.props.state.filters[key].filterValues).length !== 0) { //if filter has been properly initialized
+                    arr.push(<OnScreenFilter
+                        state={this.props.state.filters[key]}
+                        key={key} />);
+                }
             }
         return arr;
     }
@@ -335,7 +202,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     loadSavedMap(saveData: SaveState) {
         for (let i in saveData.layers) {
             let lyr = saveData.layers[i];
-            let newLayer = new Layer(this.props.state.map);
+            let newLayer = new Layer(this.props.state);
             newLayer.id = lyr.id;
             newLayer.layerName = lyr.layerName
             newLayer.headers = lyr.headers;
@@ -365,6 +232,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         }
         return (
             <div>
+                <MyApp/>
                 <div id='map'/>
                 <Modal
                     isOpen={this.props.state.welcomeShown}
@@ -379,9 +247,9 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                     style = {modalStyle}>
                     <LayerImportWizard
                         state={new ImportWizardState() }
+                        appState={this.props.state}
                         submit={this.layerImportSubmit.bind(this) }
                         cancel={this.cancelLayerImport.bind(this) }
-                        map = {this.props.state.map}
                         />
                 </Modal>
                 <MapifyMenu
@@ -389,7 +257,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                     refreshMap={this.reloadLayer.bind(this) }
                     addLayer = {this.addNewLayer.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
-                    saveFilter ={this.saveFilter.bind(this) }
                     deleteFilter={this.deleteFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
                     legendStatusChanged = {this.legendPropsChanged.bind(this) }
@@ -406,7 +273,16 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
 };
 var Map = MapMain;
 const state = new AppState();
-
+class MyApp extends React.Component<{}, {}> {
+    render() {
+        return (
+            <div>
+                ...
+                <DevTools />
+            </div>
+        );
+    }
+}
 ReactDOM.render(
     <Map state={state}/>, document.getElementById('content')
 );

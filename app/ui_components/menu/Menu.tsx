@@ -27,8 +27,6 @@ export class MapifyMenu extends React.Component<{
     addLayer: () => void,
     /** Remove a layer from the map*/
     deleteLayer: (id: number) => void,
-    /** Create a new filter or replace an existing one. Returns id*/
-    saveFilter: () => number,
     /** Remove a filter from the map */
     deleteFilter: (id: number) => void,
     /** Update the map legend*/
@@ -89,9 +87,6 @@ export class MapifyMenu extends React.Component<{
         return option ? option.layerName : '';
     }
 
-    addFilterToMap = () => {
-        return this.props.saveFilter();
-    }
 
     deleteFilter = (id: number) => {
         this.props.deleteFilter(id);
@@ -199,7 +194,6 @@ export class MapifyMenu extends React.Component<{
 
                     <FilterMenu
                         state={this.props.state}
-                        addFilterToMap = {this.addFilterToMap }
                         deleteFilter={this.deleteFilter }
                         />
                 </Menu.Item>
