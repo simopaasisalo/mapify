@@ -32,8 +32,6 @@
     "reactify": "^1.1.1",
     "sortablejs": "^1.4.2",
     "togeojson": "^0.13.0",
-    "topojson": "^1.6.26",
-    "topojson-everywhere": "git+https://github.com/jczaplew/topojson-everywhere.git",
     "wellknown": "^0.4.2"
   },
   "devDependencies": {

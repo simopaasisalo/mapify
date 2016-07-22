@@ -147,9 +147,9 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      */
     getFilters() {
         let arr: JSX.Element[] = [];
-        if (this.props.state.filters.length > 0)
+        if (this.props.state.filters && this.props.state.filters.length > 0)
             for (let key in this.props.state.filters.slice()) {
-                if (Object.keys(this.props.state.filters[key].filterValues).length !== 0) { //if filter has been properly initialized
+                if (this.props.state.filters[key].show) { //if filter has been properly initialized
                     arr.push(<OnScreenFilter
                         state={this.props.state.filters[key]}
                         key={key} />);
@@ -195,31 +195,38 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             legend: this.props.state.legend,
             filters: this.props.state.filters,
         };
+        saveData.layers = saveData.layers.slice();
+        saveData.layers.forEach(function(e) { delete e.appState; delete e.layer });
+        saveData.filters.forEach(function(e) { delete e.appState });
         let blob = new Blob([JSON.stringify(saveData)], { type: "text/plain;charset=utf-8" });
         (window as any).saveAs(blob, 'map.mapify');
     }
 
     loadSavedMap(saveData: SaveState) {
+        this.props.state.legend = saveData.legend;
+        this.props.state.filters = saveData.filters ? saveData.filters : [];
+
         for (let i in saveData.layers) {
+
             let lyr = saveData.layers[i];
             let newLayer = new Layer(this.props.state);
+
             newLayer.id = lyr.id;
             newLayer.layerName = lyr.layerName
             newLayer.headers = lyr.headers;
             newLayer.popupHeaders = lyr.popupHeaders;
-            newLayer.geoJSON = lyr.geoJSON;
             newLayer.layerType = lyr.layerType;
             newLayer.heatMapVariable = lyr.heatMapVariable;
-            newLayer.layer = lyr.layer;
-            newLayer = lyr;
-
+            newLayer.geoJSON = lyr.geoJSON;
+            newLayer.colorOptions = lyr.colorOptions;
+            newLayer.symbolOptions = lyr.symbolOptions;
+            this.props.state.layers.push(newLayer);
             //this.reloadLayer(newLayer, true)
         }
         this.props.state.welcomeShown = false;
         this.props.state.editingLayer = this.props.state.layers[0];
         this.props.state.menuShown = true;
-        this.props.state.legend = saveData.legend;
-        this.props.state.filters = saveData.filters;
+
 
     }
     render() {

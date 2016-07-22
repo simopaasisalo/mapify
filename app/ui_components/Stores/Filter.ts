@@ -61,9 +61,11 @@ export class Filter {
                     this.filterValues[val] = [layer];
             }, this);
         }
+
         if (layerUpdate) {
             this.filterLayer(); //hack-ish way to make sure that all of the layers are displayed after update
         }
+        this.show = true;
     }
 
     /**
@@ -117,14 +119,22 @@ export class Filter {
             }
             else {
                 let arr: number[][] = [];
-                this.layer.geoJSON.features.map(function(this, feat) {
+                let max = 0;
+                this.layer.geoJSON.features.map(function(feat) {
                     if (feat.properties[this.fieldToFilter] > this.currentMin && feat.properties[this.fieldToFilter] < this.currentMax) {
                         let pos = [];
+                        let heatVal = feat.properties[this.layer.heatMapVariable];
+                        if (heatVal > max)
+                            max = heatVal;
                         pos.push(feat.geometry.coordinates[1]);
                         pos.push(feat.geometry.coordinates[0]);
+                        pos.push(heatVal);
                         arr.push(pos);
                     }
-                });
+                }, this);
+                for (let i in arr) {
+                    arr[i][2] = arr[i][2] / max;
+                }
                 this.layer.layer.setLatLngs(arr);
             }
         }

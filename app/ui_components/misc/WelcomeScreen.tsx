@@ -20,7 +20,7 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
         function uploadComplete() {
             if (rawFile.readyState === 4) {
                 if (rawFile.status === 200 || rawFile.status == 0) {
-                    this.loadMap(JSON.parse(rawFile.responseText));
+                    this.props.loadMap(JSON.parse(rawFile.responseText));
                 }
             }
         }
@@ -32,6 +32,7 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
     onDrop(files) {
         let reader = new FileReader();
         let fileName, content;
+
         reader.onload = contentUploaded.bind(this);
         files.forEach((file) => {
             fileName = file.name;
@@ -41,6 +42,7 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
             let contents: any = e.target;
             let ext: string = fileName.split('.').pop().toLowerCase();
             if (ext === 'mapify') {
+
                 this.setState({
                     savedJSON: JSON.parse(contents.result),
                     fileName: fileName,
@@ -53,8 +55,8 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
 
         }
     }
-    loadMap(json) {
-        this.props.loadMap(json ? json : this.state.savedJSON)
+    loadMap() {
+        this.props.loadMap(this.state.savedJSON);
     }
     render() {
         let dropStyle = {
@@ -77,6 +79,17 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
             <h3>Check out these demos: </h3>
             <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
                 <div style={{ minWidth: 1400, height: 440 }}>
+
+                    <DemoPreview
+                        imageURL='demos/chorodemo.png'
+                        description='This demo shows the choropleth map type by mapping the United States by population density.'
+                        loadDemo={this.loadDemo.bind(this, 'chorodemo') }
+                        />
+                    <DemoPreview
+                        imageURL='demos/symboldemo.png'
+                        description='This demo demonstrates the different symbol options of Mapify. Data random generated for demo purposes.'
+                        loadDemo={this.loadDemo.bind(this, 'symboldemo') }
+                        />
                     <DemoPreview
                         imageURL='demos/hki_chartdemo.png'
                         description='This demo shows the chart-as-a-symbol map by visualizing distribution between different traffic types in Helsinki using a pie chart. Data acquired from hri.fi'
@@ -86,16 +99,6 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
                         imageURL='demos/hki_heatdemo.png'
                         description='This demo showcases the heat map by visualizing the total traffic in Helsinki. Data acquired from hri.fi'
                         loadDemo={this.loadDemo.bind(this, 'hki_heatdemo') }
-                        />
-                    <DemoPreview
-                        imageURL='demos/symboldemo.png'
-                        description='This demo demonstrates the different symbol options of Mapify. Data random generated for demo purposes.'
-                        loadDemo={this.loadDemo.bind(this, 'symboldemo') }
-                        />
-                    <DemoPreview
-                        imageURL='demos/chorodemo.png'
-                        description='This demo shows the choropleth map type by mapping the United States by population density.'
-                        loadDemo={this.loadDemo.bind(this, 'chorodemo') }
                         />
                 </div>
             </div>

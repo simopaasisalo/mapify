@@ -25,7 +25,7 @@ export class Layer {
     /** The type of the layer. Will affect the options available.*/
     @observable layerType: LayerTypes;
     /** The data property names.*/
-    headers: IHeader[] = [];
+    @observable headers: IHeader[] = [];
 
     @computed get numberHeaders() {
         return this.headers.filter(function(val) { return val.type === 'number' });
@@ -33,7 +33,7 @@ export class Layer {
 
     @observable popupHeaders: IHeader[] = [];
     /** The variable by which to create the heat map*/
-    heatMapVariable: string;
+    @observable heatMapVariable: string;
     /** The Leaflet layer. Will be modified by changing options*/
     layer: any;
     /** The function to run on every feature of the layer. Is used to place pop-ups to map features */
@@ -75,10 +75,16 @@ export class Layer {
             }
 
             if (this.layerType === LayerTypes.HeatMap) {
-                this.layer = createHeatLayer(this);
+                if (this.heatMapVariable)
+                    this.layer = createHeatLayer(this);
             }
             else if (this.layerType === LayerTypes.ChoroplethMap || col.colors.slice().length > 0) {
-                this.layer = createChoroplethLayer(this);
+                if (!col.colorField) {
+                    col.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+                }
+
+                if (col.colorField)
+                    this.layer = createChoroplethLayer(this);
             }
             else {
                 this.layer = L.geoJson(this.geoJSON, ({
@@ -116,81 +122,6 @@ export class Layer {
     }
 }
 
-export class ColorOptions implements L.PathOptions {
-    /** If not empty, use choropleth coloring */
-    @observable colorField: string;
-    /** Is the scale user-made?*/
-    @observable useCustomScheme: boolean;
-    /** Color name array to use in choropleth*/
-    @observable colors: string[] = [];
-    /** Value array to use in choropleth*/
-    @observable limits: number[] = [];
-    /** The color scheme name to use in choropleth. Default black-white*/
-    @observable colorScheme: string = 'Greys';
-    /** The amount of colors to use in choropleth. Default 5*/
-    @observable steps: number = 5;
-    /** Is the scheme reversed. This is used only to keep the menu selection synced with map*/
-    @observable revert: boolean;
-    /** The Chroma-js method to calculate colors. Default q->quantiles*/
-    @observable mode: string = 'q';
-    /** The color of the icon in symbol maps. Default white */
-    @observable iconTextColor: string = '#FFF';
-    /** Main fill color. Default yellow*/
-    @observable fillColor: string = '#E0E62D';
-    /** Border color. Default black*/
-    @observable color: string = '#000';
-    /** Main opacity. Default 0.8*/
-    @observable fillOpacity: number = 0.8;
-    /** Border opacity. Default 0.8*/
-    @observable opacity: number = 0.8;
-
-    @observable useMultipleFillColors: boolean;
-
-}
-
-export class SymbolOptions {
-    /** The type of the symbol. Default circle*/
-    @observable symbolType: SymbolTypes = SymbolTypes.Circle;
-    /** The list of icons to use. Default: one IIcon with shape='circle' and fa='anchor'*/
-    @observable icons: IIcon[] = [{ shape: 'circle', fa: 'fa-anchor' }];
-
-    /** Name of the field by which to calculate icon values*/
-    @observable iconField: string;
-    /** The steps of the field values by which to choose the icons */
-    @observable iconLimits: number[] = [];
-    /** The name of the field to scale size x-axis by*/
-    @observable sizeXVar: string;
-    /** The name of the field to scale size y-axis by*/
-    @observable sizeYVar: string;
-    /** The minimum allowed size when scaling*/
-    @observable sizeLowLimit: number;
-    /** The maximum allowed size when scaling*/
-    @observable sizeUpLimit: number;
-    /** The multiplier to scale the value by*/
-    @observable sizeMultiplier: number;
-    /** Currently selected chart fields*/
-    @observable chartFields: IHeader[] = [];
-    /** The type of chart to draw*/
-    @observable chartType: 'pie' | 'donut';
-    /** How many units does a single block represent*/
-    @observable blockValue: number;
-    /** If symbol is of scalable type; the minimum of all the x-values being calculated. Is used in the legend */
-    @observable actualMinXValue: number;
-    /** If symbol is of scalable type; the minimum of all the y-values being calculated. Is used in the legend */
-    @observable actualMinYValue: number;
-    /** If symbol is of scalable type; the minimum of all the x(pixels) being calculated. Is used in the legend */
-    @observable actualMinX: number;
-    /** If symbol is of scalable type; the minimum of all the y(pixels) being calculated. Is used in the legend */
-    @observable actualMinY: number;
-    /** If symbol is of scalable type; the maximum of all the x-values being calculated. Is used in the legend */
-    @observable actualMaxXValue: number;
-    /** If symbol is of scalable type; the maximum of all the y-values being calculated. Is used in the legend */
-    @observable actualMaxYValue: number;
-    /** If symbol is of scalable type; the maximum of all the x being calculated. Is used in the legend */
-    @observable actualMaxX: number;
-    /** If symbol is of scalable type; the maximum of all the y being calculated. Is used in the legend */
-    @observable actualMaxY: number;
-}
 
 function setCircleMarkerRadius(layer: Layer) {
     let sym: SymbolOptions = layer.symbolOptions;
@@ -360,15 +291,17 @@ function createHeatLayer(layerData: Layer) {
     let max = 0;
     layerData.geoJSON.features.map(function(feat) {
         let pos = [];
-
         let heatVal = feat.properties[layerData.heatMapVariable];
         if (heatVal > max)
             max = heatVal;
         pos.push(feat.geometry.coordinates[1]);
         pos.push(feat.geometry.coordinates[0]);
-        if (layerData.heatMapVariable) { pos.push(heatVal / max) };
+        pos.push(heatVal);
         arr.push(pos);
     });
+    for (let i in arr) {
+        arr[i][2] = arr[i][2] / max;
+    }
     return L.heatLayer(arr, { relative: true })
 }
 
@@ -380,21 +313,14 @@ function createHeatLayer(layerData: Layer) {
  */
 function createChoroplethLayer(layer: Layer) {
     let opts = layer.colorOptions;
-    if (opts.colorField === '') {
-        layer.headers.map(function(h) {
-            if (h.type == 'number') {
-                opts.colorField = h.label;
-            }
-        })
-        if (opts.colorField === '')
-            opts.colorField = layer.headers[0].label;
-    }
+
     let values = (layer.geoJSON as any).features.map(function(item) {
         return item.properties[opts.colorField];
     });
-    if (!opts.limits)
+
+    if (!opts.limits || opts.limits.length == 0)
         opts.limits = chroma.limits(values, opts.mode, opts.steps);
-    if (!opts.colors)
+    if (!opts.colors || opts.colors.length == 0)
         opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
     let style = function(feature) {
 
@@ -511,4 +437,81 @@ function addPopupsToLayer(feature, layer: L.GeoJSON) {
     }
     if (popupContent != '')
         layer.bindPopup(popupContent);
+}
+
+
+export class ColorOptions implements L.PathOptions {
+    /** If not empty, use choropleth coloring */
+    @observable colorField: string;
+    /** Is the scale user-made?*/
+    @observable useCustomScheme: boolean;
+    /** Color name array to use in choropleth*/
+    @observable colors: string[] = [];
+    /** Value array to use in choropleth*/
+    @observable limits: number[] = [];
+    /** The color scheme name to use in choropleth. Default black-white*/
+    @observable colorScheme: string = 'Greys';
+    /** The amount of colors to use in choropleth. Default 5*/
+    @observable steps: number = 5;
+    /** Is the scheme reversed. This is used only to keep the menu selection synced with map*/
+    @observable revert: boolean;
+    /** The Chroma-js method to calculate colors. Default q->quantiles*/
+    @observable mode: string = 'q';
+    /** The color of the icon in symbol maps. Default white */
+    @observable iconTextColor: string = '#FFF';
+    /** Main fill color. Default yellow*/
+    @observable fillColor: string = '#E0E62D';
+    /** Border color. Default black*/
+    @observable color: string = '#000';
+    /** Main opacity. Default 0.8*/
+    @observable fillOpacity: number = 0.8;
+    /** Border opacity. Default 0.8*/
+    @observable opacity: number = 0.8;
+
+    @observable useMultipleFillColors: boolean;
+
+}
+
+export class SymbolOptions {
+    /** The type of the symbol. Default circle*/
+    @observable symbolType: SymbolTypes = SymbolTypes.Circle;
+    /** The list of icons to use. Default: one IIcon with shape='circle' and fa='anchor'*/
+    @observable icons: IIcon[] = [{ shape: 'circle', fa: 'fa-anchor' }];
+
+    /** Name of the field by which to calculate icon values*/
+    @observable iconField: string;
+    /** The steps of the field values by which to choose the icons */
+    @observable iconLimits: number[] = [];
+    /** The name of the field to scale size x-axis by*/
+    @observable sizeXVar: string;
+    /** The name of the field to scale size y-axis by*/
+    @observable sizeYVar: string;
+    /** The minimum allowed size when scaling*/
+    @observable sizeLowLimit: number;
+    /** The maximum allowed size when scaling*/
+    @observable sizeUpLimit: number;
+    /** The multiplier to scale the value by*/
+    @observable sizeMultiplier: number;
+    /** Currently selected chart fields*/
+    @observable chartFields: IHeader[] = [];
+    /** The type of chart to draw*/
+    @observable chartType: 'pie' | 'donut';
+    /** How many units does a single block represent*/
+    @observable blockValue: number;
+    /** If symbol is of scalable type; the minimum of all the x-values being calculated. Is used in the legend */
+    @observable actualMinXValue: number;
+    /** If symbol is of scalable type; the minimum of all the y-values being calculated. Is used in the legend */
+    @observable actualMinYValue: number;
+    /** If symbol is of scalable type; the minimum of all the x(pixels) being calculated. Is used in the legend */
+    @observable actualMinX: number;
+    /** If symbol is of scalable type; the minimum of all the y(pixels) being calculated. Is used in the legend */
+    @observable actualMinY: number;
+    /** If symbol is of scalable type; the maximum of all the x-values being calculated. Is used in the legend */
+    @observable actualMaxXValue: number;
+    /** If symbol is of scalable type; the maximum of all the y-values being calculated. Is used in the legend */
+    @observable actualMaxYValue: number;
+    /** If symbol is of scalable type; the maximum of all the x being calculated. Is used in the legend */
+    @observable actualMaxX: number;
+    /** If symbol is of scalable type; the maximum of all the y being calculated. Is used in the legend */
+    @observable actualMaxY: number;
 }

@@ -35,7 +35,7 @@ export class AppState {
 
     @computed get editingFilter() {
         let selectedId = this.filterMenuState.selectedFilterId;
-        return this.filters.filter(function(f) { return f.id === selectedId })[0];
+        return this.filters ? this.filters.filter(function(f) { return f.id === selectedId })[0] : undefined;
     }
 
     @observable layerMenuState: LayerMenuState = new LayerMenuState();
