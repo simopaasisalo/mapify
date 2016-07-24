@@ -7,15 +7,8 @@ import {Layer, SymbolOptions} from '../Stores/Layer';
 import {observer} from 'mobx-react';
 
 @observer
-export class Legend extends React.Component<{ state: AppState }, {}>{
+export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
 
-    // shouldComponentUpdate(nextProps: IOnScreenLegendProps, nextState: {}) {
-    //     return nextProps.title !== this.props.state.legend.title ||
-    //         nextProps.meta !== this.props.state.legend.meta ||
-    //         nextProps.mapLayers !== this.props.state.legend.mapLayers ||
-    //         nextProps.horizontal !== this.props.state.legend.horizontal ||
-    //         nextProps.showPercentages !== this.props.state.legend.showPercentages;
-    // }
     createChoroplethLegend(layer: Layer, percentages) {
         let divs = [];
         let limits = layer.colorOptions.limits;
@@ -370,6 +363,10 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
             {blockLegend}
         </div>
     }
+    markup() {
+        return { __html: this.props.state.legend.meta };
+    }
+
     render() {
         return (
             <Draggable
@@ -386,7 +383,7 @@ export class Legend extends React.Component<{ state: AppState }, {}>{
                             return this.createLegend(m);
                         }, this) }
                     </div>
-                    <p style={{ clear: 'both', maxWidth: this.props.state.legend.horizontal ? 500 : 200 }}>{this.props.state.legend.meta}</p>
+                    <p style={{ clear: 'both', maxWidth: this.props.state.legend.horizontal ? 500 : 200 }} dangerouslySetInnerHTML={ this.markup() }/>
                     <div className='dragOverlay' style={
                         {
                             position: 'absolute',

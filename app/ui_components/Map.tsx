@@ -10,7 +10,7 @@ import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
 import {LayerTypes, SymbolTypes, GetSymbolSize} from './common_items/common';
 import {OnScreenFilter} from './misc/OnScreenFilter';
-import {Legend} from './misc/Legend';
+import {OnScreenLegend} from './misc/OnScreenLegend';
 import {WelcomeScreen} from './misc/WelcomeScreen';
 import 'leaflet';
 import 'Leaflet.extra-markers';
@@ -19,11 +19,9 @@ let d3 = require('d3');
 let chroma = require('chroma-js');
 let heat = require('leaflet.heat');
 let domToImage = require('dom-to-image');
-let topojson = require('topojson');
 let reactDOMServer = require('react-dom/server');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
-
 
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 @observer
@@ -159,13 +157,9 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     }
 
 
-    legendPropsChanged(legend: ILegend) { //unnecessary?
-        this.props.state.legend = legend;
-    }
-
     showLegend() {
         if (this.props.state.legend && this.props.state.legend.visible) {
-            return <Legend
+            return <OnScreenLegend
                 state={this.props.state}/>
 
         }
@@ -266,7 +260,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                     deleteLayer={this.deleteLayer.bind(this) }
                     deleteFilter={this.deleteFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }
-                    legendStatusChanged = {this.legendPropsChanged.bind(this) }
                     saveImage ={this.saveImage}
                     saveFile = {this.saveFile.bind(this) }
                     />

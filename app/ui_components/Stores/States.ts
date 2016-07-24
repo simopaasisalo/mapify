@@ -21,7 +21,7 @@ export class AppState {
         return this.filters.length > 0 ? this.filters[this.filters.length - 1].id + 1 : 0;
     }
     /** The active legend of the map*/
-    @observable legend: ILegend = new Legend();
+    @observable legend: Legend = new Legend();
     /** Currently selected layer on the menu*/
     @observable editingLayer: Layer;
     /** Currently open submenu index. 0=none*/
@@ -37,6 +37,8 @@ export class AppState {
         let selectedId = this.filterMenuState.selectedFilterId;
         return this.filters ? this.filters.filter(function(f) { return f.id === selectedId })[0] : undefined;
     }
+
+    @observable legendMenuState: LegendMenuState = new LegendMenuState();
 
     @observable layerMenuState: LayerMenuState = new LayerMenuState();
 
@@ -54,7 +56,7 @@ export class SaveState {
     /** The data filters of the map.*/
     filters: Filter[] = [];
     /** The active legend of the map*/
-    legend: ILegend = new Legend();
+    legend: Legend = new Legend();
 }
 
 export class ImportWizardState {
@@ -119,6 +121,11 @@ export class FilterMenuState {
     @observable customSteps: [number, number][] = [];
     /** Use distinct values as steps*/
     @observable useDistinctValues: boolean;
+}
+
+export class LegendMenuState {
+    /** Is the meta edit modal open*/
+    @observable metaEditOpen: boolean = false;
 }
 
 export class LayerMenuState {

@@ -80,22 +80,6 @@ interface IOnScreenFilterStates {
     lockDistance?: boolean,
 }
 
-
-
-/** The object interface of the map legend */
-interface ILegend {
-    /** The name of the legend. Is shown in the UI */
-    title?: string,
-    /** A description of the data or other user-generated text. Is shown in the bottom of the legend */
-    meta?: string,
-    /** Should the legend be horizontally aligned */
-    horizontal?: boolean,
-    /** Is the legend shown on the map */
-    visible?: boolean,
-    showPercentages?: boolean,
-}
-
-
 interface ISaveData {
     //layers: ILayerData[],
     //legend: ILegend,

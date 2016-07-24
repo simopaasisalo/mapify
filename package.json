@@ -6,7 +6,7 @@
     "prepublish": "typings install && tsc && webpack"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "Leaflet.extra-markers": "git+http://github.com/coryasilva/Leaflet.ExtraMarkers",
     "chroma-js": "^1.1.1",

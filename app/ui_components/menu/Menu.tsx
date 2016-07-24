@@ -9,7 +9,7 @@ import {ExportMenu} from './ExportMenu';
 import {LayerTypes, SymbolTypes} from '../common_items/common';
 import {AppState} from '../Stores/States';
 import {Layer, ColorOptions, SymbolOptions} from '../Stores/Layer';
-
+import {Legend} from '../Stores/Legend';
 import {observer} from 'mobx-react';
 
 let Select = require('react-select');
@@ -29,8 +29,6 @@ export class MapifyMenu extends React.Component<{
     deleteLayer: (id: number) => void,
     /** Remove a filter from the map */
     deleteFilter: (id: number) => void,
-    /** Update the map legend*/
-    legendStatusChanged: (info: ILegend) => void,
     /** Export map as .png */
     saveImage: () => void,
     /** Export map as .mapify*/
@@ -91,11 +89,6 @@ export class MapifyMenu extends React.Component<{
     deleteFilter = (id: number) => {
         this.props.deleteFilter(id);
     }
-
-    onLegendStatusChange = (info: ILegend) => {
-        this.props.legendStatusChanged(info);
-    }
-
     changePopUpHeaders = () => {
         let lyr: Layer = this.props.state.editingLayer;
         let headers = this.props.state.editingLayer.popupHeaders;
@@ -204,7 +197,6 @@ export class MapifyMenu extends React.Component<{
                         style={{ backgroundColor: this.props.state.visibleMenu === 5 ? '#1a263f' : '#293c60' }}> Legend </p>
                     <LegendMenu
                         state = {this.props.state}
-                        valuesChanged={this.onLegendStatusChange }
                         />
 
                 </Menu.Item >
