@@ -9,6 +9,9 @@ var config = {
   output: {
     path: BUILD_DIR,
     filename: 'Mapify.js'
+  },
+  alias: {
+    react: path.resolve('./node_modules/react'),
   }
 };
 

@@ -22,8 +22,7 @@ export class ColorMenu extends React.Component<{
             this.props.saveValues();
     }
     onColorSelect = (color) => {
-        let hex = '#' + color.hex;
-
+        let hex = color.hex;
         let step = this.props.state.colorMenuState.editing.indexOf('step') !== -1 ? this.props.state.colorMenuState.editing.substring(4) : -1;//Check if editing a custom made step, get step index
         if (step != -1)
             this.props.state.editingLayer.colorOptions.colors[step] = hex;

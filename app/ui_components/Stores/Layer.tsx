@@ -51,7 +51,11 @@ export class Layer {
 
     appState: AppState;
 
+    @observable initialized: boolean = false;
+
     refresh() {
+        let layer;
+        if (!this.initialized) return;
         if (this.layer) {
             this.appState.map.removeLayer(this.layer)
             //TODO: figure out how to do a better system than delete->redo
@@ -61,12 +65,10 @@ export class Layer {
             // return;
         }
         if (this.geoJSON) {
-            let col = this.colorOptions;
-            let sym = this.symbolOptions;
             if (this.layerType !== LayerTypes.HeatMap) {
                 if (this.layerType === LayerTypes.SymbolMap) {
                     //if needs to scale and is of scalable type
-                    if (sym.sizeXVar || sym.sizeYVar && (sym.symbolType === SymbolTypes.Circle || sym.symbolType === SymbolTypes.Rectangle || sym.symbolType === SymbolTypes.Blocks)) {
+                    if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
                         getMaxValues(this);
                     }
                 }
@@ -76,31 +78,35 @@ export class Layer {
 
             if (this.layerType === LayerTypes.HeatMap) {
                 if (this.heatMapVariable)
-                    this.layer = createHeatLayer(this);
-            }
-            else if (this.layerType === LayerTypes.ChoroplethMap || col.colors.slice().length > 0) {
-                if (!col.colorField) {
-                    col.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
-                }
-
-                if (col.colorField)
-                    this.layer = createChoroplethLayer(this);
+                    layer = createHeatLayer(this);
             }
             else {
-                this.layer = L.geoJson(this.geoJSON, ({
+
+                if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
+                    if (!this.colorOptions.colorField) {
+                        this.colorOptions.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+                    }
+
+                    if (this.colorOptions.colorField)
+                        getColors(this);
+                }
+                let cloneColOptions = JSON.parse(JSON.stringify(this.colorOptions));
+                let cloneSymOptions = JSON.parse(JSON.stringify(this.symbolOptions));
+                let geoJSON = JSON.parse(JSON.stringify(this.geoJSON));
+
+                layer = L.geoJson(geoJSON, ({
                     onEachFeature: this.onEachFeature,
-                    pointToLayer: this.pointToLayer,
-                    colorOptions: JSON.parse(JSON.stringify(this.colorOptions)),
-                    symbolOptions: JSON.parse(JSON.stringify(this.symbolOptions))
+                    pointToLayer: pointToLayerFunc.bind(this, cloneColOptions, cloneSymOptions),
                 } as any));
             }
 
-            if (this.layerType === LayerTypes.SymbolMap && sym.symbolType === SymbolTypes.Circle && sym.sizeXVar) {
+            if (this.layerType === LayerTypes.SymbolMap && this.symbolOptions.symbolType === SymbolTypes.Circle && this.symbolOptions.sizeXVar) {
                 setCircleMarkerRadius(this);
             }
         }
 
-        if (this.layer) {
+        if (layer) {
+            this.layer = layer;
             this.layer.addTo(this.appState.map);
             this.appState.map.fitBounds(this.layerType === LayerTypes.HeatMap ? (this.layer as any)._latlngs : this.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
             this.filterUpdatesPending = true;
@@ -306,12 +312,12 @@ function createHeatLayer(layerData: Layer) {
 }
 
 /**
- * createChoroplethLayer - Create a new choropleth layer by leaflet-choropleth.js
+ * getColors - calculates the color values based on a field name
+ *
  *
  * @param  layerData    the data containing the GeoJSON string and the color variable
- * @return {L.GeoJSON}  the GeoJSON layer coloured according to the visOptions
  */
-function createChoroplethLayer(layer: Layer) {
+function getColors(layer: Layer) {
     let opts = layer.colorOptions;
 
     let values = (layer.geoJSON as any).features.map(function(item) {
@@ -322,45 +328,30 @@ function createChoroplethLayer(layer: Layer) {
         opts.limits = chroma.limits(values, opts.mode, opts.steps);
     if (!opts.colors || opts.colors.length == 0)
         opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
-    let style = function(feature) {
-
-        return {
-            fillOpacity: opts.fillOpacity,
-            opacity: opts.opacity,
-            fillColor: getChoroplethColor(opts.limits, opts.colors, feature.properties[opts.colorField]),
-            color: opts.color,
-            weight: 1,
-        }
-    }
-
-    let options: L.GeoJSONOptions = {
-        pointToLayer: layer.pointToLayer.bind(this),
-        onEachFeature: layer.onEachFeature,
-        style: style.bind(this),
-    }
-
-    return L.geoJson(layer.geoJSON, options);
 }
 
 
 function getChoroplethColor(limits: any[], colors: string[], value: number) {
+
     if (!isNaN(value)) {
         for (var i = 0; i < limits.length; i++) {
-            if (value === limits[limits.length - 1]) { //color the last item correctly
-                return colors[colors.length - 1]
+            if (i < limits.length - 1) {
+                if (limits[i] <= value && value <= limits[i + 1]) {
+                    return colors[i];
+                }
             }
-            if (limits[i] <= value && value <= limits[i + 1]) {
-                return colors[i];
+            else { //color the last item correctly
+                return colors[colors.length - 1]
             }
         }
     }
 }
 
-function pointToLayerFunc(feature, latlng: L.LatLng): L.Marker | L.CircleMarker {
-    let col = this.colorOptions;
-    let sym = this.symbolOptions;
-    let fillColor = col.colors.slice().length == 0 ? col.fillColor : getChoroplethColor(col.limits, col.colors, feature.properties[col.colorField]);
+function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng: L.LatLng): L.Marker | L.CircleMarker {
+    if (col.colors && col.limits)
+        col.fillColor = col.colors.slice().length == 0 ? col.fillColor : getChoroplethColor(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
     let borderColor = col.color;
+
     switch (sym.symbolType) {
         case SymbolTypes.Icon:
             let icon, shape, val;
@@ -377,7 +368,7 @@ function pointToLayerFunc(feature, latlng: L.LatLng): L.Marker | L.CircleMarker 
             let customIcon = L.ExtraMarkers.icon({
                 icon: icon ? icon : sym.icons[0].fa,
                 prefix: 'fa',
-                markerColor: fillColor,
+                markerColor: col.fillColor,
                 svg: true,
                 svgBorderColor: borderColor,
                 svgOpacity: col.fillOpacity,
@@ -389,7 +380,7 @@ function pointToLayerFunc(feature, latlng: L.LatLng): L.Marker | L.CircleMarker 
 
             let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
             let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
-            let rectHtml = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + fillColor + '; border: 1px solid ' + borderColor + '"/>';
+            let rectHtml = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + col.fillColor + '; border: 1px solid ' + borderColor + '"/>';
             let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: rectHtml, className: '' });
             return L.marker(latlng, { icon: rectMarker });
         case SymbolTypes.Chart:
@@ -416,7 +407,7 @@ function pointToLayerFunc(feature, latlng: L.LatLng): L.Marker | L.CircleMarker 
         case SymbolTypes.Blocks:
             let side = Math.ceil(Math.sqrt(feature.properties[sym.sizeXVar] / sym.blockValue));
             let blockCount = Math.ceil(feature.properties[sym.sizeXVar] / sym.blockValue);
-            let blockHtml = makeBlockSymbol(side, blockCount, fillColor, borderColor);
+            let blockHtml = makeBlockSymbol(side, blockCount, col.fillColor, borderColor);
             let blockMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: blockHtml, className: '' });
             return L.marker(latlng, { icon: blockMarker });
     }

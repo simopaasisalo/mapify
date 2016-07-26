@@ -43,6 +43,7 @@ export class LayerImportWizard extends React.Component<{
             for (let h of Object.keys(props)) {
                 state.layer.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
             }
+
             this.nextStep();
         }
     }
@@ -85,6 +86,7 @@ export class LayerImportWizard extends React.Component<{
         else if (state.coordinateSystem && state.coordinateSystem !== 'WGS84') {
             state.layer.geoJSON = _fileModel.ProjectCoords(state.layer.geoJSON, state.coordinateSystem);
         }
+        this.props.state.layer.initialized = true;
         this.props.submit(state.layer);
     }
     getCurrentView() {

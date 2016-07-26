@@ -13,12 +13,8 @@ export class LegendMenu extends React.Component<{
         this.props.state.legend.title = e.target.value;
     }
 
-    onMetaEditChange = (e) => {
-        this.props.state.legendMenuState.metaEditOpen = !this.props.state.legendMenuState.metaEditOpen;
-    }
-
-    onMetaChange = (e) => {
-        this.props.state.legend.meta = e.target.value;
+    onEditChange = (e) => {
+        this.props.state.legend.edit = e.currentTarget.checked;
     }
     onVisibleChange = (e) => {
         this.props.state.legend.visible = e.currentTarget.checked;
@@ -29,16 +25,6 @@ export class LegendMenu extends React.Component<{
     onPercentageChange = (e) => {
         this.props.state.legend.showPercentages = e.currentTarget.checked;
     }
-    // componentDidUpdate() {
-    //     let info: ILegend = {
-    //         horizontal: this.state.horizontal,
-    //         showPercentages: this.state.showPercentages,
-    //         visible: this.state.visible,
-    //         title: this.state.title,
-    //         meta: this.state.meta
-    //     }
-    //     this.props.valuesChanged(info);
-    // }
     render() {
         let legend = this.props.state.legend;
         let metaStyle = {
@@ -74,18 +60,9 @@ export class LegendMenu extends React.Component<{
                 <label>Title</label>
                 <input type='text' style={{ width: '100%' }} value={legend.title} onChange={this.onTitleChange }/>
                 <br/>
-                <button onClick={this.onMetaEditChange}>Edit meta information</button>
-                <Modal
-                    isOpen={this.props.state.legendMenuState.metaEditOpen}
-                    style={metaStyle}
-                    >
-
-                    <TextEditor
-                        style={{ width: '100%', height: 50 }}
-                        content={legend.meta}
-                        onChange={this.onMetaChange }/>
-                </Modal>
-
+                <label htmlFor='showEdit'>Show legend edit options
+                    <input id='showEdit' type='checkbox' checked={legend.edit} onChange={this.onEditChange }/>
+                </label>
                 <br/>
                 <label htmlFor='showPercentages'>Show distribution
                     <input id='showPercentages' type='checkbox' checked={legend.showPercentages} onChange={this.onPercentageChange }/>

@@ -2,9 +2,9 @@ declare var require: any;
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import {observer} from 'mobx-react';
-import DevTools from 'mobx-react-devtools';
 import {AppState, ImportWizardState, SaveState} from './Stores/States';
 import {Layer, ColorOptions, SymbolOptions} from './Stores/Layer';
+import {Legend} from './Stores/Legend';
 import {LayerImportWizard} from './import_wizard/LayerImportWizard';
 import {MapifyMenu} from './menu/Menu';
 import {MapInitModel} from '../models/MapInitModel';
@@ -197,7 +197,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     }
 
     loadSavedMap(saveData: SaveState) {
-        this.props.state.legend = saveData.legend;
+        this.props.state.legend = new Legend(saveData.legend);
         this.props.state.filters = saveData.filters ? saveData.filters : [];
 
         for (let i in saveData.layers) {
@@ -215,7 +215,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             newLayer.colorOptions = lyr.colorOptions;
             newLayer.symbolOptions = lyr.symbolOptions;
             this.props.state.layers.push(newLayer);
-            //this.reloadLayer(newLayer, true)
         }
         this.props.state.welcomeShown = false;
         this.props.state.editingLayer = this.props.state.layers[0];
@@ -234,6 +233,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         return (
             <div>
                 <MyApp/>
+
                 <div id='map'/>
                 <Modal
                     isOpen={this.props.state.welcomeShown}
@@ -271,8 +271,8 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
 
 
 };
-var Map = MapMain;
-const state = new AppState();
+import DevTools from 'mobx-react-devtools';
+
 class MyApp extends React.Component<{}, {}> {
     render() {
         return (
@@ -283,6 +283,9 @@ class MyApp extends React.Component<{}, {}> {
         );
     }
 }
+
+var Map = MapMain;
+const state = new AppState();
 ReactDOM.render(
     <Map state={state}/>, document.getElementById('content')
 );

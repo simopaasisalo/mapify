@@ -3,11 +3,79 @@ let Draggable = require('react-draggable');
 import {SymbolTypes} from '../common_items/common';
 import {AppState} from '../Stores/States';
 import {Layer, SymbolOptions} from '../Stores/Layer';
+import {TextEditor} from './TextEditor';
 
 import {observer} from 'mobx-react';
 
 @observer
 export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
+
+    createLegend(layer: Layer) {
+        let choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
+        let options = layer;
+        let col = options.colorOptions;
+        let sym = options.symbolOptions;
+        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
+            let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.colorField, col.limits) : {};
+            choroLegend = this.createChoroplethLegend(options, percentages);
+        }
+        if (sym.symbolType === SymbolTypes.Chart) {
+            chartLegend = this.createChartSymbolLegend(sym);
+        }
+        if (sym.sizeXVar || sym.sizeYVar) {
+            scaledLegend = this.createScaledSizeLegend(options);
+        }
+        if (sym.symbolType === SymbolTypes.Icon) {
+            let percentages = this.props.state.legend.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
+            iconLegend = this.createIconLegend(options, percentages, layer.layerName);
+        }
+        if (sym.symbolType === SymbolTypes.Blocks) {
+            blockLegend = this.createBlockLegend(options);
+        }
+
+        return <div key={layer.id}>
+            {choroLegend}
+            {scaledLegend}
+            {chartLegend}
+            {iconLegend}
+            {blockLegend}
+        </div>
+    }
+
+    onMetaChange = (e) => {
+        this.props.state.legend.meta = e.target.value;
+    }
+
+    render() {
+        return (
+            <Draggable
+                handle={'.dragDiv'}
+                bounds={'parent'}
+                >
+                <div className='legend' style={{
+                    width: 'auto',
+                    textAlign: 'center'
+                }}>
+                    <h2 className='legendHeader'>{this.props.state.legend.title}</h2>
+                    <div>
+                        <div style={{ position: 'absolute', left: 0, cursor: 'pointer' }} className='dragDiv'><i className='fa fa-arrows'/></div>
+                        {this.props.state.layers.map(function(m) {
+                            return this.createLegend(m);
+                        }, this) }
+                    </div>
+                    <div style={{ clear: 'both' }}>
+                        <TextEditor
+                            style={{ width: '100%', minHeight: 50 }}
+                            content={this.props.state.legend.meta}
+                            onChange={this.onMetaChange }
+                            edit={this.props.state.legend.edit}/>
+                    </div>
+                </div >
+
+
+            </Draggable >
+        );
+    }
 
     createChoroplethLegend(layer: Layer, percentages) {
         let divs = [];
@@ -331,72 +399,4 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         return counts;
     }
 
-    createLegend(layer: Layer) {
-        let choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
-        let options = layer;
-        let col = options.colorOptions;
-        let sym = options.symbolOptions;
-        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
-            let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.colorField, col.limits) : {};
-            choroLegend = this.createChoroplethLegend(options, percentages);
-        }
-        if (sym.symbolType === SymbolTypes.Chart) {
-            chartLegend = this.createChartSymbolLegend(sym);
-        }
-        if (sym.sizeXVar || sym.sizeYVar) {
-            scaledLegend = this.createScaledSizeLegend(options);
-        }
-        if (sym.symbolType === SymbolTypes.Icon) {
-            let percentages = this.props.state.legend.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
-            iconLegend = this.createIconLegend(options, percentages, layer.layerName);
-        }
-        if (sym.symbolType === SymbolTypes.Blocks) {
-            blockLegend = this.createBlockLegend(options);
-        }
-
-
-        return <div key={layer.id}>
-            {choroLegend}
-            {scaledLegend}
-            {chartLegend}
-            {iconLegend}
-            {blockLegend}
-        </div>
-    }
-    markup() {
-        return { __html: this.props.state.legend.meta };
-    }
-
-    render() {
-        return (
-            <Draggable
-                handle={'.dragOverlay'}
-                bounds={'parent'}
-                >
-                <div className='legend' style={{
-                    width: 'auto',
-                    textAlign: 'center'
-                }}>
-                    <h2 className='draggableHeader legendHeader'>{this.props.state.legend.title}</h2>
-                    <div>
-                        {this.props.state.layers.map(function(m) {
-                            return this.createLegend(m);
-                        }, this) }
-                    </div>
-                    <p style={{ clear: 'both', maxWidth: this.props.state.legend.horizontal ? 500 : 200 }} dangerouslySetInnerHTML={ this.markup() }/>
-                    <div className='dragOverlay' style={
-                        {
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            width: '100%',
-                            height: '100%'
-                        }
-                    }/>
-                </div >
-
-
-            </Draggable >
-        );
-    }
 }
