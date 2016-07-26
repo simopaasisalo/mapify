@@ -99,17 +99,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     reloadLayer(layer: Layer, wasImported: boolean = false) {
     }
 
-
-
-    /**
-     * addNewLayer - Opens the import wizard for  a new layer
-     *
-     */
-    addNewLayer() {
-        this.props.state.importWizardShown = true;
-        this.props.state.menuShown = false;
-    }
-
     /**
      * deleteLayer - Removes a layer from the map and layer list
      *
@@ -214,6 +203,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             newLayer.geoJSON = lyr.geoJSON;
             newLayer.colorOptions = lyr.colorOptions;
             newLayer.symbolOptions = lyr.symbolOptions;
+            newLayer.blockUpdate = false;
             this.props.state.layers.push(newLayer);
         }
         this.props.state.welcomeShown = false;
@@ -256,7 +246,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                 <MapifyMenu
                     state = {this.props.state}
                     refreshMap={this.reloadLayer.bind(this) }
-                    addLayer = {this.addNewLayer.bind(this) }
+                    addLayer = {this.startLayerImport.bind(this) }
                     deleteLayer={this.deleteLayer.bind(this) }
                     deleteFilter={this.deleteFilter.bind(this) }
                     changeLayerOrder ={this.changeLayerOrder.bind(this) }

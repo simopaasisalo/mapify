@@ -22,59 +22,77 @@ export class ColorMenu extends React.Component<{
             this.props.saveValues();
     }
     onColorSelect = (color) => {
+        let layer = this.props.state.editingLayer;
         let hex = color.hex;
         let step = this.props.state.colorMenuState.editing.indexOf('step') !== -1 ? this.props.state.colorMenuState.editing.substring(4) : -1;//Check if editing a custom made step, get step index
+        layer.blockUpdate = true;
+
         if (step != -1)
-            this.props.state.editingLayer.colorOptions.colors[step] = hex;
+            layer.colorOptions.colors[step] = hex;
 
         switch (this.props.state.colorMenuState.editing) {
             case 'fillColor':
-                this.props.state.editingLayer.colorOptions.fillColor = hex;
+                layer.colorOptions.fillColor = hex;
                 break;
             case 'borderColor':
-                this.props.state.editingLayer.colorOptions.color = hex;
+                layer.colorOptions.color = hex;
                 break;
             case 'iconTextColor':
-                this.props.state.editingLayer.colorOptions.iconTextColor = hex;
+                layer.colorOptions.iconTextColor = hex;
                 break;
         }
+        layer.blockUpdate = false;
         this.props.state.colorMenuState.startColor = hex;
 
     }
     onChoroVariableChange = (e) => {
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.colorField = e.label;
         this.calculateValues();
+        this.props.state.editingLayer.blockUpdate = false;
+
     }
     onSchemeChange = (e) => {
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.colorScheme = e.value;
         this.calculateValues();
+        this.props.state.editingLayer.blockUpdate = false;
     }
     onOpacityChange = (e) => {
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.opacity = e.target.valueAsNumber;
         this.props.state.editingLayer.colorOptions.fillOpacity = e.target.valueAsNumber;
+        this.props.state.editingLayer.blockUpdate = false;
     }
     onStepsChange = (e) => {
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.steps = e.target.valueAsNumber;
         this.calculateValues();
+        this.props.state.editingLayer.blockUpdate = false;
     }
     onModeChange = (mode) => {
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.mode = mode;
         this.calculateValues();
+        this.props.state.editingLayer.blockUpdate = false;
     }
     onMultipleColorsChange = (e) => {
         this.props.state.editingLayer.colorOptions.useMultipleFillColors = e.target.checked;
     }
     onRevertChange = (e) => {
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.revert = e.target.checked;
         this.calculateValues();
+        this.props.state.editingLayer.blockUpdate = false;
     }
     onCustomSchemeChange = (e) => {
         let use: boolean = e.target.checked;
         let steps: number = use ? this.props.state.editingLayer.colorOptions.steps : this.props.state.editingLayer.colorOptions.steps > 10 ? 10 : this.props.state.editingLayer.colorOptions.steps; //If switching back from custom steps, force the steps to be under the limit
-
+        this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.useCustomScheme = use;
         this.props.state.editingLayer.colorOptions.steps = steps;
         this.calculateValues();
+        this.props.state.editingLayer.blockUpdate = false;
     }
     toggleColorPick = (property: string) => {
         this.props.state.colorMenuState.colorSelectOpen = this.props.state.colorMenuState.editing !== property ? true : !this.props.state.colorMenuState.colorSelectOpen;
@@ -98,6 +116,7 @@ export class ColorMenu extends React.Component<{
 
         this.props.state.editingLayer.colorOptions.limits = limits;
         this.props.state.editingLayer.colorOptions.colors = this.props.state.editingLayer.colorOptions.revert ? colors.reverse() : colors;
+
     }
 
     /**

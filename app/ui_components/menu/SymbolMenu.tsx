@@ -21,18 +21,31 @@ export class SymbolMenu extends React.Component<{
     }
     onTypeChange = (type: SymbolTypes) => {
         let layer: Layer = this.props.state.editingLayer;
+        layer.blockUpdate = true;
+
         let sym: SymbolOptions = this.props.state.editingLayer.symbolOptions;
         sym.symbolType = type;
         sym.sizeXVar = sym.sizeXVar ? sym.sizeXVar : layer.numberHeaders[0] ? layer.numberHeaders[0].label : undefined;
         sym.iconField = sym.iconField ? sym.iconField : layer.numberHeaders[0] ? layer.numberHeaders[0].label : undefined;
         sym.chartFields = sym.chartFields.length > 0 ? sym.chartFields : layer.numberHeaders;
+        layer.blockUpdate = false;
+
 
     }
     onXVariableChange = (val) => {
-        this.props.state.editingLayer.symbolOptions.sizeXVar = val ? val.value : '';
+        let sym = this.props.state.editingLayer.symbolOptions;
+        this.props.state.editingLayer.blockUpdate = true;
+        sym.sizeXVar = val ? val.value : '';
+        sym.sizeMultiplier = sym.sizeMultiplier ? sym.sizeMultiplier : 1;
+        this.props.state.editingLayer.blockUpdate = false;
+
     }
     onYVariableChange = (val) => {
-        this.props.state.editingLayer.symbolOptions.sizeYVar = val ? val.value : '';
+        let sym = this.props.state.editingLayer.symbolOptions;
+        this.props.state.editingLayer.blockUpdate = true;
+        sym.sizeYVar = val ? val.value : '';
+        sym.sizeMultiplier = sym.sizeMultiplier ? sym.sizeMultiplier : 1;
+        this.props.state.editingLayer.blockUpdate = false;
     }
     onSizeMultiplierChange = (e) => {
         this.props.state.editingLayer.symbolOptions.sizeMultiplier = e.currentTarget.valueAsNumber;
@@ -74,6 +87,7 @@ export class SymbolMenu extends React.Component<{
     }
     onUseIconStepsChange = (e) => {
         let use: boolean = e.target.checked;
+        this.props.state.editingLayer.blockUpdate = true;
         let sym: SymbolOptions = this.props.state.editingLayer.symbolOptions;
         this.props.state.symbolMenuState.useIconSteps = use;
         sym.icons = use ? sym.icons : [sym.icons.slice()[0]];
@@ -81,6 +95,7 @@ export class SymbolMenu extends React.Component<{
         if (use) {
             this.calculateIconValues(sym.iconField, this.props.state.symbolMenuState.iconStepCount)
         }
+        this.props.state.editingLayer.blockUpdate = false;
 
     }
     onIconFieldChange = (val: IHeader) => {

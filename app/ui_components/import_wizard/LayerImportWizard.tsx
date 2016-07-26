@@ -86,7 +86,7 @@ export class LayerImportWizard extends React.Component<{
         else if (state.coordinateSystem && state.coordinateSystem !== 'WGS84') {
             state.layer.geoJSON = _fileModel.ProjectCoords(state.layer.geoJSON, state.coordinateSystem);
         }
-        this.props.state.layer.initialized = true;
+        this.props.state.layer.blockUpdate = false;
         this.props.submit(state.layer);
     }
     getCurrentView() {

@@ -51,36 +51,22 @@ export class Layer {
 
     appState: AppState;
 
-    @observable initialized: boolean = false;
+    /** Keep the layer from redrawing unnecessarily. For example when a function updates multiple observable fields at once, release the block only after the last one*/
+    @observable blockUpdate: boolean = true;
 
     refresh() {
         let layer;
-        if (!this.initialized) return;
-        if (this.layer) {
-            this.appState.map.removeLayer(this.layer)
-            //TODO: figure out how to do a better system than delete->redo
-            // this.layer.pointToLayer = pointToLayerFunc.call(this);
-            // console.log(this.layer)
-            //
-            // return;
-        }
+        if (this.blockUpdate) return;
         if (this.geoJSON) {
-            if (this.layerType !== LayerTypes.HeatMap) {
-                if (this.layerType === LayerTypes.SymbolMap) {
-                    //if needs to scale and is of scalable type
-                    if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
-                        getMaxValues(this);
-                    }
-                }
-
-                this.pointToLayer = pointToLayerFunc.bind(this);
-            }
-
             if (this.layerType === LayerTypes.HeatMap) {
                 if (this.heatMapVariable)
                     layer = createHeatLayer(this);
             }
             else {
+
+
+
+                this.pointToLayer = pointToLayerFunc.bind(this);
 
                 if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
                     if (!this.colorOptions.colorField) {
@@ -90,26 +76,34 @@ export class Layer {
                     if (this.colorOptions.colorField)
                         getColors(this);
                 }
-                let cloneColOptions = JSON.parse(JSON.stringify(this.colorOptions));
-                let cloneSymOptions = JSON.parse(JSON.stringify(this.symbolOptions));
                 let geoJSON = JSON.parse(JSON.stringify(this.geoJSON));
 
                 layer = L.geoJson(geoJSON, ({
                     onEachFeature: this.onEachFeature,
-                    pointToLayer: pointToLayerFunc.bind(this, cloneColOptions, cloneSymOptions),
+                    pointToLayer: pointToLayerFunc.bind(this, this.colorOptions, this.symbolOptions),
                 } as any));
             }
 
-            if (this.layerType === LayerTypes.SymbolMap && this.symbolOptions.symbolType === SymbolTypes.Circle && this.symbolOptions.sizeXVar) {
-                setCircleMarkerRadius(this);
-            }
-        }
 
+        }
         if (layer) {
+            if (this.layerType === LayerTypes.SymbolMap && this.symbolOptions.symbolType === SymbolTypes.Circle && this.symbolOptions.sizeXVar) {
+                setCircleMarkerRadius(this.symbolOptions, layer);
+            }
+            layer.addTo(this.appState.map);
+            if (this.layer)
+                this.appState.map.removeLayer(this.layer)
             this.layer = layer;
-            this.layer.addTo(this.appState.map);
+
+            if (this.layerType === LayerTypes.SymbolMap) {
+                //if needs to scale and is of scalable type
+                if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
+                    getMaxValues(this);
+                }
+            }
+
             this.appState.map.fitBounds(this.layerType === LayerTypes.HeatMap ? (this.layer as any)._latlngs : this.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
-            this.filterUpdatesPending = true;
+            //this.filterUpdatesPending = true;
         }
     }
     refreshFilter() {
@@ -129,10 +123,9 @@ export class Layer {
 }
 
 
-function setCircleMarkerRadius(layer: Layer) {
-    let sym: SymbolOptions = layer.symbolOptions;
-    (layer.layer as any).eachLayer(function(layer) {
-        layer.setRadius(GetSymbolSize(layer.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
+function setCircleMarkerRadius(sym: SymbolOptions, layer: any) {
+    layer.eachLayer(function(lyr) {
+        lyr.setRadius(GetSymbolSize(lyr.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
     });
 }
 
@@ -388,7 +381,8 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
             let vals = [];
             let i = 0;
             sym.chartFields.map(function(e) {
-                vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
+                if (feature.properties[e.value] > 0)
+                    vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
                 i++;
             });
             let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
