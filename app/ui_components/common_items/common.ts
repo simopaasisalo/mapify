@@ -37,4 +37,25 @@ function GetSymbolSize(val: number, sizeMultiplier: number, minSize: number, max
 
 }
 
-export {LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize}
+function GetFillColor(limits: any[], colors: string[], value: number) {
+
+    if (!isNaN(value)) {
+        for (let i = 0; i < limits.length; i++) {
+
+            if (i < limits.length - 1) {
+                let lowerLimit = Math.round(limits[i] * 100) / 100;
+                let upperLimit = Math.round(limits[i + 1] * 100) / 100;
+                let val = Math.round(value * 100) / 100;
+
+                if (lowerLimit <= val && val <= upperLimit) {
+                    return colors[i];
+                }
+            }
+            else { //color the last item correctly
+                return colors[colors.length - 1]
+            }
+        }
+    }
+}
+
+export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, GetFillColor }

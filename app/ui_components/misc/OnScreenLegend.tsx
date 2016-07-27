@@ -1,11 +1,11 @@
 import * as React from 'react';
 let Draggable = require('react-draggable');
-import {SymbolTypes} from '../common_items/common';
-import {AppState} from '../Stores/States';
-import {Layer, SymbolOptions} from '../Stores/Layer';
-import {TextEditor} from './TextEditor';
+import { SymbolTypes, GetFillColor } from '../common_items/common';
+import { AppState } from '../Stores/States';
+import { Layer, SymbolOptions } from '../Stores/Layer';
+import { TextEditor } from './TextEditor';
 
-import {observer} from 'mobx-react';
+import { observer } from 'mobx-react';
 
 @observer
 export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
@@ -15,7 +15,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         let options = layer;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
-        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
+        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField || sym.iconLimits.length !== col.limits.length)) {
             let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.colorField, col.limits) : {};
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
@@ -47,6 +47,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
     }
 
     render() {
+        let layers = this.props.state.layers;
         return (
             <Draggable
                 handle={'.dragDiv'}
@@ -59,15 +60,15 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
                     <h2 className='legendHeader'>{this.props.state.legend.title}</h2>
                     <div>
                         <div style={{ position: 'absolute', left: 0, cursor: 'pointer' }} className='dragDiv'><i className='fa fa-arrows'/></div>
-                        {this.props.state.layers.map(function(m) {
+                        {layers.map(function(m) {
                             return this.createLegend(m);
-                        }, this) }
+                        }, this)}
                     </div>
                     <div style={{ clear: 'both' }}>
                         <TextEditor
                             style={{ width: '100%', minHeight: 50 }}
                             content={this.props.state.legend.meta}
-                            onChange={this.onMetaChange }
+                            onChange={this.onMetaChange}
                             edit={this.props.state.legend.edit}/>
                     </div>
                 </div >
@@ -94,7 +95,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
 
                 <span style={{ marginLeft: '3px', marginRight: '3px' }}>
 
-                    {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
+                    {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : ''} {limits[i + 1].toFixed(0)}
                     {this.props.state.legend.showPercentages ? <br/> : null}
                     {this.props.state.legend.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
                 </span>
@@ -102,9 +103,9 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-            { layer.colorOptions.colorField }
+            {layer.colorOptions.colorField}
             <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
-                { divs.map(function(d) { return d }) }
+                {divs.map(function(d) { return d })}
             </div >
         </div >;
     }
@@ -114,7 +115,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         let opt = layer.symbolOptions;
         let xVar = opt.sizeXVar;
         let yVar = opt.sizeYVar;
-        let square = xVar && yVar && xVar === yVar;
+        let square: boolean = xVar && yVar && xVar === yVar;
 
         let style = {
             float: 'left',
@@ -128,13 +129,13 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
 
             if (square)
                 return (<div style={style}>
-                    {rectangleLegend.call(this, false) }
+                    {rectangleLegend.call(this, false)}
                 </div>);
             else {
                 return (
                     <div style={style}>
-                        { xVar ? rectangleLegend.call(this, false) : null }
-                        {yVar ? rectangleLegend.call(this, true) : null }
+                        {xVar ? rectangleLegend.call(this, false) : null}
+                        {yVar ? rectangleLegend.call(this, true) : null}
                     </div>);
             }
         }
@@ -144,10 +145,10 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             let divs = [], sides = [], values = [];
             let classes: number = 5;
             for (let i = 0; i < classes - 1; i++) {
-                sides[i] = y ? Math.round(opt.actualMinY + i * ((opt.actualMaxY - opt.actualMinY) / classes)) : Math.round(opt.actualMinX + i * ((opt.actualMaxX - opt.actualMinX) / classes));
+                sides[i] = y ? Math.round(opt.actualMinYRadius + i * ((opt.actualMaxYRadius - opt.actualMinYRadius) / classes)) : Math.round(opt.actualMinXRadius + i * ((opt.actualMaxXRadius - opt.actualMinXRadius) / classes));
                 values[i] = y ? (opt.actualMinYValue + i * ((opt.actualMaxYValue - opt.actualMinYValue) / classes)).toFixed(0) : (opt.actualMinXValue + i * ((opt.actualMaxXValue - opt.actualMinXValue) / classes)).toFixed(0);
             }
-            sides.push(y ? opt.actualMaxY : opt.actualMaxX);
+            sides.push(y ? opt.actualMaxYRadius : opt.actualMaxXRadius);
             values.push(y ? opt.actualMaxYValue.toFixed(0) : opt.actualMaxXValue.toFixed(0));
             let textWidth = values[values.length - 1].length;
 
@@ -173,14 +174,14 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
                 divs.push(
                     <div key={i} style={parentDivStyle}>
                         <div style={style} />
-                        <span style={{ display: 'inline-block', width: this.props.state.legend.horizontal ? '' : textWidth * 10 }}>{ values[i]}</span>
+                        <span style={{ display: 'inline-block', width: this.props.state.legend.horizontal ? '' : textWidth * 10 }}>{values[i]}</span>
                     </div >);
             }
 
             return <div style= {{ float: this.props.state.legend.horizontal ? '' : 'left', textAlign: 'center' }}>
                 {y ? layer.symbolOptions.sizeYVar : layer.symbolOptions.sizeXVar}
                 <div>
-                    {divs.map(function(d) { return d }) }
+                    {divs.map(function(d) { return d })}
                 </div>
             </div>;
         }
@@ -189,10 +190,10 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             let divs = [], radii = [], values = [];
             let classes: number = 5;
             for (let i = 0; i < classes - 1; i++) {
-                radii[i] = Math.round(opt.actualMinX + i * ((opt.actualMaxX - opt.actualMinX) / classes));
+                radii[i] = Math.round(opt.actualMinXRadius + i * ((opt.actualMaxXRadius - opt.actualMinXRadius) / classes));
                 values[i] = (opt.actualMinXValue + i * ((opt.actualMaxXValue - opt.actualMinXValue) / classes)).toFixed(0);
             }
-            radii.push(opt.actualMaxX);
+            radii.push(opt.actualMaxXRadius);
             values.push(opt.actualMaxXValue.toFixed(0));
             for (let i = 0; i < classes; i++) {
                 let margin = radii[radii.length - 1] - radii[i] + 2;
@@ -219,14 +220,14 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
                 divs.push(
                     <div key={i} style={parentDivStyle}>
                         <div style={style} />
-                        <span style={{ marginRight: this.props.state.legend.horizontal ? 15 : '' }}>{ values[i]}</span>
+                        <span style={{ marginRight: this.props.state.legend.horizontal ? 15 : '' }}>{values[i]}</span>
                     </div>);
             }
 
             return <div style= {{ float: this.props.state.legend.horizontal ? '' : 'left', textAlign: 'center' }}>
                 {layer.symbolOptions.sizeXVar}
                 <div>
-                    {divs.map(function(d) { return d }) }
+                    {divs.map(function(d) { return d })}
                 </div>
             </div>;
         }
@@ -247,13 +248,13 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
                 <div style={colorStyle} />
                 <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-                    { headers[i].label}
+                    {headers[i].label}
                 </span>
             </div >);
         }
         return <div style={{ margin: '5px', float: 'left' }}>
             <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
-                { divs.map(function(d) { return d }) }
+                {divs.map(function(d) { return d })}
             </div >
         </div >;
     }
@@ -265,28 +266,30 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         let col = layer.colorOptions;
         if (limits && limits.length > 0) {
             for (let i = 0; i < limits.length - 1; i++) {
-
+                let fillColor: string = col.colorField === layer.symbolOptions.iconField && col.limits.length === limits.length ?
+                    GetFillColor(col.limits.slice(), col.colors.slice(), (limits[i] + limits[i + 1]) / 2) //if can be fitted into the same legend, show colors and symbols together. Get fill color by average of icon limits
+                    : '000';
                 divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
-                    {getIcon(icons[i].shape, icons[i].fa, col.color, col.colorField === layer.symbolOptions.iconField ? col.colors[i] : col.fillColor, layer.colorOptions.iconTextColor) }
+                    {getIcon(icons[i].shape, icons[i].fa, col.color, fillColor, fillColor != '000' ? layer.colorOptions.iconTextColor : 'FFF')}
                     <span style={{ marginLeft: '3px', marginRight: '3px' }}>
-                        {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : '' } {limits[i + 1].toFixed(0) }
+                        {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : ''} {limits[i + 1].toFixed(0)}
                         {this.props.state.legend.showPercentages ? <br/> : null}
                         {this.props.state.legend.showPercentages ? percentages[i] ? percentages[i] + '%' : '0%' : null}
                     </span>
                 </div >);
             }
             return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-                { layer.symbolOptions.iconField }
+                {layer.symbolOptions.iconField}
                 <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
-                    { divs.map(function(d) { return d }) }
+                    {divs.map(function(d) { return d })}
                 </div >
             </div >;
         }
         else {
             return <div style={{ margin: '5px', float: 'left', textAlign: 'center' }}>
-                { layerName}
+                {layerName}
                 <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
-                    {getIcon(icons[0].shape, icons[0].fa, layer.colorOptions.color, layer.colorOptions.fillColor, layer.colorOptions.iconTextColor) }
+                    {getIcon(icons[0].shape, icons[0].fa, layer.colorOptions.color, layer.colorOptions.fillColor, layer.colorOptions.iconTextColor)}
                 </div >
             </div >;
         }
@@ -367,7 +370,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
                 <div style= {{ display: 'flex', flexDirection: this.props.state.legend.horizontal ? 'row' : 'column', flex: '1' }}>
                     <div style={style} />
                     =
-                    <span style={{ display: 'inline-block' }}>{ layer.symbolOptions.blockValue}</span>
+                    <span style={{ display: 'inline-block' }}>{layer.symbolOptions.blockValue}</span>
 
                 </div >
             </div >);

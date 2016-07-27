@@ -1,8 +1,8 @@
 import * as React from 'react';
-import {AppState} from '../Stores/States';
-import {Legend} from '../Stores/Legend';
-import {observer} from 'mobx-react';
-import {TextEditor} from '../misc/TextEditor';
+import { AppState } from '../Stores/States';
+import { Legend } from '../Stores/Legend';
+import { observer } from 'mobx-react';
+import { TextEditor } from '../misc/TextEditor';
 let Modal = require('react-modal');
 @observer
 export class LegendMenu extends React.Component<{
@@ -26,6 +26,8 @@ export class LegendMenu extends React.Component<{
         this.props.state.legend.showPercentages = e.currentTarget.checked;
     }
     render() {
+        if (this.props.state.visibleMenu !== 5)
+            return <div/>
         let legend = this.props.state.legend;
         let metaStyle = {
             overlay: {
@@ -51,25 +53,25 @@ export class LegendMenu extends React.Component<{
                 left: '',
             }
         }
-        return (this.props.state.visibleMenu !== 5 ? null :
+        return (
             <div className="mapify-options">
                 <label htmlFor='showLegend'>Show legend
-                    <input id='showLegend' type='checkbox' checked={legend.visible} onChange={this.onVisibleChange }/>
+                    <input id='showLegend' type='checkbox' checked={legend.visible} onChange={this.onVisibleChange}/>
                 </label>
                 <br/>
                 <label>Title</label>
-                <input type='text' style={{ width: '100%' }} value={legend.title} onChange={this.onTitleChange }/>
+                <input type='text' style={{ width: '100%' }} value={legend.title} onChange={this.onTitleChange}/>
                 <br/>
                 <label htmlFor='showEdit'>Show legend edit options
-                    <input id='showEdit' type='checkbox' checked={legend.edit} onChange={this.onEditChange }/>
+                    <input id='showEdit' type='checkbox' checked={legend.edit} onChange={this.onEditChange}/>
                 </label>
                 <br/>
                 <label htmlFor='showPercentages'>Show distribution
-                    <input id='showPercentages' type='checkbox' checked={legend.showPercentages} onChange={this.onPercentageChange }/>
+                    <input id='showPercentages' type='checkbox' checked={legend.showPercentages} onChange={this.onPercentageChange}/>
                 </label>
                 <br/>
                 <label htmlFor='makeHorizontal'>Align horizontally
-                    <input id='makeHorizontal' type='checkbox' checked={legend.horizontal} onChange={this.onHorizontalChange }/>
+                    <input id='makeHorizontal' type='checkbox' checked={legend.horizontal} onChange={this.onHorizontalChange}/>
                 </label>
                 <br/>
                 <i>TIP: drag the legend on screen to place it where you wish</i>

@@ -1,17 +1,17 @@
 declare var require: any;
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import {observer} from 'mobx-react';
-import {AppState, ImportWizardState, SaveState} from './Stores/States';
-import {Layer, ColorOptions, SymbolOptions} from './Stores/Layer';
-import {Legend} from './Stores/Legend';
-import {LayerImportWizard} from './import_wizard/LayerImportWizard';
-import {MapifyMenu} from './menu/Menu';
-import {MapInitModel} from '../models/MapInitModel';
-import {LayerTypes, SymbolTypes, GetSymbolSize} from './common_items/common';
-import {OnScreenFilter} from './misc/OnScreenFilter';
-import {OnScreenLegend} from './misc/OnScreenLegend';
-import {WelcomeScreen} from './misc/WelcomeScreen';
+import { observer } from 'mobx-react';
+import { AppState, ImportWizardState, SaveState } from './Stores/States';
+import { Layer, ColorOptions, SymbolOptions } from './Stores/Layer';
+import { Legend } from './Stores/Legend';
+import { LayerImportWizard } from './import_wizard/LayerImportWizard';
+import { MapifyMenu } from './menu/Menu';
+import { MapInitModel } from '../models/MapInitModel';
+import { LayerTypes, SymbolTypes, GetSymbolSize } from './common_items/common';
+import { OnScreenFilter } from './misc/OnScreenFilter';
+import { OnScreenLegend } from './misc/OnScreenLegend';
+import { WelcomeScreen } from './misc/WelcomeScreen';
 import 'leaflet';
 import 'Leaflet.extra-markers';
 let Modal = require('react-modal');
@@ -202,7 +202,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             newLayer.heatMapVariable = lyr.heatMapVariable;
             newLayer.geoJSON = lyr.geoJSON;
             newLayer.colorOptions = lyr.colorOptions;
-            newLayer.symbolOptions = lyr.symbolOptions;
+            newLayer.symbolOptions = new SymbolOptions(lyr.symbolOptions);
             newLayer.blockUpdate = false;
             this.props.state.layers.push(newLayer);
         }
@@ -229,32 +229,32 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                     isOpen={this.props.state.welcomeShown}
                     style = {modalStyle}>
                     <WelcomeScreen
-                        loadMap={this.loadSavedMap.bind(this) }
-                        openLayerImport={this.startLayerImport.bind(this) }
+                        loadMap={this.loadSavedMap.bind(this)}
+                        openLayerImport={this.startLayerImport.bind(this)}
                         />
                 </Modal>
                 <Modal
                     isOpen={this.props.state.importWizardShown}
                     style = {modalStyle}>
                     <LayerImportWizard
-                        state={new ImportWizardState() }
+                        state={new ImportWizardState()}
                         appState={this.props.state}
-                        submit={this.layerImportSubmit.bind(this) }
-                        cancel={this.cancelLayerImport.bind(this) }
+                        submit={this.layerImportSubmit.bind(this)}
+                        cancel={this.cancelLayerImport.bind(this)}
                         />
                 </Modal>
                 <MapifyMenu
                     state = {this.props.state}
-                    refreshMap={this.reloadLayer.bind(this) }
-                    addLayer = {this.startLayerImport.bind(this) }
-                    deleteLayer={this.deleteLayer.bind(this) }
-                    deleteFilter={this.deleteFilter.bind(this) }
-                    changeLayerOrder ={this.changeLayerOrder.bind(this) }
+                    refreshMap={this.reloadLayer.bind(this)}
+                    addLayer = {this.startLayerImport.bind(this)}
+                    deleteLayer={this.deleteLayer.bind(this)}
+                    deleteFilter={this.deleteFilter.bind(this)}
+                    changeLayerOrder ={this.changeLayerOrder.bind(this)}
                     saveImage ={this.saveImage}
-                    saveFile = {this.saveFile.bind(this) }
+                    saveFile = {this.saveFile.bind(this)}
                     />
-                {this.getFilters() }
-                {this.showLegend() }
+                {this.getFilters()}
+                {this.showLegend()}
             </div>
         );
     }

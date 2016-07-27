@@ -1,26 +1,19 @@
 import * as React from 'react';
 let Select = require('react-select');
 let ColorPicker = require('react-color');
-import {ColorScheme} from './ColorScheme';
+import { ColorScheme } from './ColorScheme';
 let Modal = require('react-modal');
 let chroma = require('chroma-js');
-import {AppState} from '../Stores/States';
-import {Layer, ColorOptions} from '../Stores/Layer';
-import {LayerTypes, SymbolTypes} from "../common_items/common";
-import {observer} from 'mobx-react';
+import { AppState } from '../Stores/States';
+import { Layer, ColorOptions } from '../Stores/Layer';
+import { LayerTypes, SymbolTypes } from "../common_items/common";
+import { observer } from 'mobx-react';
 
 @observer
 export class ColorMenu extends React.Component<{
     state: AppState,
-    /** Save the current options to the layer*/
-    saveValues: () => void,
     /** layer being edited*/
 }, {}>{
-
-    componentWillUpdate() {
-        if (this.props.state.autoRefresh)
-            this.props.saveValues();
-    }
     onColorSelect = (color) => {
         let layer = this.props.state.editingLayer;
         let hex = color.hex;
@@ -107,15 +100,27 @@ export class ColorMenu extends React.Component<{
      */
     calculateValues = () => {
         let lyr: Layer = this.props.state.editingLayer;
-        let choroField = this.props.state.editingLayer.colorOptions.colorField;
+        let choroField: string = lyr.colorOptions.colorField;
         let values = (lyr.geoJSON as any).features.map(function(feat) {
             return feat.properties[choroField];
         });
-        let limits: number[] = chroma.limits(values, this.props.state.editingLayer.colorOptions.mode, this.props.state.editingLayer.colorOptions.steps);
-        let colors: string[] = chroma.scale(this.props.state.editingLayer.colorOptions.colorScheme).colors(limits.length - 1);
+        let limits: number[] = chroma.limits(values, lyr.colorOptions.mode, lyr.colorOptions.steps);
+        let colors: string[];
+        if (!lyr.colorOptions.useCustomScheme) {
+            colors = chroma.scale(lyr.colorOptions.colorScheme).colors(limits.length - 1);
+        }
+        else {
+            colors = lyr.colorOptions.colors;
+            while (colors.length < limits.length) {
+                colors.push(colors[colors.length - 1]);
+            }
+            while (colors.length > limits.length) {
+                colors.pop();
+            }
+        }
 
-        this.props.state.editingLayer.colorOptions.limits = limits;
-        this.props.state.editingLayer.colorOptions.colors = this.props.state.editingLayer.colorOptions.revert ? colors.reverse() : colors;
+        lyr.colorOptions.limits = limits;
+        lyr.colorOptions.colors = lyr.colorOptions.revert ? colors.reverse() : colors;
 
     }
 
@@ -148,7 +153,7 @@ export class ColorMenu extends React.Component<{
         return limits;
     }
     saveOptions = () => {
-        this.props.saveValues();
+
     }
     renderSteps() {
         let rows = [];
@@ -166,11 +171,11 @@ export class ColorMenu extends React.Component<{
             rows.push(
                 <li key={i}
                     style={{ background: this.props.state.editingLayer.colorOptions.colors[row] ? this.props.state.editingLayer.colorOptions.colors[row] : '#FFF' }}
-                    onClick={this.toggleColorPick.bind(this, 'step' + row) }>
+                    onClick={this.toggleColorPick.bind(this, 'step' + row)}>
                     <input
                         id={row + 'min'}
                         type='number'
-                        defaultValue={i.toFixed(2) }
+                        defaultValue={i.toFixed(2)}
                         style={{
                             width: 100,
 
@@ -181,10 +186,12 @@ export class ColorMenu extends React.Component<{
             row++;
         }
         return <div>
-            <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r }) }</ul>
+            <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r })}</ul>
         </div>
     }
     render() {
+        if (this.props.state.visibleMenu !== 2)
+            return <div />;
         let col = this.props.state.editingLayer.colorOptions;
         let layer = this.props.state.editingLayer;
         let state = this.props.state.colorMenuState;
@@ -229,7 +236,7 @@ export class ColorMenu extends React.Component<{
                 left: '',
             }
         }
-        return (this.props.state.visibleMenu !== 2 ? null :
+        return (
             <div className="mapify-options">
                 {layer.layerType === LayerTypes.ChoroplethMap ? null :
                     <div>
@@ -237,7 +244,7 @@ export class ColorMenu extends React.Component<{
                             <input
                                 id='multipleSelect'
                                 type='checkbox'
-                                onChange={this.onMultipleColorsChange }
+                                onChange={this.onMultipleColorsChange}
                                 checked={col.useMultipleFillColors}/>
                         </label>
                     </div>
@@ -245,17 +252,17 @@ export class ColorMenu extends React.Component<{
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
                     {col.useMultipleFillColors || layer.layerType === LayerTypes.ChoroplethMap ?
                         null :
-                        <div className='colorBlock' style={fillColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'fillColor') }>Fill</div>
+                        <div className='colorBlock' style={fillColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'fillColor')}>Fill</div>
                     }
-                    <div className='colorBlock' style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor') }>Border</div>
+                    <div className='colorBlock' style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor')}>Border</div>
                     {layer.layerType === LayerTypes.SymbolMap && layer.symbolOptions.symbolType === SymbolTypes.Icon ?
-                        <div className='colorBlock' style={iconTextColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'iconTextColor') }>Icon</div>
+                        <div className='colorBlock' style={iconTextColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'iconTextColor')}>Icon</div>
                         : null
                     }
 
                 </div>
                 <label>Opacity</label>
-                <input type='number' max={1} min={0} step={0.1} onChange={this.onOpacityChange } value={col.opacity}/>
+                <input type='number' max={1} min={0} step={0.1} onChange={this.onOpacityChange} value={col.opacity}/>
 
                 <Modal
                     isOpen={state.colorSelectOpen}
@@ -266,12 +273,12 @@ export class ColorMenu extends React.Component<{
                         width={300}
                         height={600}
                         overlowY='auto'
-                        color={ state.startColor}
-                        onChange={this.onColorSelect }
+                        color={state.startColor}
+                        onChange={this.onColorSelect}
                         />
                     <button
                         className='primaryButton'
-                        onClick={this.toggleColorPick.bind(this, state.editing) }
+                        onClick={this.toggleColorPick.bind(this, state.editing)}
                         style={{ position: 'absolute', left: 80 }}>OK</button>
                 </Modal>
                 {
@@ -280,7 +287,7 @@ export class ColorMenu extends React.Component<{
                             <label>Select the variable to color by</label>
                             <Select
                                 options={layer.numberHeaders}
-                                onChange={this.onChoroVariableChange }
+                                onChange={this.onChoroVariableChange}
                                 value={col.colorField}
                                 clearable={false}
                                 />
@@ -291,7 +298,7 @@ export class ColorMenu extends React.Component<{
                                     <input
                                         id='customScale'
                                         type='checkbox'
-                                        onChange={this.onCustomSchemeChange }
+                                        onChange={this.onCustomSchemeChange}
                                         checked={col.useCustomScheme}/>
                                     <br/>
                                     {col.useCustomScheme ?
@@ -304,16 +311,16 @@ export class ColorMenu extends React.Component<{
                                                 clearable = {false}
                                                 searchable = {false}
                                                 options = {_gradientOptions}
-                                                optionRenderer={this.renderScheme }
-                                                valueRenderer = {this.renderScheme }
-                                                onChange={this.onSchemeChange }
+                                                optionRenderer={this.renderScheme}
+                                                valueRenderer = {this.renderScheme}
+                                                onChange={this.onSchemeChange}
                                                 value={col.colorScheme}
                                                 />
                                             <label htmlFor='revertSelect'>Revert</label>
                                             <input
                                                 id='revertSelect'
                                                 type='checkbox'
-                                                onChange={this.onRevertChange }
+                                                onChange={this.onRevertChange}
                                                 checked={col.revert}/>
                                         </div>
                                     }
@@ -323,12 +330,12 @@ export class ColorMenu extends React.Component<{
                                         max={col.useCustomScheme ? 100 : 10}
                                         min={2}
                                         step={1}
-                                        onChange={this.onStepsChange }
+                                        onChange={this.onStepsChange}
                                         value={col.steps}/>
                                     {col.useCustomScheme ?
                                         <div>
                                             Set the <i>lower limit</i> for each step and a color to match
-                                            {this.renderSteps() }
+                                            {this.renderSteps()}
                                         </div>
                                         :
                                         <div>
@@ -336,7 +343,7 @@ export class ColorMenu extends React.Component<{
                                                 Quantiles
                                                 <input
                                                     type='radio'
-                                                    onChange={this.onModeChange.bind(this, 'q') }
+                                                    onChange={this.onModeChange.bind(this, 'q')}
                                                     checked={col.mode === 'q'}
                                                     name='mode'
                                                     id='quantiles'
@@ -347,7 +354,7 @@ export class ColorMenu extends React.Component<{
                                                 K-means
                                                 <input
                                                     type='radio'
-                                                    onChange={this.onModeChange.bind(this, 'k') }
+                                                    onChange={this.onModeChange.bind(this, 'k')}
                                                     checked={col.mode === 'k'}
                                                     name='mode'
                                                     id='kmeans'
@@ -359,7 +366,7 @@ export class ColorMenu extends React.Component<{
                                                 Equidistant
                                                 <input
                                                     type='radio'
-                                                    onChange={this.onModeChange.bind(this, 'e') }
+                                                    onChange={this.onModeChange.bind(this, 'e')}
                                                     checked={col.mode === 'e'}
                                                     name='mode'
                                                     id='equidistant'
@@ -375,7 +382,7 @@ export class ColorMenu extends React.Component<{
                         : null
                 }
                 {this.props.state.autoRefresh ? null :
-                    <button className='menuButton' onClick={this.saveOptions }>Refresh map</button>
+                    <button className='menuButton' onClick={this.saveOptions}>Refresh map</button>
                 }
             </div >
         );

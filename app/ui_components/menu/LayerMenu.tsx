@@ -1,8 +1,8 @@
 import * as React from 'react';
 let Sortable = require('react-sortablejs')
-import {AppState} from '../Stores/States';
-import {Layer} from '../Stores/Layer';
-import {observer} from 'mobx-react';
+import { AppState } from '../Stores/States';
+import { Layer } from '../Stores/Layer';
+import { observer } from 'mobx-react';
 
 @observer
 export class LayerMenu extends React.Component<{
@@ -76,6 +76,8 @@ export class LayerMenu extends React.Component<{
         this.props.saveOrder(arr); //unnecessary? just set the state?
     }
     render() {
+        if (this.props.state.visibleMenu !== 1)
+            return <div/>
         let layerStyle = {
             cursor: 'pointer',
             width: '90%',
@@ -88,19 +90,19 @@ export class LayerMenu extends React.Component<{
             textAlign: 'center',
             lineHeight: '20px',
         }
-        return (this.props.state.visibleMenu !== 1 ? null :
+        return (
             <div className="mapify-options">
                 <label>Drag and drop to reorder</label>
-                <Sortable className='layerList' onChange={this.handleSort.bind(this) }>
+                <Sortable className='layerList' onChange={this.handleSort.bind(this)}>
                     {this.props.state.layerMenuState.order.map(function(layer) {
                         return <div style={layerStyle} key={layer.id} data-id={layer.id} >
                             {layer.name}
-                            <i className="fa fa-times" onClick = {this.deleteLayer.bind(this, layer.id) }/>
+                            <i className="fa fa-times" onClick = {this.deleteLayer.bind(this, layer.id)}/>
                         </div>;
-                    }, this) }
+                    }, this)}
                 </Sortable>
-                <button className='menuButton' onClick={this.saveOrder.bind(this) }>Save</button>
-                <button className='menuButton' onClick={this.addNewLayer.bind(this) }>Add new layer</button>
+                <button className='menuButton' onClick={this.saveOrder.bind(this)}>Save</button>
+                <button className='menuButton' onClick={this.addNewLayer.bind(this)}>Add new layer</button>
 
             </div>
         );

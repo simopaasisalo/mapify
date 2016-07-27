@@ -1,8 +1,8 @@
-import {observable, computed} from 'mobx';
-import {Layer} from './Layer';
-import {Filter} from './Filter';
-import {Legend} from './Legend';
-import {LayerTypes, SymbolTypes} from '../common_items/common';
+import { observable, computed } from 'mobx';
+import { Layer } from './Layer';
+import { Filter } from './Filter';
+import { Legend } from './Legend';
+import { LayerTypes, SymbolTypes } from '../common_items/common';
 
 
 export class AppState {
@@ -99,11 +99,7 @@ export class ColorMenuState {
 export class SymbolMenuState {
     /** Is the icon selection visible*/
     @observable iconSelectOpen: boolean;
-    /** Use steps to define different icons*/
-    @observable useIconSteps: boolean;
-    /** The icon being edited */
     @observable currentIconIndex: number;
-    @observable iconStepCount: number;
 }
 
 export class FilterMenuState {

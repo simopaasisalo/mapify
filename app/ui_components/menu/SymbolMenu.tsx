@@ -1,19 +1,16 @@
 import * as React from 'react';
 let Modal = require('react-modal');
 let Select = require('react-select');
-import {SymbolTypes} from './../common_items/common';
-import {AppState, SymbolMenuState} from '../Stores/States';
-import { Layer, SymbolOptions} from '../Stores/Layer';
-import {observer} from 'mobx-react';
+import { SymbolTypes } from './../common_items/common';
+import { AppState, SymbolMenuState } from '../Stores/States';
+import { Layer, SymbolOptions } from '../Stores/Layer';
+import { observer } from 'mobx-react';
 
 @observer
 export class SymbolMenu extends React.Component<{
     state: AppState,
     saveValues: () => void,
 }, {}>{
-    private activeLayer = this.props.state.editingLayer;
-    private symbolOptions = this.props.state.editingLayer.symbolOptions;
-    private UIState = this.props.state.symbolMenuState;
 
     componentWillUpdate() {
         if (this.props.state.autoRefresh)
@@ -89,26 +86,39 @@ export class SymbolMenu extends React.Component<{
         let use: boolean = e.target.checked;
         this.props.state.editingLayer.blockUpdate = true;
         let sym: SymbolOptions = this.props.state.editingLayer.symbolOptions;
-        this.props.state.symbolMenuState.useIconSteps = use;
+        this.props.state.editingLayer.symbolOptions.useMultipleIcons = use;
         sym.icons = use ? sym.icons : [sym.icons.slice()[0]];
         sym.iconLimits = use ? sym.iconLimits : [];
         if (use) {
-            this.calculateIconValues(sym.iconField, this.props.state.symbolMenuState.iconStepCount)
+            this.calculateIconValues(sym.iconField, sym.iconCount)
         }
         this.props.state.editingLayer.blockUpdate = false;
 
     }
     onIconFieldChange = (val: IHeader) => {
+        this.props.state.editingLayer.blockUpdate = true;
+
         this.props.state.editingLayer.symbolOptions.iconField = val.value;
-        this.calculateIconValues(val.value, this.props.state.symbolMenuState.iconStepCount);
+        this.calculateIconValues(val.value, this.props.state.editingLayer.symbolOptions.iconCount);
+        this.props.state.editingLayer.blockUpdate = false;
+
     }
     changeIconStepsCount = (amount: number) => {
-        let newVal = this.props.state.symbolMenuState.iconStepCount ? this.props.state.symbolMenuState.iconStepCount + amount : 1;
-        if (newVal > 0) {
+        let layer = this.props.state.editingLayer;
+        layer.blockUpdate = true;
 
-            this.props.state.symbolMenuState.iconStepCount = newVal;
-            this.calculateIconValues(this.props.state.editingLayer.symbolOptions.iconField, newVal)
+        if (amount == 1) {
+            layer.symbolOptions.icons.push({ shape: 'circle', fa: faIcons[Math.floor(Math.random() * faIcons.length)] }); //add random icon
         }
+        else if (amount == -1) {
+            layer.symbolOptions.icons.pop();
+        }
+        let count = layer.symbolOptions.iconCount;
+        if (count > 0) {
+            this.calculateIconValues(layer.symbolOptions.iconField, count)
+        }
+        layer.blockUpdate = false;
+
     }
     saveOptions = () => {
         this.props.saveValues();
@@ -155,7 +165,7 @@ export class SymbolMenu extends React.Component<{
                 break;
         }
         return <div
-            onClick={onClick }
+            onClick={onClick}
             style={{
                 cursor: 'pointer',
                 display: 'inline-block',
@@ -201,6 +211,9 @@ export class SymbolMenu extends React.Component<{
     }
 
     render() {
+        if (this.props.state.visibleMenu !== 3)
+            return <div/>;
+
         let sym: SymbolOptions = this.props.state.editingLayer.symbolOptions;
         let state: SymbolMenuState = this.props.state.symbolMenuState;
 
@@ -231,231 +244,231 @@ export class SymbolMenu extends React.Component<{
             }
         }
         return (
-            this.props.state.visibleMenu !== 3 ? null :
-                <div className="mapify-options">
-                    <label forHTML='circle'>
-                        <i style={{ margin: 4 }} className='fa fa-circle-o'/>
-                        Circle
-                        <input
-                            type='radio'
-                            onChange={this.onTypeChange.bind(this, SymbolTypes.Circle) }
-                            checked={sym.symbolType === SymbolTypes.Circle}
-                            name='symboltype'
-                            id='circle'
+
+            <div className="mapify-options">
+                <label forHTML='circle'>
+                    <i style={{ margin: 4 }} className='fa fa-circle-o'/>
+                    Circle
+                    <input
+                        type='radio'
+                        onChange={this.onTypeChange.bind(this, SymbolTypes.Circle)}
+                        checked={sym.symbolType === SymbolTypes.Circle}
+                        name='symboltype'
+                        id='circle'
+                        />
+                    <br/>
+                </label>
+                <label forHTML='rect'>
+                    <i style={{ margin: 4 }} className='fa fa-signal'/>
+                    Rectangle
+                    <input
+                        type='radio'
+                        onChange={this.onTypeChange.bind(this, SymbolTypes.Rectangle)}
+                        checked={sym.symbolType === SymbolTypes.Rectangle}
+                        name='symboltype'
+                        id='rect'
+                        />
+                    <br/>
+                </label>
+                <label forHTML='icon'>
+                    <i style={{ margin: 4 }} className='fa fa-map-marker'/>
+                    Icon
+                    <input
+                        type='radio'
+                        onChange={this.onTypeChange.bind(this, SymbolTypes.Icon)}
+                        checked={sym.symbolType === SymbolTypes.Icon}
+                        name='symboltype'
+                        id='icon'
+                        />
+                    <br/>
+                </label>
+                <label forHTML='chart'>
+                    <i style={{ margin: 4 }} className='fa fa-pie-chart'/>
+                    Chart
+                    <input
+                        type='radio'
+                        onChange={this.onTypeChange.bind(this, SymbolTypes.Chart)}
+                        checked={sym.symbolType === SymbolTypes.Chart}
+                        name='symboltype'
+                        id='chart'
+                        />
+                    <br/>
+                </label>
+                <label forHTML='blocks'>
+                    <i style={{ margin: 4 }} className='fa fa-th-large'/>
+                    Blocks
+                    <input
+                        type='radio'
+                        onChange={this.onTypeChange.bind(this, SymbolTypes.Blocks)}
+                        checked={sym.symbolType === SymbolTypes.Blocks}
+                        name='symboltype'
+                        id='blocks'
+                        />
+                    <br/>
+                </label>
+                {sym.symbolType === SymbolTypes.Circle || sym.symbolType === SymbolTypes.Rectangle || sym.symbolType === SymbolTypes.Chart || sym.symbolType === SymbolTypes.Blocks ?
+                    <div>
+                        <label>Scale {sym.symbolType === SymbolTypes.Rectangle ? 'width' : 'size'} by</label>
+                        <Select
+                            options={this.props.state.editingLayer.numberHeaders}
+                            onChange={this.onXVariableChange}
+                            value={sym.sizeXVar}
                             />
-                        <br/>
-                    </label>
-                    <label forHTML='rect'>
-                        <i style={{ margin: 4 }} className='fa fa-signal'/>
-                        Rectangle
-                        <input
-                            type='radio'
-                            onChange={this.onTypeChange.bind(this, SymbolTypes.Rectangle) }
-                            checked={sym.symbolType === SymbolTypes.Rectangle}
-                            name='symboltype'
-                            id='rect'
-                            />
-                        <br/>
-                    </label>
-                    <label forHTML='icon'>
-                        <i style={{ margin: 4 }} className='fa fa-map-marker'/>
-                        Icon
-                        <input
-                            type='radio'
-                            onChange={this.onTypeChange.bind(this, SymbolTypes.Icon) }
-                            checked={sym.symbolType === SymbolTypes.Icon}
-                            name='symboltype'
-                            id='icon'
-                            />
-                        <br/>
-                    </label>
-                    <label forHTML='chart'>
-                        <i style={{ margin: 4 }} className='fa fa-pie-chart'/>
-                        Chart
-                        <input
-                            type='radio'
-                            onChange={this.onTypeChange.bind(this, SymbolTypes.Chart) }
-                            checked={sym.symbolType === SymbolTypes.Chart}
-                            name='symboltype'
-                            id='chart'
-                            />
-                        <br/>
-                    </label>
-                    <label forHTML='blocks'>
-                        <i style={{ margin: 4 }} className='fa fa-th-large'/>
-                        Blocks
-                        <input
-                            type='radio'
-                            onChange={this.onTypeChange.bind(this, SymbolTypes.Blocks) }
-                            checked={sym.symbolType === SymbolTypes.Blocks}
-                            name='symboltype'
-                            id='blocks'
-                            />
-                        <br/>
-                    </label>
-                    {sym.symbolType === SymbolTypes.Circle || sym.symbolType === SymbolTypes.Rectangle || sym.symbolType === SymbolTypes.Chart || sym.symbolType === SymbolTypes.Blocks ?
-                        <div>
-                            <label>Scale {sym.symbolType === SymbolTypes.Rectangle ? 'width' : 'size'} by</label>
+                        {sym.symbolType === SymbolTypes.Rectangle ? <div>
+                            <label>Scale height by</label>
                             <Select
                                 options={this.props.state.editingLayer.numberHeaders}
-                                onChange={this.onXVariableChange }
-                                value={sym.sizeXVar}
+                                onChange={this.onYVariableChange}
+                                value={sym.sizeYVar}
                                 />
-                            {sym.symbolType === SymbolTypes.Rectangle ? <div>
-                                <label>Scale height by</label>
-                                <Select
-                                    options={this.props.state.editingLayer.numberHeaders }
-                                    onChange={this.onYVariableChange }
-                                    value={sym.sizeYVar}
-                                    />
-                            </div> : null}
-                            {sym.symbolType !== SymbolTypes.Blocks && (sym.sizeXVar || sym.sizeYVar) ?
-                                <div><label>Size multiplier</label>
-                                    <input type="number" value={sym.sizeMultiplier} onChange={this.onSizeMultiplierChange } min={0.1} max={10} step={0.1}/>
-                                    <br/>
-                                    <label>Size lower limit</label>
-                                    <input type="number" value={sym.sizeLowLimit} onChange={this.onSizeLowLimitChange } min={0}/>
-                                    <br/>
-                                    <label>Size upper limit</label>
-                                    <input type="number" value={sym.sizeUpLimit} onChange={this.onSizeUpLimitChange } min={1}/>
-                                </div>
-                                : null}
-                        </div>
-
-                        : null
-                    }
-
-                    {
-                        sym.symbolType === SymbolTypes.Icon ?
-                            <div>
-                                <label htmlFor='iconSteps'>Use multiple icons</label>
-                                <input id='iconSteps' type='checkbox' onChange={this.onUseIconStepsChange } checked={state.useIconSteps}/>
-
-                                {state.useIconSteps ?
-                                    <div>
-                                        <label>Field to change icon by</label>
-                                        <Select
-                                            options={this.props.state.editingLayer.numberHeaders}
-                                            onChange={this.onIconFieldChange }
-                                            value={sym.iconField}
-                                            />
-                                        {sym.iconField ?
-                                            <div>Set the <i>lower limit</i> and icon
-                                                <br/>
-                                                <button onClick={this.changeIconStepsCount.bind(this, -1) }>-</button>
-                                                <button onClick={this.changeIconStepsCount.bind(this, 1) }>+</button>
-                                                {this.renderSteps.call(this) }
-                                            </div> : null}
-                                    </div>
-                                    :
-                                    <div>
-                                        Set icon
-                                        {this.getIcon(sym.icons[0].shape, sym.icons[0].fa, '#999999', 'transparent', this.toggleIconSelect.bind(this, 0)) }
-
-                                    </div>
-                                }
-
+                        </div> : null}
+                        {sym.symbolType !== SymbolTypes.Blocks && (sym.sizeXVar || sym.sizeYVar) ?
+                            <div><label>Size multiplier</label>
+                                <input type="number" value={sym.sizeMultiplier} onChange={this.onSizeMultiplierChange} min={0.1} max={10} step={0.1}/>
                                 <br/>
-                                Change icon colors in the color menu
-                            </div>
-
-                            : null
-                    }
-                    {sym.symbolType === SymbolTypes.Chart ?
-                        <div>
-                            <label>Select the variables to show</label>
-                            <Select
-                                options={this.props.state.editingLayer.numberHeaders}
-                                multi
-                                onChange={this.onChartFieldsChange }
-                                value={sym.chartFields.slice() }
-                                />
-                            Chart type
-                            <br/>
-                            <label forHTML='pie'>
-                                Pie
-                                <input
-                                    type='radio'
-                                    onChange={this.onChartTypeChange.bind(this, 'pie') }
-                                    checked={sym.chartType === 'pie'}
-                                    name='charttype'
-                                    id='rect'
-                                    />
+                                <label>Size lower limit</label>
+                                <input type="number" value={sym.sizeLowLimit} onChange={this.onSizeLowLimitChange} min={0}/>
                                 <br/>
-
-                            </label>
-                            <label forHTML='donut'>
-                                Donut
-                                <input
-                                    type='radio'
-                                    onChange={this.onChartTypeChange.bind(this, 'donut') }
-                                    checked={sym.chartType === 'donut'}
-                                    name='charttype'
-                                    id='donut'
-                                    />
-                                <br/>
-
-                            </label>
-                            <i>TIP: hover over symbol segments to see corresponding value</i>
-                        </div>
-
-                        : null
-                    }
-                    {sym.symbolType === SymbolTypes.Blocks ?
-                        <div>
-                            <label>Single block value</label>
-                            <input type="number" value={sym.blockValue} onChange={this.onBlockValueChange } min={0}/>
-                        </div>
-                        : null
-
-                    }
-                    {this.props.state.autoRefresh ? null :
-                        <button className='menuButton' onClick={this.saveOptions }>Refresh map</button>
-                    }
-                    <Modal
-                        isOpen={state.iconSelectOpen}
-                        style={iconSelectStyle}
-                        >
-                        {state.iconSelectOpen ? <div>
-                            Icon
-                            {this.renderIcons.call(this) }
-                            Or
-                            <br/>
-                            <label>Use another <a href='http://fontawesome.io/icons/'>Font Awesome</a> icon</label>
-                            <input type="text" onChange={this.onFAIconChange } value={sym.icons[state.currentIconIndex].fa}/>
-
-                            <br/>
-                            Icon shape
-                            <br/>
-                            <div
-                                style ={{ display: 'inline-block' }}
-                                onClick={this.onIconShapeChange.bind(this, 'circle') }>
-                                {this.getIcon('circle', '', '#999999', 'transparent', null) }
+                                <label>Size upper limit</label>
+                                <input type="number" value={sym.sizeUpLimit} onChange={this.onSizeUpLimitChange} min={1}/>
                             </div>
-                            <div
-                                style ={{ display: 'inline-block' }}
-                                onClick={this.onIconShapeChange.bind(this, 'square') }>
-                                {this.getIcon('square', '', '#999999', 'transparent', null) }
-                            </div>
-                            <div
-                                style ={{ display: 'inline-block' }}
-                                onClick={this.onIconShapeChange.bind(this, 'star') }>
-                                {this.getIcon('star', '', '#999999', 'transparent', null) }
-                            </div>
-                            <div
-                                style ={{ display: 'inline-block' }}
-                                onClick={this.onIconShapeChange.bind(this, 'penta') }>
-                                {this.getIcon('penta', '', '#999999', 'transparent', null) }
-                            </div>
-                            <br/>
-                            <button
-                                className='primaryButton'
-                                onClick={this.toggleIconSelect.bind(this, state.currentIconIndex) }
-                                style={{ position: 'absolute', left: 80 }}>OK</button>
-                        </div>
                             : null}
-                    </Modal>
-                </div >
+                    </div>
+
+                    : null
+                }
+
+                {
+                    sym.symbolType === SymbolTypes.Icon ?
+                        <div>
+                            <label htmlFor='iconSteps'>Use multiple icons</label>
+                            <input id='iconSteps' type='checkbox' onChange={this.onUseIconStepsChange} checked={sym.useMultipleIcons}/>
+
+                            {sym.useMultipleIcons ?
+                                <div>
+                                    <label>Field to change icon by</label>
+                                    <Select
+                                        options={this.props.state.editingLayer.numberHeaders}
+                                        onChange={this.onIconFieldChange}
+                                        value={sym.iconField}
+                                        />
+                                    {sym.iconField ?
+                                        <div>Set the <i>lower limit</i> and icon
+                                            <br/>
+                                            <button onClick={this.changeIconStepsCount.bind(this, -1)}>-</button>
+                                            <button onClick={this.changeIconStepsCount.bind(this, 1)}>+</button>
+                                            {this.renderSteps.call(this)}
+                                        </div> : null}
+                                </div>
+                                :
+                                <div>
+                                    Set icon
+                                    {this.getIcon(sym.icons[0].shape, sym.icons[0].fa, '#999999', 'transparent', this.toggleIconSelect.bind(this, 0))}
+
+                                </div>
+                            }
+
+                            <br/>
+                            Change icon colors in the color menu
+                        </div>
+
+                        : null
+                }
+                {sym.symbolType === SymbolTypes.Chart ?
+                    <div>
+                        <label>Select the variables to show</label>
+                        <Select
+                            options={this.props.state.editingLayer.numberHeaders}
+                            multi
+                            onChange={this.onChartFieldsChange}
+                            value={sym.chartFields.slice()}
+                            />
+                        Chart type
+                        <br/>
+                        <label forHTML='pie'>
+                            Pie
+                            <input
+                                type='radio'
+                                onChange={this.onChartTypeChange.bind(this, 'pie')}
+                                checked={sym.chartType === 'pie'}
+                                name='charttype'
+                                id='rect'
+                                />
+                            <br/>
+
+                        </label>
+                        <label forHTML='donut'>
+                            Donut
+                            <input
+                                type='radio'
+                                onChange={this.onChartTypeChange.bind(this, 'donut')}
+                                checked={sym.chartType === 'donut'}
+                                name='charttype'
+                                id='donut'
+                                />
+                            <br/>
+
+                        </label>
+                        <i>TIP: hover over symbol segments to see corresponding value</i>
+                    </div>
+
+                    : null
+                }
+                {sym.symbolType === SymbolTypes.Blocks ?
+                    <div>
+                        <label>Single block value</label>
+                        <input type="number" value={sym.blockValue} onChange={this.onBlockValueChange} min={0}/>
+                    </div>
+                    : null
+
+                }
+                {this.props.state.autoRefresh ? null :
+                    <button className='menuButton' onClick={this.saveOptions}>Refresh map</button>
+                }
+                <Modal
+                    isOpen={state.iconSelectOpen}
+                    style={iconSelectStyle}
+                    >
+                    {state.iconSelectOpen ? <div>
+                        Icon
+                        {this.renderIcons.call(this)}
+                        Or
+                        <br/>
+                        <label>Use another <a href='http://fontawesome.io/icons/'>Font Awesome</a> icon</label>
+                        <input type="text" onChange={this.onFAIconChange} value={sym.icons[state.currentIconIndex].fa}/>
+
+                        <br/>
+                        Icon shape
+                        <br/>
+                        <div
+                            style ={{ display: 'inline-block' }}
+                            onClick={this.onIconShapeChange.bind(this, 'circle')}>
+                            {this.getIcon('circle', '', '#999999', 'transparent', null)}
+                        </div>
+                        <div
+                            style ={{ display: 'inline-block' }}
+                            onClick={this.onIconShapeChange.bind(this, 'square')}>
+                            {this.getIcon('square', '', '#999999', 'transparent', null)}
+                        </div>
+                        <div
+                            style ={{ display: 'inline-block' }}
+                            onClick={this.onIconShapeChange.bind(this, 'star')}>
+                            {this.getIcon('star', '', '#999999', 'transparent', null)}
+                        </div>
+                        <div
+                            style ={{ display: 'inline-block' }}
+                            onClick={this.onIconShapeChange.bind(this, 'penta')}>
+                            {this.getIcon('penta', '', '#999999', 'transparent', null)}
+                        </div>
+                        <br/>
+                        <button
+                            className='primaryButton'
+                            onClick={this.toggleIconSelect.bind(this, state.currentIconIndex)}
+                            style={{ position: 'absolute', left: 80 }}>OK</button>
+                    </div>
+                        : null}
+                </Modal>
+            </div >
         );
 
     }
@@ -486,7 +499,7 @@ export class SymbolMenu extends React.Component<{
                     lineHeight: '30px',
                     textAlign: 'center'
                 }
-                columns.push(<td style={style} key={i + c} className={'symbolIcon fa ' + faIcons[i + c]} onClick={this.onFAIconChange.bind(this, faIcons[i + c]) }/>);
+                columns.push(<td style={style} key={i + c} className={'symbolIcon fa ' + faIcons[i + c]} onClick={this.onFAIconChange.bind(this, faIcons[i + c])}/>);
             }
             return columns;
         }
@@ -495,7 +508,7 @@ export class SymbolMenu extends React.Component<{
                 <tbody>
                     {arr.map(function(td) {
                         return td;
-                    }) }
+                    })}
                 </tbody>
             </table>
         );
@@ -518,19 +531,19 @@ export class SymbolMenu extends React.Component<{
                     <input
                         id={row + 'min'}
                         type='number'
-                        defaultValue={i.toFixed(2) }
+                        defaultValue={i.toFixed(2)}
                         style={{
                             width: 100,
 
                         }}
                         step='any'/>
-                    {this.getIcon(this.props.state.editingLayer.symbolOptions.icons[row].shape, this.props.state.editingLayer.symbolOptions.icons[row].fa, '#999999', 'transparent', this.toggleIconSelect.bind(this, row)) }
+                    {this.getIcon(this.props.state.editingLayer.symbolOptions.icons[row].shape, this.props.state.editingLayer.symbolOptions.icons[row].fa, '#999999', 'transparent', this.toggleIconSelect.bind(this, row))}
                 </li>);
             row++;
         }
 
 
-        return <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r }) }</ul>
+        return <ul id='customSteps' style={{ listStyle: 'none', padding: 0 }}>{rows.map(function(r) { return r })}</ul>
     }
 
 }

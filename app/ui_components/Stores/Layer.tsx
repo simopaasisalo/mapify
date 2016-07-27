@@ -1,6 +1,6 @@
-import {observable, computed} from 'mobx';
-import {LayerTypes, SymbolTypes, GetSymbolSize} from '../common_items/common';
-import {AppState} from './States';
+import { observable, computed } from 'mobx';
+import { LayerTypes, SymbolTypes, GetSymbolSize, GetFillColor } from '../common_items/common';
+import { AppState } from './States';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 let d3 = require('d3');
@@ -11,11 +11,6 @@ let chroma = require('chroma-js');
 
 export class Layer {
 
-    constructor(state: AppState) {
-        this.appState = state;
-        mobx.autorun(() => this.refresh());
-        mobx.autorun(() => this.refreshFilter());
-    }
     /** The unique identification. Is used for example to delete items*/
     id: number;
     /** The name of the layer. Will be shown in the UI*/
@@ -38,10 +33,6 @@ export class Layer {
     layer: any;
     /** The function to run on every feature of the layer. Is used to place pop-ups to map features */
     onEachFeature: (feature: any, layer: L.GeoJSON) => void = addPopupsToLayer;
-    /** The function to convert a geojson point to a layer. Is used in symbol maps ie. to convert a point to a circle marker */
-    pointToLayer: (featureData: any, latlng: L.LatLng) => L.Marker | L.CircleMarker = function(feature, latlng: L.LatLng) {
-        return L.circleMarker(latlng, this.colorOptions)
-    }.bind(this);
     /** The coloring options of the layer. Contains ie. border color and opacity */
     @observable colorOptions: ColorOptions = new ColorOptions();
     /**  The symbol options for symbol layers. Contains ie. symbol type  */
@@ -54,6 +45,12 @@ export class Layer {
     /** Keep the layer from redrawing unnecessarily. For example when a function updates multiple observable fields at once, release the block only after the last one*/
     @observable blockUpdate: boolean = true;
 
+    constructor(state: AppState) {
+        this.appState = state;
+        mobx.autorun(() => this.refresh());
+        mobx.autorun(() => this.refreshFilter());
+    }
+
     refresh() {
         let layer;
         if (this.blockUpdate) return;
@@ -63,24 +60,20 @@ export class Layer {
                     layer = createHeatLayer(this);
             }
             else {
-
-
-
-                this.pointToLayer = pointToLayerFunc.bind(this);
-
-                if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
-                    if (!this.colorOptions.colorField) {
-                        this.colorOptions.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
-                    }
-
-                    if (this.colorOptions.colorField)
-                        getColors(this);
-                }
+                // if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
+                //     if (!this.colorOptions.colorField) {
+                //         this.colorOptions.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+                //     }
+                //
+                //     if (this.colorOptions.colorField)
+                //         getColors(this);
+                // }
                 let geoJSON = JSON.parse(JSON.stringify(this.geoJSON));
-
+                let col: ColorOptions = JSON.parse(JSON.stringify(this.colorOptions));
+                let sym: SymbolOptions = JSON.parse(JSON.stringify(this.symbolOptions));
                 layer = L.geoJson(geoJSON, ({
                     onEachFeature: this.onEachFeature,
-                    pointToLayer: pointToLayerFunc.bind(this, this.colorOptions, this.symbolOptions),
+                    pointToLayer: pointToLayerFunc.bind(this, col, sym),
                 } as any));
             }
 
@@ -98,12 +91,12 @@ export class Layer {
             if (this.layerType === LayerTypes.SymbolMap) {
                 //if needs to scale and is of scalable type
                 if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
-                    getMaxValues(this);
+                    getMaxValues.call(this);
                 }
             }
 
             this.appState.map.fitBounds(this.layerType === LayerTypes.HeatMap ? (this.layer as any)._latlngs : this.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
-            //this.filterUpdatesPending = true;
+            this.filterUpdatesPending = true;
         }
     }
     refreshFilter() {
@@ -122,6 +115,79 @@ export class Layer {
     }
 }
 
+function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng: L.LatLng): L.Marker | L.CircleMarker {
+    if (col.colors && col.limits)
+        col.fillColor = col.colors.slice().length == 0 ? col.fillColor : GetFillColor(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
+    let borderColor = col.color;
+
+    switch (sym.symbolType) {
+        case SymbolTypes.Icon:
+            let icon, shape, val;
+            for (let i = 0; i < sym.iconLimits.slice().length; i++) {
+                if (i !== sym.iconLimits.slice().length - 1) {
+                    val = feature.properties[sym.iconField];
+                    if (sym.iconLimits[i] <= val && val <= sym.iconLimits[i + 1]) {
+                        icon = sym.icons[i].fa;
+                        shape = sym.icons[i].shape;
+                        break;
+                    }
+                }
+                else { //get the last correct symbol
+                    icon = sym.icons[i].fa;
+                    shape = sym.icons[i].shape;
+                }
+            }
+
+            let customIcon = L.ExtraMarkers.icon({
+                icon: icon ? icon : sym.icons[0].fa,
+                prefix: 'fa',
+                markerColor: col.fillColor,
+                svg: true,
+                svgBorderColor: borderColor,
+                svgOpacity: col.fillOpacity,
+                shape: shape ? shape : sym.icons[0].shape,
+                iconColor: col.iconTextColor,
+            });
+            return L.marker(latlng, { icon: customIcon });
+        case SymbolTypes.Rectangle:
+
+            let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+            let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+            let rectHtml = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + col.fillColor + '; border: 1px solid ' + borderColor + '"/>';
+            let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: rectHtml, className: '' });
+            return L.marker(latlng, { icon: rectMarker });
+        case SymbolTypes.Chart:
+            let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
+            let vals = [];
+            let i = 0;
+            sym.chartFields.map(function(e) {
+                if (feature.properties[e.value] > 0)
+                    vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
+                i++;
+            });
+            let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
+            let chartHtml = makePieChart({
+                fullCircle: sym.chartType === 'pie',
+                data: vals,
+                valueFunc: function(d) { return d.val; },
+                strokeWidth: 1,
+                outerRadius: radius,
+                innerRadius: radius / 3,
+                pieClass: function(d) { return d.data.feat },
+                pathFillFunc: function(d) { return d.data.color },
+            });
+            let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: chartHtml, className: '' });
+            return L.marker(latlng, { icon: marker });
+        case SymbolTypes.Blocks:
+            let side = Math.ceil(Math.sqrt(feature.properties[sym.sizeXVar] / sym.blockValue));
+            let blockCount = Math.ceil(feature.properties[sym.sizeXVar] / sym.blockValue);
+            let blockHtml = makeBlockSymbol(side, blockCount, col.fillColor, borderColor);
+            let blockMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: blockHtml, className: '' });
+            return L.marker(latlng, { icon: blockMarker });
+    }
+    return L.circleMarker(latlng, col);
+}
+
 
 function setCircleMarkerRadius(sym: SymbolOptions, layer: any) {
     layer.eachLayer(function(lyr) {
@@ -129,9 +195,10 @@ function setCircleMarkerRadius(sym: SymbolOptions, layer: any) {
     });
 }
 
-function getMaxValues(layer: Layer) {
-    let sym: SymbolOptions = layer.symbolOptions;
-    (layer.layer as any).eachLayer(function(layer) {
+function getMaxValues() {
+    let maxXradius, minXradius, maxYradius, minYradius;
+    let sym: SymbolOptions = this.symbolOptions;
+    (this.layer as any).eachLayer(function(layer) {
         let xVal = layer.feature.properties[sym.sizeXVar];
         let yVal = layer.feature.properties[sym.sizeYVar];
         let r = 10;
@@ -141,20 +208,26 @@ function getMaxValues(layer: Layer) {
             if (!sym.actualMaxXValue && !sym.actualMinXValue) {
                 sym.actualMinXValue = xVal;
                 sym.actualMaxXValue = xVal;
-                sym.actualMaxX = r;
-                sym.actualMinX = r;
-
             }
             else {
                 if (xVal > sym.actualMaxXValue) {
-                    sym.actualMaxX = r;
                     sym.actualMaxXValue = xVal;
                 }
                 else if (xVal < sym.actualMinXValue) {
-                    sym.actualMinX = r;
                     sym.actualMinXValue = xVal;
                 }
-
+            }
+            if (!maxXradius && !minXradius) {
+                maxXradius = r;
+                minXradius = r;
+            }
+            else {
+                if (r > maxXradius) {
+                    maxXradius = r;
+                }
+                else if (r < minXradius) {
+                    minXradius = r;
+                }
             }
         }
         if (sym.sizeYVar) {
@@ -163,23 +236,33 @@ function getMaxValues(layer: Layer) {
             if (!sym.actualMaxYValue && !sym.actualMinYValue) {
                 sym.actualMinYValue = yVal;
                 sym.actualMaxYValue = yVal;
-                sym.actualMaxY = r;
-                sym.actualMinY = r;
-
             }
             else {
                 if (yVal > sym.actualMaxYValue) {
-                    sym.actualMaxY = r;
                     sym.actualMaxYValue = yVal;
                 }
-                if (yVal < sym.actualMinY) {
-                    sym.actualMinY = r;
+                else if (yVal < sym.actualMinYValue) {
                     sym.actualMinYValue = yVal;
                 }
-
+            }
+            if (!maxYradius && !minYradius) {
+                maxYradius = r;
+                minYradius = r;
+            }
+            else {
+                if (r > maxYradius) {
+                    maxYradius = r;
+                }
+                else if (r < minYradius) {
+                    minYradius = r;
+                }
             }
         }
     });
+    sym.actualMinXRadius = minXradius;
+    sym.actualMaxXRadius = maxXradius;
+    sym.actualMinYRadius = minYradius;
+    sym.actualMaxYRadius = maxYradius;
 }
 
 function makePieChart(options) {
@@ -191,8 +274,8 @@ function makePieChart(options) {
         r = options.outerRadius ? options.outerRadius : 28,
         rInner = options.innerRadius ? options.innerRadius : r - 10,
         strokeWidth = options.strokeWidth ? options.strokeWidth : 1,
-        pathTitleFunc = options.pathTitleFunc ? options.pathTitleFunc : function(d) { return d.data.feat + ': ' + d.data.val }, //Title for each path
-        pieLabel = options.pieLabel ? options.pieLabel : '', //Label for the whole pie
+        pathTitleFunc = options.pathTitleFunc ? options.pathTitleFunc : function(d) { return d.data.feat.label + ': ' + d.data.val }, //Title for each path
+        pieLabel = options.pieLabel ? options.pieLabel : 'asd', //Label for the whole pie
         pathFillFunc = options.pathFillFunc,
 
         origo = (r + strokeWidth), //Center coordinate
@@ -279,7 +362,7 @@ function makeBlockSymbol(sideLength: number, blockAmount: number, fillColor: str
             <tbody>
                 {arr.map(function(td) {
                     return td;
-                }) }
+                })}
             </tbody>
         </table>;
     return reactDOMServer.renderToString(table);
@@ -306,8 +389,6 @@ function createHeatLayer(layerData: Layer) {
 
 /**
  * getColors - calculates the color values based on a field name
- *
- *
  * @param  layerData    the data containing the GeoJSON string and the color variable
  */
 function getColors(layer: Layer) {
@@ -324,89 +405,8 @@ function getColors(layer: Layer) {
 }
 
 
-function getChoroplethColor(limits: any[], colors: string[], value: number) {
 
-    if (!isNaN(value)) {
-        for (var i = 0; i < limits.length; i++) {
-            if (i < limits.length - 1) {
-                if (limits[i] <= value && value <= limits[i + 1]) {
-                    return colors[i];
-                }
-            }
-            else { //color the last item correctly
-                return colors[colors.length - 1]
-            }
-        }
-    }
-}
 
-function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng: L.LatLng): L.Marker | L.CircleMarker {
-    if (col.colors && col.limits)
-        col.fillColor = col.colors.slice().length == 0 ? col.fillColor : getChoroplethColor(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
-    let borderColor = col.color;
-
-    switch (sym.symbolType) {
-        case SymbolTypes.Icon:
-            let icon, shape, val;
-            for (let i in sym.iconLimits.slice()) {
-                if (+i !== sym.iconLimits.slice().length - 1) {
-                    val = feature.properties[sym.iconField];
-                    if (val < sym.iconLimits[i]) {
-                        icon = sym.icons[i].fa;
-                        shape = sym.icons[i].shape;
-                        break;
-                    }
-                }
-            }
-            let customIcon = L.ExtraMarkers.icon({
-                icon: icon ? icon : sym.icons[0].fa,
-                prefix: 'fa',
-                markerColor: col.fillColor,
-                svg: true,
-                svgBorderColor: borderColor,
-                svgOpacity: col.fillOpacity,
-                shape: shape ? shape : sym.icons[0].shape,
-                iconColor: col.iconTextColor,
-            });
-            return L.marker(latlng, { icon: customIcon });
-        case SymbolTypes.Rectangle:
-
-            let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
-            let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
-            let rectHtml = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + col.fillColor + '; border: 1px solid ' + borderColor + '"/>';
-            let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: rectHtml, className: '' });
-            return L.marker(latlng, { icon: rectMarker });
-        case SymbolTypes.Chart:
-            let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
-            let vals = [];
-            let i = 0;
-            sym.chartFields.map(function(e) {
-                if (feature.properties[e.value] > 0)
-                    vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
-                i++;
-            });
-            let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
-            let chartHtml = makePieChart({
-                fullCircle: sym.chartType === 'pie',
-                data: vals,
-                valueFunc: function(d) { return d.val; },
-                strokeWidth: 1,
-                outerRadius: radius,
-                innerRadius: radius / 3,
-                pieClass: function(d) { return d.data.feat },
-                pathFillFunc: function(d) { return d.data.color },
-            });
-            let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: chartHtml, className: '' });
-            return L.marker(latlng, { icon: marker });
-        case SymbolTypes.Blocks:
-            let side = Math.ceil(Math.sqrt(feature.properties[sym.sizeXVar] / sym.blockValue));
-            let blockCount = Math.ceil(feature.properties[sym.sizeXVar] / sym.blockValue);
-            let blockHtml = makeBlockSymbol(side, blockCount, col.fillColor, borderColor);
-            let blockMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: blockHtml, className: '' });
-            return L.marker(latlng, { icon: blockMarker });
-    }
-    return L.circleMarker(latlng, col);
-}
 
 /**
  * addPopupsToLayer - adds the feature details popup to layer
@@ -459,9 +459,15 @@ export class ColorOptions implements L.PathOptions {
 
 export class SymbolOptions {
     /** The type of the symbol. Default circle*/
-    @observable symbolType: SymbolTypes = SymbolTypes.Circle;
+    @observable symbolType: SymbolTypes;
+    /** Use steps to define different icons*/
+    @observable useMultipleIcons: boolean;
     /** The list of icons to use. Default: one IIcon with shape='circle' and fa='anchor'*/
-    @observable icons: IIcon[] = [{ shape: 'circle', fa: 'fa-anchor' }];
+    @observable icons: IIcon[];
+
+    @computed get iconCount() {
+        return this.icons.slice().length;
+    }
 
     /** Name of the field by which to calculate icon values*/
     @observable iconField: string;
@@ -472,11 +478,11 @@ export class SymbolOptions {
     /** The name of the field to scale size y-axis by*/
     @observable sizeYVar: string;
     /** The minimum allowed size when scaling*/
-    @observable sizeLowLimit: number;
+    @observable sizeLowLimit: number = 0;
     /** The maximum allowed size when scaling*/
-    @observable sizeUpLimit: number;
+    @observable sizeUpLimit: number = 50;
     /** The multiplier to scale the value by*/
-    @observable sizeMultiplier: number;
+    @observable sizeMultiplier: number = 1;
     /** Currently selected chart fields*/
     @observable chartFields: IHeader[] = [];
     /** The type of chart to draw*/
@@ -488,15 +494,40 @@ export class SymbolOptions {
     /** If symbol is of scalable type; the minimum of all the y-values being calculated. Is used in the legend */
     @observable actualMinYValue: number;
     /** If symbol is of scalable type; the minimum of all the x(pixels) being calculated. Is used in the legend */
-    @observable actualMinX: number;
+    @observable actualMinXRadius: number;
     /** If symbol is of scalable type; the minimum of all the y(pixels) being calculated. Is used in the legend */
-    @observable actualMinY: number;
+    @observable actualMinYRadius: number;
     /** If symbol is of scalable type; the maximum of all the x-values being calculated. Is used in the legend */
     @observable actualMaxXValue: number;
     /** If symbol is of scalable type; the maximum of all the y-values being calculated. Is used in the legend */
     @observable actualMaxYValue: number;
     /** If symbol is of scalable type; the maximum of all the x being calculated. Is used in the legend */
-    @observable actualMaxX: number;
+    @observable actualMaxXRadius: number;
     /** If symbol is of scalable type; the maximum of all the y being calculated. Is used in the legend */
-    @observable actualMaxY: number;
+    @observable actualMaxYRadius: number;
+
+    constructor(prev?: SymbolOptions) {
+
+        this.symbolType = prev && prev.symbolType || SymbolTypes.Circle;
+        this.useMultipleIcons = prev && prev.useMultipleIcons || false;
+        this.icons = prev && prev.icons || [{ shape: 'circle', fa: 'fa-anchor' }];
+        this.iconField = prev && prev.iconField || undefined;
+        this.iconLimits = prev && prev.iconLimits || [];
+        this.sizeXVar = prev && prev.sizeXVar || undefined;
+        this.sizeYVar = prev && prev.sizeYVar || undefined;
+        this.sizeLowLimit = prev && prev.sizeLowLimit || 0;
+        this.sizeUpLimit = prev && prev.sizeUpLimit || 50;
+        this.sizeMultiplier = prev && prev.sizeMultiplier || 1;
+        this.chartFields = prev && prev.chartFields || [];
+        this.chartType = prev && prev.chartType || 'pie';
+        this.blockValue = prev && prev.blockValue || 1;
+        this.actualMinYValue = prev && prev.actualMinYValue || undefined;
+        this.actualMaxYValue = prev && prev.actualMaxYValue || undefined;
+        this.actualMinXValue = prev && prev.actualMinXValue || undefined;
+        this.actualMaxXValue = prev && prev.actualMaxXValue || undefined;
+        this.actualMinYRadius = prev && prev.actualMinYRadius || undefined;
+        this.actualMaxYRadius = prev && prev.actualMaxYRadius || undefined;
+        this.actualMinXRadius = prev && prev.actualMinXRadius || undefined;
+        this.actualMaxXRadius = prev && prev.actualMaxXRadius || undefined;
+    }
 }
