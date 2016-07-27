@@ -160,7 +160,6 @@ export class MapifyMenu extends React.Component<{
                             style={{ backgroundColor: this.props.state.visibleMenu === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
                         <ColorMenu
                             state = {this.props.state}
-                            saveValues = {this.refreshMap }
                             />
                     </Menu.Item>
                     : <div/>
