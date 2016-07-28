@@ -1,5 +1,5 @@
 import { observable, computed } from 'mobx';
-import { LayerTypes, SymbolTypes, GetSymbolSize, GetFillColor } from '../common_items/common';
+import { LayerTypes, SymbolTypes, GetSymbolSize, GetItemBetweenLimits } from '../common_items/common';
 import { AppState } from './States';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -45,12 +45,15 @@ export class Layer {
     /** Keep the layer from redrawing unnecessarily. For example when a function updates multiple observable fields at once, release the block only after the last one*/
     @observable blockUpdate: boolean = true;
 
+    values: { [field: string]: any[]; } = undefined;
+
     constructor(state: AppState) {
         this.appState = state;
         mobx.autorun(() => this.refresh());
         mobx.autorun(() => this.refreshFilter());
     }
 
+    /** Update layer based on changed options and properties. */
     refresh() {
         let layer;
         if (this.blockUpdate) return;
@@ -60,20 +63,32 @@ export class Layer {
                     layer = createHeatLayer(this);
             }
             else {
-                // if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
-                //     if (!this.colorOptions.colorField) {
-                //         this.colorOptions.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
-                //     }
-                //
-                //     if (this.colorOptions.colorField)
-                //         getColors(this);
-                // }
+                if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
+                    if (!this.colorOptions.colorField) {
+                        this.colorOptions.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+                    }
+
+                    if (this.colorOptions.colorField)
+                        getColors(this);
+                }
+                let style = function(opts: ColorOptions, feature) {
+
+                    return {
+                        fillOpacity: opts.fillOpacity,
+                        opacity: opts.opacity,
+                        fillColor: col.colors.slice().length == 0 ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]),
+                        color: opts.color,
+                        weight: 1,
+                    }
+                }
+
                 let geoJSON = JSON.parse(JSON.stringify(this.geoJSON));
                 let col: ColorOptions = JSON.parse(JSON.stringify(this.colorOptions));
                 let sym: SymbolOptions = JSON.parse(JSON.stringify(this.symbolOptions));
                 layer = L.geoJson(geoJSON, ({
                     onEachFeature: this.onEachFeature,
                     pointToLayer: pointToLayerFunc.bind(this, col, sym),
+                    style: style.bind(this, col),
                 } as any));
             }
 
@@ -87,7 +102,10 @@ export class Layer {
             if (this.layer)
                 this.appState.map.removeLayer(this.layer)
             this.layer = layer;
-
+            if (!this.values) {
+                this.values = {};
+                getValues(this)
+            }
             if (this.layerType === LayerTypes.SymbolMap) {
                 //if needs to scale and is of scalable type
                 if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
@@ -115,9 +133,10 @@ export class Layer {
     }
 }
 
+/** Function to run on every point-type data to visualize it according to the settings*/
 function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng: L.LatLng): L.Marker | L.CircleMarker {
     if (col.colors && col.limits)
-        col.fillColor = col.colors.slice().length == 0 ? col.fillColor : GetFillColor(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
+        col.fillColor = col.colors.slice().length == 0 ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
     let borderColor = col.color;
 
     switch (sym.symbolType) {
@@ -193,6 +212,26 @@ function setCircleMarkerRadius(sym: SymbolOptions, layer: any) {
     layer.eachLayer(function(lyr) {
         lyr.setRadius(GetSymbolSize(lyr.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
     });
+}
+
+/** Get feature values in their own dictionary to reduce the amount of common calculations*/
+function getValues(layer: Layer) {
+    layer.geoJSON.features.map(function(feat) {
+        for (let i in feat.properties) {
+            if (!layer.values[i])
+                layer.values[i] = [];
+
+            layer.values[i].push(feat.properties[i]);
+
+        }
+    });
+
+    for (let i in layer.headers) {
+        let header = layer.headers[i].label;
+        if (layer.values[header]) {
+            layer.values[header].sort(function(a, b) { return a - b })
+        }
+    }
 }
 
 function getMaxValues() {
@@ -275,7 +314,7 @@ function makePieChart(options) {
         rInner = options.innerRadius ? options.innerRadius : r - 10,
         strokeWidth = options.strokeWidth ? options.strokeWidth : 1,
         pathTitleFunc = options.pathTitleFunc ? options.pathTitleFunc : function(d) { return d.data.feat.label + ': ' + d.data.val }, //Title for each path
-        pieLabel = options.pieLabel ? options.pieLabel : 'asd', //Label for the whole pie
+        pieLabel = options.pieLabel ? options.pieLabel : '', //Label for the whole pie
         pathFillFunc = options.pathFillFunc,
 
         origo = (r + strokeWidth), //Center coordinate
@@ -386,6 +425,37 @@ function createHeatLayer(layerData: Layer) {
     }
     return L.heatLayer(arr, { relative: true })
 }
+
+// function createChoroplethLayer(layer: Layer) {
+//     let opts = layer.colorOptions;
+//
+//     let values = (layer.geoJSON as any).features.map(function(item) {
+//         return item.properties[opts.colorField];
+//     });
+//
+//     if (!opts.limits || opts.limits.length == 0)
+//         opts.limits = chroma.limits(values, opts.mode, opts.steps);
+//     if (!opts.colors || opts.colors.length == 0)
+//         opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
+//     let style = function(feature) {
+//
+//         return {
+//             fillOpacity: opts.fillOpacity,
+//             opacity: opts.opacity,
+//             fillColor: GetFillColor(opts.limits, opts.colors, feature.properties[opts.colorField]),
+//             color: opts.color,
+//             weight: 1,
+//         }
+//     }
+//
+//     let options: L.GeoJSONOptions = {
+//         pointToLayer: layer.pointToLayer.bind(this),
+//         onEachFeature: layer.onEachFeature,
+//         style: style.bind(this),
+//     }
+//
+//     return L.geoJson(layer.geoJSON, options);
+// }
 
 /**
  * getColors - calculates the color values based on a field name

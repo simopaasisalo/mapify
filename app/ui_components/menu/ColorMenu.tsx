@@ -6,7 +6,7 @@ let Modal = require('react-modal');
 let chroma = require('chroma-js');
 import { AppState } from '../Stores/States';
 import { Layer, ColorOptions } from '../Stores/Layer';
-import { LayerTypes, SymbolTypes } from "../common_items/common";
+import { LayerTypes, SymbolTypes, CalculateLimits } from "../common_items/common";
 import { observer } from 'mobx-react';
 
 @observer
@@ -87,6 +87,46 @@ export class ColorMenu extends React.Component<{
         this.calculateValues();
         this.props.state.editingLayer.blockUpdate = false;
     }
+
+    onCustomLimitChange = (step: number, e) => {
+        let layer = this.props.state.editingLayer;
+        let limits = layer.colorOptions.limits;
+        let val = e.currentTarget.valueAsNumber;
+        layer.blockUpdate = true;
+        if (limits[step + 1] && limits[step + 1] <= val) { //if collides with the next limit
+            limits = this.increaseLimitStep(limits, val, step);
+        }
+        else if (limits[step - 1] && limits[step - 1] >= val) { //if collides with the previous limit
+            limits = this.decreaseLimitStep(limits, val, step);
+        }
+        else {
+            limits[step] = val;
+        }
+
+        layer.blockUpdate = false;
+
+    }
+
+    increaseLimitStep(limits: number[], val: number, step: number) {
+        limits[step] = val;
+        if (step < limits.length - 1 && limits[step + 1] <= val) {
+            return this.increaseLimitStep(limits, val + 1, step + 1)
+        }
+        else {
+            return limits;
+        }
+    }
+
+    decreaseLimitStep(limits: number[], val: number, step: number) {
+        limits[step] = val;
+        if (step > 0 && limits[step - 1] >= val) {
+
+            return this.decreaseLimitStep(limits, val - 1, step - 1)
+        }
+        else {
+            return limits;
+        }
+    }
     toggleColorPick = (property: string) => {
         this.props.state.colorMenuState.colorSelectOpen = this.props.state.colorMenuState.editing !== property ? true : !this.props.state.colorMenuState.colorSelectOpen;
         this.props.state.colorMenuState.editing = property;
@@ -95,16 +135,20 @@ export class ColorMenu extends React.Component<{
         return <ColorScheme gradientName={option.value} revert={this.props.state.editingLayer.colorOptions.revert}/>;
     }
 
+
+
     /**
      * calculateValues - Performs the chroma-js calculation to get colors and steps
      */
     calculateValues = () => {
         let lyr: Layer = this.props.state.editingLayer;
         let choroField: string = lyr.colorOptions.colorField;
-        let values = (lyr.geoJSON as any).features.map(function(feat) {
-            return feat.properties[choroField];
-        });
-        let limits: number[] = chroma.limits(values, lyr.colorOptions.mode, lyr.colorOptions.steps);
+        let limits: number[] = !lyr.colorOptions.useCustomScheme ?
+            chroma.limits(lyr.values[choroField], lyr.colorOptions.mode, lyr.colorOptions.steps) :
+            CalculateLimits(lyr.values[choroField][0], lyr.values[choroField][lyr.values[choroField].length - 1], lyr.colorOptions.steps);
+        for (let i in limits) {
+            limits[i] = Math.round(limits[i]); //TODO: layer-specific accuracy on decimals. For example two decimal accuracy:  * 100) / 100
+        }
         let colors: string[];
         if (!lyr.colorOptions.useCustomScheme) {
             colors = chroma.scale(lyr.colorOptions.colorScheme).colors(limits.length - 1);
@@ -161,7 +205,6 @@ export class ColorMenu extends React.Component<{
         for (let i in this.props.state.editingLayer.colorOptions.limits.slice()) {
             if (+i !== this.props.state.editingLayer.colorOptions.limits.length - 1) {
                 let step: number = this.props.state.editingLayer.colorOptions.limits[i];
-
                 steps.push(step);
             }
         }
@@ -175,10 +218,10 @@ export class ColorMenu extends React.Component<{
                     <input
                         id={row + 'min'}
                         type='number'
-                        defaultValue={i.toFixed(2)}
+                        value={this.props.state.editingLayer.colorOptions.limits[row]}
+                        onChange={this.onCustomLimitChange.bind(this, row)}
                         style={{
                             width: 100,
-
                         }}
                         onClick={function(e) { e.stopPropagation(); } }
                         step='any'/>

@@ -37,25 +37,40 @@ function GetSymbolSize(val: number, sizeMultiplier: number, minSize: number, max
 
 }
 
-function GetFillColor(limits: any[], colors: string[], value: number) {
+
+
+/** Calculate a set of limits between a minimum and maximum values*/
+function CalculateLimits(min: number, max: number, count: number) {
+    let limits: number[] = [];
+    for (let i = min; i < max; i += (max - min) / count) {
+        limits.push(i);
+    }
+    limits.push(max)
+    return limits;
+}
+
+function GetItemBetweenLimits(limits: any[], items: any[], value: number) {
 
     if (!isNaN(value)) {
-        for (let i = 0; i < limits.length; i++) {
+        if (limits.length > 0)
+            for (let i = 0; i < limits.length; i++) {
 
-            if (i < limits.length - 1) {
-                let lowerLimit = Math.round(limits[i] * 100) / 100;
-                let upperLimit = Math.round(limits[i + 1] * 100) / 100;
-                let val = Math.round(value * 100) / 100;
-
-                if (lowerLimit <= val && val <= upperLimit) {
-                    return colors[i];
+                if (i < limits.length - 1) {
+                    let lowerLimit = limits[i];
+                    let upperLimit = limits[i + 1];
+                    if (lowerLimit <= value && value <= upperLimit) {
+                        return items[i];
+                    }
+                }
+                else {
+                    return items[items.length - 1]
                 }
             }
-            else { //color the last item correctly
-                return colors[colors.length - 1]
-            }
+        else {
+            return items[0];
         }
     }
 }
 
-export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, GetFillColor }
+
+export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, CalculateLimits, GetItemBetweenLimits }

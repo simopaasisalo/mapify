@@ -1,6 +1,6 @@
 import * as React from 'react';
 let Draggable = require('react-draggable');
-import { SymbolTypes, GetFillColor } from '../common_items/common';
+import { SymbolTypes, GetItemBetweenLimits } from '../common_items/common';
 import { AppState } from '../Stores/States';
 import { Layer, SymbolOptions } from '../Stores/Layer';
 import { TextEditor } from './TextEditor';
@@ -15,7 +15,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         let options = layer;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
-        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField || sym.iconLimits.length !== col.limits.length)) {
+        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
             let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.colorField, col.limits) : {};
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
@@ -261,16 +261,19 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
 
     createIconLegend(layer: Layer, percentages, layerName: string) {
         let divs = [];
-        let limits = layer.symbolOptions.iconLimits;
+        let limits = layer.symbolOptions.iconCount > 1 ? this.combineLimits(layer) : layer.symbolOptions.iconLimits.slice();
         let icons: IIcon[] = layer.symbolOptions.icons;
         let col = layer.colorOptions;
+        let sym = layer.symbolOptions;
         if (limits && limits.length > 0) {
             for (let i = 0; i < limits.length - 1; i++) {
-                let fillColor: string = col.colorField === layer.symbolOptions.iconField && col.limits.length === limits.length ?
-                    GetFillColor(col.limits.slice(), col.colors.slice(), (limits[i] + limits[i + 1]) / 2) //if can be fitted into the same legend, show colors and symbols together. Get fill color by average of icon limits
+                let fillColor: string = col.colorField === layer.symbolOptions.iconField ?
+                    GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), (limits[i] + limits[i + 1]) / 2) //if can be fitted into the same legend, show colors and symbols together. Get fill color by average of icon limits
                     : '000';
+                let icon = GetItemBetweenLimits(sym.iconLimits.slice(), sym.icons.slice(), (limits[i] + limits[i + 1]) / 2);
+
                 divs.push(<div key={i} style={{ display: this.props.state.legend.horizontal ? 'initial' : 'flex' }}>
-                    {getIcon(icons[i].shape, icons[i].fa, col.color, fillColor, fillColor != '000' ? layer.colorOptions.iconTextColor : 'FFF')}
+                    {getIcon(icon.shape, icon.fa, col.color, fillColor, fillColor != '000' ? layer.colorOptions.iconTextColor : 'FFF')}
                     <span style={{ marginLeft: '3px', marginRight: '3px' }}>
                         {limits[i].toFixed(0) + '-'} {this.props.state.legend.horizontal ? <br/> : ''} {limits[i + 1].toFixed(0)}
                         {this.props.state.legend.showPercentages ? <br/> : null}
@@ -400,6 +403,12 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             counts[i] = +(counts[i] / totalCount * 100).toFixed(2);
         }
         return counts;
+    }
+
+    combineLimits(layer: Layer) {
+        return layer.symbolOptions.iconLimits.concat(layer.colorOptions.limits.filter(function(item) {
+            return layer.symbolOptions.iconLimits.indexOf(item) < 0;
+        })).sort(function(a, b) { return a - b });
     }
 
 }

@@ -1,16 +1,16 @@
 import * as React from 'react';
-import {LayerMenu} from './LayerMenu';
-import {ColorMenu} from './ColorMenu';
-import {SymbolMenu} from './SymbolMenu';
-import {FilterMenu} from './FilterMenu';
-import {LegendMenu} from './LegendMenu';
-import {PopUpMenu} from './PopUpMenu';
-import {ExportMenu} from './ExportMenu';
-import {LayerTypes, SymbolTypes} from '../common_items/common';
-import {AppState} from '../Stores/States';
-import {Layer, ColorOptions, SymbolOptions} from '../Stores/Layer';
-import {Legend} from '../Stores/Legend';
-import {observer} from 'mobx-react';
+import { LayerMenu } from './LayerMenu';
+import { ColorMenu } from './ColorMenu';
+import { SymbolMenu } from './SymbolMenu';
+import { FilterMenu } from './FilterMenu';
+import { LegendMenu } from './LegendMenu';
+import { PopUpMenu } from './PopUpMenu';
+import { ExportMenu } from './ExportMenu';
+import { LayerTypes, SymbolTypes } from '../common_items/common';
+import { AppState } from '../Stores/States';
+import { Layer, ColorOptions, SymbolOptions } from '../Stores/Layer';
+import { Legend } from '../Stores/Legend';
+import { observer } from 'mobx-react';
 
 let Select = require('react-select');
 let Menu = require('impromptu-react-sidemenu');
@@ -135,19 +135,19 @@ export class MapifyMenu extends React.Component<{
                 <Menu.Item style={{ backgroundColor: this.props.state.visibleMenu === 1 ? '#1a263f' : '#293c60' }}>
                     <p
                         className="menuHeader fa fa-bars"
-                        onClick = {this.onActiveMenuChange.bind(this, 1) }
+                        onClick = {this.onActiveMenuChange.bind(this, 1)}
                         > Layers </p>
                     <LayerMenu
                         state={this.props.state}
-                        saveOrder={this.onLayerOrderChange }
-                        addNewLayer = {this.addNewLayer }
-                        deleteLayer = {this.deleteLayer }
+                        saveOrder={this.onLayerOrderChange}
+                        addNewLayer = {this.addNewLayer}
+                        deleteLayer = {this.deleteLayer}
                         />
 
                 </Menu.Item>
                 <Select
                     options={layers}
-                    onChange = {this.onLayerSelectionChange }
+                    onChange = {this.onLayerSelectionChange}
                     value = {this.props.state.editingLayer}
                     valueRenderer = {this.showLayerNameOnMenu}
                     clearable={false}
@@ -156,7 +156,7 @@ export class MapifyMenu extends React.Component<{
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-paint-brush"
-                            onClick = {this.onActiveMenuChange.bind(this, 2) }
+                            onClick = {this.onActiveMenuChange.bind(this, 2)}
                             style={{ backgroundColor: this.props.state.visibleMenu === 2 ? '#1a263f' : '#293c60' }}> Colors </p>
                         <ColorMenu
                             state = {this.props.state}
@@ -168,11 +168,11 @@ export class MapifyMenu extends React.Component<{
                     <Menu.Item >
                         <p
                             className="menuHeader fa fa-map-marker"
-                            onClick = {this.onActiveMenuChange.bind(this, 3) }
+                            onClick = {this.onActiveMenuChange.bind(this, 3)}
                             style={{ backgroundColor: this.props.state.visibleMenu === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
                         <SymbolMenu
                             state = {this.props.state}
-                            saveValues = {this.refreshMap }
+                            saveValues = {this.refreshMap}
 
                             />
                     </Menu.Item>
@@ -181,18 +181,18 @@ export class MapifyMenu extends React.Component<{
                 < Menu.Item >
                     <p
                         className="menuHeader fa fa-sliders"
-                        onClick = {this.onActiveMenuChange.bind(this, 4) }
+                        onClick = {this.onActiveMenuChange.bind(this, 4)}
                         style={{ backgroundColor: this.props.state.visibleMenu === 4 ? '#1a263f' : '#293c60' }}> Filters </p>
 
                     <FilterMenu
                         state={this.props.state}
-                        deleteFilter={this.deleteFilter }
+                        deleteFilter={this.deleteFilter}
                         />
                 </Menu.Item>
                 <Menu.Item>
                     <p
                         className="menuHeader fa fa-map-o"
-                        onClick = {this.onActiveMenuChange.bind(this, 5) }
+                        onClick = {this.onActiveMenuChange.bind(this, 5)}
                         style={{ backgroundColor: this.props.state.visibleMenu === 5 ? '#1a263f' : '#293c60' }}> Legend </p>
                     <LegendMenu
                         state = {this.props.state}
@@ -204,7 +204,7 @@ export class MapifyMenu extends React.Component<{
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-newspaper-o"
-                            onClick = {this.onActiveMenuChange.bind(this, 6) }
+                            onClick = {this.onActiveMenuChange.bind(this, 6)}
                             style={{ backgroundColor: this.props.state.visibleMenu === 6 ? '#1a263f' : '#293c60' }}> Pop-ups </p>
                         <PopUpMenu
                             state = {this.props.state}
@@ -216,12 +216,12 @@ export class MapifyMenu extends React.Component<{
                 <Menu.Item>
                     <p
                         className="menuHeader fa fa-download"
-                        onClick = {this.onActiveMenuChange.bind(this, 7) }
+                        onClick = {this.onActiveMenuChange.bind(this, 7)}
                         style={{ backgroundColor: this.props.state.visibleMenu === 7 ? '#1a263f' : '#293c60' }}> Export map </p>
                     <ExportMenu
                         state={this.props.state}
-                        saveImage = {this.saveImage }
-                        saveFile = {this.saveFile }
+                        saveImage = {this.saveImage}
+                        saveFile = {this.saveFile}
                         />
                 </Menu.Item>
             </Menu.Menu >

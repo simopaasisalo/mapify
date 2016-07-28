@@ -1,7 +1,7 @@
 import * as React from 'react';
 let Modal = require('react-modal');
 let Select = require('react-select');
-import { SymbolTypes } from './../common_items/common';
+import { SymbolTypes, CalculateLimits } from './../common_items/common';
 import { AppState, SymbolMenuState } from '../Stores/States';
 import { Layer, SymbolOptions } from '../Stores/Layer';
 import { observer } from 'mobx-react';
@@ -9,13 +9,9 @@ import { observer } from 'mobx-react';
 @observer
 export class SymbolMenu extends React.Component<{
     state: AppState,
-    saveValues: () => void,
+    saveValues: () => void
 }, {}>{
 
-    componentWillUpdate() {
-        if (this.props.state.autoRefresh)
-            this.props.saveValues();
-    }
     onTypeChange = (type: SymbolTypes) => {
         let layer: Layer = this.props.state.editingLayer;
         layer.blockUpdate = true;
@@ -103,23 +99,54 @@ export class SymbolMenu extends React.Component<{
         this.props.state.editingLayer.blockUpdate = false;
 
     }
-    changeIconStepsCount = (amount: number) => {
+    onIconStepCountChange = (amount: number) => {
         let layer = this.props.state.editingLayer;
         layer.blockUpdate = true;
 
         if (amount == 1) {
             layer.symbolOptions.icons.push({ shape: 'circle', fa: faIcons[Math.floor(Math.random() * faIcons.length)] }); //add random icon
         }
-        else if (amount == -1) {
+        else if (amount == -1 && layer.symbolOptions.iconCount > 1) {
             layer.symbolOptions.icons.pop();
         }
-        let count = layer.symbolOptions.iconCount;
-        if (count > 0) {
-            this.calculateIconValues(layer.symbolOptions.iconField, count)
+        if (layer.symbolOptions.iconCount > 0) {
+            this.calculateIconValues(layer.symbolOptions.iconField, layer.symbolOptions.iconCount)
         }
         layer.blockUpdate = false;
 
     }
+
+    onStepLimitChange = (step: number, e) => {
+        let layer = this.props.state.editingLayer;
+        let limits = layer.symbolOptions.iconLimits;
+        let val = e.currentTarget.valueAsNumber;
+        layer.blockUpdate = true;
+        if (limits[step + 1] && limits[step + 1] <= val) { //if collides with the next limit
+            let index = step + 1;
+            while (index < limits.length) { //keep increasing limits by one until a free amount is found. NOTE: This will cause some funky effects if the actual limits are something like 0.5, 0.6, 0.7...
+                limits[index]++;
+                if (limits[index + 1] && limits[index + 1] <= limits[index])
+                    index++;
+                else
+                    break;
+            }
+        }
+        else if (limits[step - 1] && limits[step - 1] >= val) { //if collides with the previous limit
+            let index = step - 1;
+            while (true) { //keep increasing limits by one until a free amount is found. NOTE: This will cause some funky effects if the actual limits are something like 0.5, 0.6, 0.7...
+                limits[index]--;
+                if (limits[index - 1] && limits[index - 1] >= limits[index])
+                    index--;
+                else
+                    break;
+            }
+        }
+        layer.symbolOptions.iconLimits[step] = val;
+
+        layer.blockUpdate = false;
+
+    }
+
     saveOptions = () => {
         this.props.saveValues();
     }
@@ -181,33 +208,8 @@ export class SymbolMenu extends React.Component<{
 
     }
     calculateIconValues(fieldName: string, steps: number) {
-
-        let max, min;
-        let sym: SymbolOptions = this.props.state.editingLayer.symbolOptions;
-        let values = (this.props.state.editingLayer.geoJSON as any).features.map(function(feat) {
-            let val = feat.properties[fieldName];
-
-            if (!max && !min) {
-                max = val;
-                min = val;
-            }
-            else if (val > max)
-                max = val;
-            else if (val < min)
-                min = val;
-            return val;
-        });
-        let index = 0;
-        sym.iconLimits.splice(0, sym.iconLimits.length)
-
-        for (let i = min; i < max; i += (max - min) / steps) {
-            sym.iconLimits.push(i);
-            if (!sym.icons[index]) {
-                sym.icons.push({ fa: 'fa-anchor', shape: 'circle' })
-            }
-            index++;
-        }
-        sym.iconLimits.push(max)
+        let values = this.props.state.editingLayer.values;
+        this.props.state.editingLayer.symbolOptions.iconLimits = CalculateLimits(values[fieldName][0], values[fieldName][values[fieldName].length - 1], steps); //get limits by min and max value
     }
 
     render() {
@@ -355,8 +357,8 @@ export class SymbolMenu extends React.Component<{
                                     {sym.iconField ?
                                         <div>Set the <i>lower limit</i> and icon
                                             <br/>
-                                            <button onClick={this.changeIconStepsCount.bind(this, -1)}>-</button>
-                                            <button onClick={this.changeIconStepsCount.bind(this, 1)}>+</button>
+                                            <button onClick={this.onIconStepCountChange.bind(this, -1)}>-</button>
+                                            <button onClick={this.onIconStepCountChange.bind(this, 1)}>+</button>
                                             {this.renderSteps.call(this)}
                                         </div> : null}
                                 </div>
@@ -536,6 +538,7 @@ export class SymbolMenu extends React.Component<{
                             width: 100,
 
                         }}
+                        onChange={this.onStepLimitChange.bind(this, row)}
                         step='any'/>
                     {this.getIcon(this.props.state.editingLayer.symbolOptions.icons[row].shape, this.props.state.editingLayer.symbolOptions.icons[row].fa, '#999999', 'transparent', this.toggleIconSelect.bind(this, row))}
                 </li>);
