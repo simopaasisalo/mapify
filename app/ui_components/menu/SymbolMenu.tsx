@@ -20,11 +20,14 @@ export class SymbolMenu extends React.Component<{
         sym.symbolType = type;
         sym.sizeXVar = sym.sizeXVar ? sym.sizeXVar : layer.numberHeaders[0] ? layer.numberHeaders[0].label : undefined;
         sym.iconField = sym.iconField ? sym.iconField : layer.numberHeaders[0] ? layer.numberHeaders[0].label : undefined;
-        sym.chartFields = sym.chartFields.length > 0 ? sym.chartFields : layer.numberHeaders;
+        if (type === SymbolTypes.Chart && sym.chartFields.length == 0) {
+            this.onChartFieldsChange(layer.numberHeaders);
+        }
         layer.blockUpdate = false;
 
 
     }
+
     onXVariableChange = (val) => {
         let sym = this.props.state.editingLayer.symbolOptions;
         this.props.state.editingLayer.blockUpdate = true;
@@ -33,6 +36,7 @@ export class SymbolMenu extends React.Component<{
         this.props.state.editingLayer.blockUpdate = false;
 
     }
+
     onYVariableChange = (val) => {
         let sym = this.props.state.editingLayer.symbolOptions;
         this.props.state.editingLayer.blockUpdate = true;
@@ -40,44 +44,58 @@ export class SymbolMenu extends React.Component<{
         sym.sizeMultiplier = sym.sizeMultiplier ? sym.sizeMultiplier : 1;
         this.props.state.editingLayer.blockUpdate = false;
     }
+
     onSizeMultiplierChange = (e) => {
         this.props.state.editingLayer.symbolOptions.sizeMultiplier = e.currentTarget.valueAsNumber;
     }
+
     onSizeLowLimitChange = (e) => {
         this.props.state.editingLayer.symbolOptions.sizeLowLimit = e.currentTarget.valueAsNumber;
     }
+
     onSizeUpLimitChange = (e) => {
         this.props.state.editingLayer.symbolOptions.sizeUpLimit = e.currentTarget.valueAsNumber;
     }
+
     onBlockValueChange = (e) => {
         this.props.state.editingLayer.symbolOptions.blockValue = e.currentTarget.valueAsNumber;
     }
+
     onFAIconChange = (e) => {
         if (e.currentTarget) { //if event triggered from input
             e = e.currentTarget.value
         }
         this.props.state.editingLayer.symbolOptions.icons[this.props.state.symbolMenuState.currentIconIndex].fa = e;
     }
+
     onIconShapeChange = (shape: 'circle' | 'square' | 'star' | 'penta') => {
         this.props.state.editingLayer.symbolOptions.icons[this.props.state.symbolMenuState.currentIconIndex].shape = shape;
     }
+
     onChartTypeChange = (type: 'pie' | 'donut') => {
 
         this.props.state.editingLayer.symbolOptions.chartType = type;
     }
+
     onChartFieldsChange = (e: IHeader[]) => {
         let headers: IHeader[] = this.props.state.editingLayer.symbolOptions.chartFields;
+        let colors = this.props.state.editingLayer.colorOptions.chartColors;
         if (e === null)
             e = [];
         headers.splice(0, headers.length) //empty headers
         for (let i in e) { //add new headers
+            if (!colors[e[i].value]) {
+                colors[e[i].value] = defaultChartColors[i] || '#FFF';
+            }
             headers.push(e[i]);
         }
     }
+
     toggleIconSelect = (index: number) => {
         this.props.state.symbolMenuState.iconSelectOpen = index !== this.props.state.symbolMenuState.currentIconIndex ? true : !this.props.state.symbolMenuState.iconSelectOpen;
         this.props.state.symbolMenuState.currentIconIndex = index;
     }
+
     onUseIconStepsChange = (e) => {
         let use: boolean = e.target.checked;
         this.props.state.editingLayer.blockUpdate = true;
@@ -91,6 +109,7 @@ export class SymbolMenu extends React.Component<{
         this.props.state.editingLayer.blockUpdate = false;
 
     }
+
     onIconFieldChange = (val: IHeader) => {
         this.props.state.editingLayer.blockUpdate = true;
 
@@ -207,6 +226,7 @@ export class SymbolMenu extends React.Component<{
         </div>
 
     }
+
     calculateIconValues(fieldName: string, steps: number) {
         let values = this.props.state.editingLayer.values;
         this.props.state.editingLayer.symbolOptions.iconLimits = CalculateLimits(values[fieldName][0], values[fieldName][values[fieldName].length - 1], steps); //get limits by min and max value
@@ -474,6 +494,7 @@ export class SymbolMenu extends React.Component<{
         );
 
     }
+
     renderIcons() {
         let arr = [];
         let columnCount = 7;
@@ -516,6 +537,7 @@ export class SymbolMenu extends React.Component<{
         );
 
     }
+
     renderSteps() {
         let rows = [];
         let steps: number[] = [];
@@ -610,4 +632,8 @@ let faIcons = [
     'fa-life-ring',
     'fa-wheelchair',
 
+];
+
+let defaultChartColors = [
+    '#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'
 ];

@@ -58,19 +58,20 @@ export class Layer {
         let layer;
         if (this.blockUpdate) return;
         if (this.geoJSON) {
+            if (!this.colorOptions.useCustomScheme && (this.layerType === LayerTypes.ChoroplethMap || this.layerType === LayerTypes.HeatMap || this.colorOptions.colorField)) {
+                if (!this.colorOptions.colorField) {
+                    this.colorOptions.colorField = this.layerType === LayerTypes.HeatMap ? this.heatMapVariable : this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+                }
+
+                if (this.colorOptions.colorField)
+                    getColors(this);
+            }
             if (this.layerType === LayerTypes.HeatMap) {
                 if (this.heatMapVariable)
                     layer = createHeatLayer(this);
             }
             else {
-                if (this.layerType === LayerTypes.ChoroplethMap || this.colorOptions.colorField) {
-                    if (!this.colorOptions.colorField) {
-                        this.colorOptions.colorField = this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
-                    }
 
-                    if (this.colorOptions.colorField)
-                        getColors(this);
-                }
                 let style = function(opts: ColorOptions, feature) {
 
                     return {
@@ -176,12 +177,11 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
             let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: rectHtml, className: '' });
             return L.marker(latlng, { icon: rectMarker });
         case SymbolTypes.Chart:
-            let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
             let vals = [];
             let i = 0;
             sym.chartFields.map(function(e) {
                 if (feature.properties[e.value] > 0)
-                    vals.push({ feat: e, val: feature.properties[e.value], color: colors[i] });
+                    vals.push({ feat: e, val: feature.properties[e.value], color: col.chartColors[e.value] });
                 i++;
             });
             let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
@@ -194,6 +194,8 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
                 innerRadius: radius / 3,
                 pieClass: function(d) { return d.data.feat },
                 pathFillFunc: function(d) { return d.data.color },
+                borderColor: col.color,
+                opacity: col.fillOpacity
             });
             let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: chartHtml, className: '' });
             return L.marker(latlng, { icon: marker });
@@ -206,7 +208,6 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
     }
     return L.circleMarker(latlng, col);
 }
-
 
 function setCircleMarkerRadius(sym: SymbolOptions, layer: any) {
     layer.eachLayer(function(lyr) {
@@ -226,8 +227,9 @@ function getValues(layer: Layer) {
         }
     });
 
-    for (let i in layer.headers) {
+    for (let i in layer.headers.slice()) {
         let header = layer.headers[i].label;
+
         if (layer.values[header]) {
             layer.values[header].sort(function(a, b) { return a - b })
         }
@@ -316,6 +318,8 @@ function makePieChart(options) {
         pathTitleFunc = options.pathTitleFunc ? options.pathTitleFunc : function(d) { return d.data.feat.label + ': ' + d.data.val }, //Title for each path
         pieLabel = options.pieLabel ? options.pieLabel : '', //Label for the whole pie
         pathFillFunc = options.pathFillFunc,
+        border = options.borderColor,
+        opacity = options.opacity,
 
         origo = (r + strokeWidth), //Center coordinate
         w = origo * 2, //width and height of the svg element
@@ -339,7 +343,8 @@ function makePieChart(options) {
 
     arcs.append('svg:path')
         .attr('fill', pathFillFunc)
-        .attr('stroke', '#2b262a')
+        .attr('opacity', opacity)
+        .attr('stroke', border)
         .attr('stroke-width', strokeWidth)
         .attr('d', arc)
         .append('svg:title')
@@ -407,12 +412,12 @@ function makeBlockSymbol(sideLength: number, blockAmount: number, fillColor: str
     return reactDOMServer.renderToString(table);
 }
 
-function createHeatLayer(layerData: Layer) {
+function createHeatLayer(l: Layer) {
     let arr: number[][] = [];
     let max = 0;
-    layerData.geoJSON.features.map(function(feat) {
+    l.geoJSON.features.map(function(feat) {
         let pos = [];
-        let heatVal = feat.properties[layerData.heatMapVariable];
+        let heatVal = feat.properties[l.heatMapVariable];
         if (heatVal > max)
             max = heatVal;
         pos.push(feat.geometry.coordinates[1]);
@@ -423,7 +428,14 @@ function createHeatLayer(layerData: Layer) {
     for (let i in arr) {
         arr[i][2] = arr[i][2] / max;
     }
-    return L.heatLayer(arr, { relative: true })
+    let gradient = l.colorOptions.colors && l.colorOptions.colors.length > 0 ? {} : undefined;
+    if (gradient) {
+        let limits = l.colorOptions.limits;
+        for (let i = 1; i < limits.length; i++) {
+            gradient[limits[i] / (limits[limits.length - 1])] = l.colorOptions.colors[i - 1];
+        }
+    }
+    return L.heatLayer(arr, { relative: true, gradient: gradient, radius: l.colorOptions.heatMapRadius })
 }
 
 // function createChoroplethLayer(layer: Layer) {
@@ -467,16 +479,11 @@ function getColors(layer: Layer) {
     let values = (layer.geoJSON as any).features.map(function(item) {
         return item.properties[opts.colorField];
     });
-
-    if (!opts.limits || opts.limits.length == 0)
-        opts.limits = chroma.limits(values, opts.mode, opts.steps);
-    if (!opts.colors || opts.colors.length == 0)
-        opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
+    let colors = [];
+    opts.limits = chroma.limits(values, opts.mode, opts.steps);
+    colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
+    opts.colors = opts.revert ? colors.reverse() : colors;
 }
-
-
-
-
 
 /**
  * addPopupsToLayer - adds the feature details popup to layer
@@ -501,17 +508,17 @@ export class ColorOptions implements L.PathOptions {
     /** Is the scale user-made?*/
     @observable useCustomScheme: boolean;
     /** Color name array to use in choropleth*/
-    @observable colors: string[] = [];
+    @observable colors: string[];
     /** Value array to use in choropleth*/
-    @observable limits: number[] = [];
-    /** The color scheme name to use in choropleth. Default black-white*/
-    @observable colorScheme: string = 'Greys';
+    @observable limits: number[];
+    /** The color scheme name to use in choropleth. Default blue-white-red for heatmaps, else black-white*/
+    @observable colorScheme: string;
     /** The amount of colors to use in choropleth. Default 5*/
-    @observable steps: number = 5;
+    @observable steps: number;
     /** Is the scheme reversed. This is used only to keep the menu selection synced with map*/
     @observable revert: boolean;
     /** The Chroma-js method to calculate colors. Default q->quantiles*/
-    @observable mode: string = 'q';
+    @observable mode: string;
     /** The color of the icon in symbol maps. Default white */
     @observable iconTextColor: string = '#FFF';
     /** Main fill color. Default yellow*/
@@ -524,6 +531,34 @@ export class ColorOptions implements L.PathOptions {
     @observable opacity: number = 0.8;
 
     @observable useMultipleFillColors: boolean;
+
+    @observable heatMapRadius: number = 25;
+
+    @observable chartColors: { [field: string]: string; } = undefined;
+
+
+    /**
+     * @param  prev   previous options to copy
+     */
+    constructor(prev?: ColorOptions) {
+
+        this.colorField = prev && prev.colorField || undefined;
+        this.useCustomScheme = prev && prev.useCustomScheme || false;
+        this.colors = prev && prev.colors || [];
+        this.limits = prev && prev.limits || [];
+        this.colorScheme = prev && prev.colorScheme || 'RdYlBu';
+        this.steps = prev && prev.steps || 5;
+        this.revert = prev && prev.revert || false;
+        this.mode = prev && prev.mode || 'q';
+        this.iconTextColor = prev && prev.iconTextColor || '#FFF';
+        this.fillColor = prev && prev.fillColor || '#E0E62D';
+        this.color = prev && prev.color || '#000';
+        this.fillOpacity = prev && prev.fillOpacity || 0.8;
+        this.opacity = prev && prev.opacity || 0.8;
+        this.useMultipleFillColors = prev && prev.useMultipleFillColors || false;
+        this.heatMapRadius = prev && prev.heatMapRadius || 25;
+        this.chartColors = prev && prev.chartColors || {};
+    }
 
 }
 
@@ -542,19 +577,19 @@ export class SymbolOptions {
     /** Name of the field by which to calculate icon values*/
     @observable iconField: string;
     /** The steps of the field values by which to choose the icons */
-    @observable iconLimits: number[] = [];
+    @observable iconLimits: number[];
     /** The name of the field to scale size x-axis by*/
     @observable sizeXVar: string;
     /** The name of the field to scale size y-axis by*/
     @observable sizeYVar: string;
     /** The minimum allowed size when scaling*/
-    @observable sizeLowLimit: number = 0;
+    @observable sizeLowLimit: number;
     /** The maximum allowed size when scaling*/
-    @observable sizeUpLimit: number = 50;
+    @observable sizeUpLimit: number;
     /** The multiplier to scale the value by*/
-    @observable sizeMultiplier: number = 1;
+    @observable sizeMultiplier: number;
     /** Currently selected chart fields*/
-    @observable chartFields: IHeader[] = [];
+    @observable chartFields: IHeader[];
     /** The type of chart to draw*/
     @observable chartType: 'pie' | 'donut';
     /** How many units does a single block represent*/

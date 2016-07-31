@@ -1,9 +1,9 @@
 import * as React from 'react';
-import {LayerType} from "./LayerType";
-import {LayerTypes} from "../common_items/common";
-import {ImportWizardState, AppState} from '../Stores/States';
-import {Layer} from '../Stores/Layer';
-import {observer} from 'mobx-react';
+import { LayerType } from "./LayerType";
+import { LayerTypes } from "../common_items/common";
+import { ImportWizardState, AppState } from '../Stores/States';
+import { Layer } from '../Stores/Layer';
+import { observer } from 'mobx-react';
 
 @observer
 export class LayerTypeSelectView extends React.Component<{
@@ -24,7 +24,13 @@ export class LayerTypeSelectView extends React.Component<{
         if (this.activeLayer.layerType === null) {
             alert('Choose a layer type!');
         }
-        else { this.props.state.step++ }
+        else {
+            if (this.activeLayer.layerType === LayerTypes.HeatMap) {
+                this.activeLayer.colorOptions.revert = true;
+                this.activeLayer.colorOptions.colorScheme = 'RdYlBu';
+            }
+            this.props.state.step++
+        }
     }
 
     public render() {
@@ -41,7 +47,7 @@ export class LayerTypeSelectView extends React.Component<{
                             type = {LayerTypes.ChoroplethMap}
                             imageURL = 'app/images/choropreview.png'
                             description = 'Use this type to create clean and easy to read maps from your polygon data. Color the areas by a single value by selecting a predefined color scheme or define your own.'
-                            onClick = {this.onMapTypeClick }
+                            onClick = {this.onMapTypeClick}
                             selected = {this.activeLayer.layerType == LayerTypes.ChoroplethMap}
                             />
                         <LayerType
@@ -49,7 +55,7 @@ export class LayerTypeSelectView extends React.Component<{
                             type = {LayerTypes.SymbolMap}
                             imageURL = 'app/images/symbolpreview.png'
                             description = 'Use icons and charts to bring your point data to life! Scale symbol size by a value and give them choropleth-style coloring to create multi-value maps.'
-                            onClick = {this.onMapTypeClick }
+                            onClick = {this.onMapTypeClick}
                             selected = {this.activeLayer.layerType == LayerTypes.SymbolMap}
 
                             />
@@ -58,14 +64,14 @@ export class LayerTypeSelectView extends React.Component<{
                             type = {LayerTypes.HeatMap}
                             imageURL = 'app/images/heatpreview.png'
                             description = 'Turn your point data into an intensity map with this layer type. In development!'
-                            onClick = {this.onMapTypeClick }
+                            onClick = {this.onMapTypeClick}
                             selected = {this.activeLayer.layerType === LayerTypes.HeatMap}
                             />
                     </div>
 
                 </div>
-                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={this.cancel }>Cancel</button>
-                <button className='primaryButton' disabled={this.activeLayer.layerType === null} style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed }>Continue</button>
+                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={this.cancel}>Cancel</button>
+                <button className='primaryButton' disabled={this.activeLayer.layerType === null} style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed}>Continue</button>
             </div >
         );
     }

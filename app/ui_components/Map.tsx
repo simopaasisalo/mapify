@@ -201,7 +201,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             newLayer.layerType = lyr.layerType;
             newLayer.heatMapVariable = lyr.heatMapVariable;
             newLayer.geoJSON = lyr.geoJSON;
-            newLayer.colorOptions = lyr.colorOptions;
+            newLayer.colorOptions = new ColorOptions(lyr.colorOptions);
             newLayer.symbolOptions = new SymbolOptions(lyr.symbolOptions);
             newLayer.blockUpdate = false;
             this.props.state.layers.push(newLayer);
@@ -222,7 +222,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         }
         return (
             <div>
-                <MyApp/>
 
                 <div id='map'/>
                 <Modal
@@ -261,18 +260,18 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
 
 
 };
-import DevTools from 'mobx-react-devtools';
-
-class MyApp extends React.Component<{}, {}> {
-    render() {
-        return (
-            <div>
-                ...
-                <DevTools />
-            </div>
-        );
-    }
-}
+// import DevTools from 'mobx-react-devtools';
+//
+// class MyApp extends React.Component<{}, {}> {
+//     render() {
+//         return (
+//             <div>
+//                 ...
+//                 <DevTools />
+//             </div>
+//         );
+//     }
+// }
 
 var Map = MapMain;
 const state = new AppState();

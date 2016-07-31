@@ -2,7 +2,7 @@ import * as React from 'react';
 let Draggable = require('react-draggable');
 import { SymbolTypes, GetItemBetweenLimits } from '../common_items/common';
 import { AppState } from '../Stores/States';
-import { Layer, SymbolOptions } from '../Stores/Layer';
+import { Layer, SymbolOptions, ColorOptions } from '../Stores/Layer';
 import { TextEditor } from './TextEditor';
 
 import { observer } from 'mobx-react';
@@ -20,7 +20,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
         if (sym.symbolType === SymbolTypes.Chart) {
-            chartLegend = this.createChartSymbolLegend(sym);
+            chartLegend = this.createChartSymbolLegend(col, sym);
         }
         if (sym.sizeXVar || sym.sizeYVar) {
             scaledLegend = this.createScaledSizeLegend(options);
@@ -234,14 +234,13 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
 
     }
 
-    createChartSymbolLegend(options: SymbolOptions) {
+    createChartSymbolLegend(col: ColorOptions, sym: SymbolOptions) {
         let divs = [];
-        let headers = options.chartFields;
-        let colors = ['#6bbc60', '#e2e236', '#e28c36', '#36a6e2', '#e25636', '#36e2c9', '#364de2', '#e236c9', '#51400e', '#511f0e', '#40510e'];
+        let headers = sym.chartFields;
 
         for (let i = 0; i < headers.length; i++) {
             let colorStyle = {
-                background: colors[i],
+                background: col.chartColors[headers[i].value],
                 minWidth: '20px',
                 minHeight: '20px',
             }

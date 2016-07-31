@@ -152,7 +152,7 @@ export class MapifyMenu extends React.Component<{
                     valueRenderer = {this.showLayerNameOnMenu}
                     clearable={false}
                     />
-                {this.props.state.editingLayer && this.props.state.editingLayer.layerType !== LayerTypes.HeatMap ?
+                {this.props.state.editingLayer ?
                     <Menu.Item>
                         <p
                             className="menuHeader fa fa-paint-brush"

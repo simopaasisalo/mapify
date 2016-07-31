@@ -3,10 +3,10 @@ import * as React from 'react';
 let Select = require('react-select');
 
 var coords;
-import {DefaultProjections} from "../common_items/common";
+import { DefaultProjections } from "../common_items/common";
 
-import {ImportWizardState} from '../Stores/States';
-import {observer} from 'mobx-react';
+import { ImportWizardState } from '../Stores/States';
+import { observer } from 'mobx-react';
 
 @observer
 export class FileDetailsView extends React.Component<
@@ -27,7 +27,7 @@ export class FileDetailsView extends React.Component<
         this.props.state.latitudeField = this.props.state.isGeoJSON ? '' : this.activeLayer.numberHeaders[0].label;
         this.props.state.longitudeField = this.props.state.isGeoJSON ? '' : this.activeLayer.numberHeaders[1].label;
         this.props.state.coordinateSystem = 'WGS84';
-        this.activeLayer.heatMapVariable = this.props.state.isHeatMap ? this.activeLayer.numberHeaders[0].label : '';
+
 
     }
     onLatitudeSelectionChange = (val) => {
@@ -41,6 +41,7 @@ export class FileDetailsView extends React.Component<
     }
     onHeatValueChange = (val) => {
         this.activeLayer.heatMapVariable = val ? val.value : '';
+        this.activeLayer.colorOptions.colorField = val ? val.value : '';
     }
     goBack = () => {
         this.props.goBack();
@@ -67,20 +68,20 @@ export class FileDetailsView extends React.Component<
                         <label>Select the latitude/Y field name</label>
                         <Select
                             options={this.activeLayer.numberHeaders}
-                            onChange={this.onLatitudeSelectionChange }
+                            onChange={this.onLatitudeSelectionChange}
                             value={this.props.state.latitudeField}
                             />
                         <label>Select the longitude/X field name</label>
                         <Select
                             options={this.activeLayer.numberHeaders}
-                            onChange={this.onLongitudeSelectionChange }
+                            onChange={this.onLongitudeSelectionChange}
                             value={this.props.state.longitudeField}/>
                     </div>}
                 <label>Select the coordinate system</label>
 
                 <Select
                     options={coords}
-                    onChange={this.onCoordinateSystemChange }
+                    onChange={this.onCoordinateSystemChange}
                     value={this.props.state.coordinateSystem}/>
                 <p> Not sure? Try with the default (WGS84) and see if the data lines up.</p>
                 <p>Coordinate system missing? Get the Proj4-string for your system from
@@ -92,13 +93,13 @@ export class FileDetailsView extends React.Component<
                         <label>Select heat map variable</label>
                         <Select
                             options={this.activeLayer.numberHeaders}
-                            onChange={this.onHeatValueChange }
+                            onChange={this.onHeatValueChange}
                             value={this.activeLayer.heatMapVariable}/>
                     </div>
                     : null}
             </div>
-            <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack }>Go back</button>
-            <button className='primaryButton' disabled={!this.props.state.coordinateSystem || (this.props.state.isHeatMap && !this.activeLayer.heatMapVariable) || (!this.props.state.isGeoJSON && (!this.props.state.latitudeField || !this.props.state.longitudeField)) } style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed }>Mapify!</button>
+            <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack}>Go back</button>
+            <button className='primaryButton' disabled={!this.props.state.coordinateSystem || (this.props.state.isHeatMap && !this.activeLayer.heatMapVariable) || (!this.props.state.isGeoJSON && (!this.props.state.latitudeField || !this.props.state.longitudeField))} style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed}>Mapify!</button>
         </div>
     }
 

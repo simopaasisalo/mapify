@@ -43,9 +43,10 @@ function GetSymbolSize(val: number, sizeMultiplier: number, minSize: number, max
 function CalculateLimits(min: number, max: number, count: number) {
     let limits: number[] = [];
     for (let i = min; i < max; i += (max - min) / count) {
-        limits.push(i);
+        limits.push(Math.round(i));
     }
-    limits.push(max)
+    if (limits.indexOf(max) === -1)
+        limits.push(max)
     return limits;
 }
 
