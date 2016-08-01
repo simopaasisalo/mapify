@@ -231,7 +231,7 @@ export class ColorMenu extends React.Component<{
                     <li key={i.label}
                         style={{ background: layer.colorOptions.chartColors[i.value] || '#FFF' }}
                         onClick={this.toggleColorPick.bind(this, 'chartfield' + i.value)}>
-                        <i style={{ padding: 10, background: 'white', borderRadius: 5 }}>
+                        <i style={{ margin: 4, padding: 10, background: 'white', borderRadius: 5 }}>
                             {i.label}
                         </i>
                     </li>);
