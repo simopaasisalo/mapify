@@ -10,7 +10,7 @@ export class AppState {
     @observable welcomeShown: boolean = true;
     /** Is the import wizard visible*/
     @observable importWizardShown: boolean = false;
-    /** Is the options menu visible*/
+    /** Is the options menu icon visible*/
     @observable menuShown: boolean = false;
     /** The layers of the map.*/
     @observable layers: Layer[] = [];

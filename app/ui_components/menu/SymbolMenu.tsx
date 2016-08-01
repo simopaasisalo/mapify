@@ -20,8 +20,9 @@ export class SymbolMenu extends React.Component<{
         sym.symbolType = type;
         sym.sizeXVar = sym.sizeXVar ? sym.sizeXVar : layer.numberHeaders[0] ? layer.numberHeaders[0].label : undefined;
         sym.iconField = sym.iconField ? sym.iconField : layer.numberHeaders[0] ? layer.numberHeaders[0].label : undefined;
-        if (type === SymbolTypes.Chart && sym.chartFields.length == 0) {
-            this.onChartFieldsChange(layer.numberHeaders);
+        if (type === SymbolTypes.Chart) {
+            if (sym.chartFields.length == 0)
+                this.onChartFieldsChange(layer.numberHeaders);
         }
         layer.blockUpdate = false;
 
@@ -404,6 +405,8 @@ export class SymbolMenu extends React.Component<{
                             multi
                             onChange={this.onChartFieldsChange}
                             value={sym.chartFields.slice()}
+                            backspaceRemoves={false}
+
                             />
                         Chart type
                         <br/>

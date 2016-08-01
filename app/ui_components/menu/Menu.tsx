@@ -126,7 +126,7 @@ export class MapifyMenu extends React.Component<{
             }
         }
 
-        return (!this.props.state.menuShown ? null :
+        return (
             <Menu.Menu showDividers={true}>
 
                 <Menu.Brand>

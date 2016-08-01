@@ -47,6 +47,7 @@ export class Layer {
 
     values: { [field: string]: any[]; } = undefined;
 
+
     constructor(state: AppState) {
         this.appState = state;
         mobx.autorun(() => this.refresh());
@@ -58,14 +59,14 @@ export class Layer {
         let layer;
         if (this.blockUpdate) return;
         if (this.geoJSON) {
-            if (!this.colorOptions.useCustomScheme && (this.layerType === LayerTypes.ChoroplethMap || this.layerType === LayerTypes.HeatMap || this.colorOptions.colorField)) {
-                if (!this.colorOptions.colorField) {
-                    this.colorOptions.colorField = this.layerType === LayerTypes.HeatMap ? this.heatMapVariable : this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
-                }
-
-                if (this.colorOptions.colorField)
-                    getColors(this);
-            }
+            // if (this.colorOptions.useMultipleFillColors && !this.colorOptions.useCustomScheme && (this.layerType === LayerTypes.ChoroplethMap || this.layerType === LayerTypes.HeatMap || this.colorOptions.colorField)) {
+            //     if (!this.colorOptions.colorField) {
+            //         this.colorOptions.colorField = this.layerType === LayerTypes.HeatMap ? this.heatMapVariable : this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+            //     }
+            //
+            //     if (this.colorOptions.colorField)
+            //         getColors(this);
+            // }
             if (this.layerType === LayerTypes.HeatMap) {
                 if (this.heatMapVariable)
                     layer = createHeatLayer(this);
@@ -77,7 +78,7 @@ export class Layer {
                     return {
                         fillOpacity: opts.fillOpacity,
                         opacity: opts.opacity,
-                        fillColor: col.colors.slice().length == 0 ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]),
+                        fillColor: col.colors.slice().length == 0 || !col.useMultipleFillColors ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]),
                         color: opts.color,
                         weight: 1,
                     }
@@ -86,18 +87,22 @@ export class Layer {
                 let geoJSON = JSON.parse(JSON.stringify(this.geoJSON));
                 let col: ColorOptions = JSON.parse(JSON.stringify(this.colorOptions));
                 let sym: SymbolOptions = JSON.parse(JSON.stringify(this.symbolOptions));
+                let options: L.GeoJSONOptions = {}
                 layer = L.geoJson(geoJSON, ({
                     onEachFeature: this.onEachFeature,
                     pointToLayer: pointToLayerFunc.bind(this, col, sym),
                     style: style.bind(this, col),
-                } as any));
+                }));
             }
 
 
         }
         if (layer) {
             if (this.layerType === LayerTypes.SymbolMap && this.symbolOptions.symbolType === SymbolTypes.Circle && this.symbolOptions.sizeXVar) {
-                setCircleMarkerRadius(this.symbolOptions, layer);
+                let sym = this.symbolOptions;
+                this.layer.eachLayer(function(lyr) {
+                    lyr.setRadius(GetSymbolSize(lyr.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
+                });
             }
             layer.addTo(this.appState.map);
             if (this.layer)
@@ -109,14 +114,16 @@ export class Layer {
             }
             if (this.layerType === LayerTypes.SymbolMap) {
                 //if needs to scale and is of scalable type
+                //
                 if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
-                    getMaxValues.call(this);
+                    getScaleSymbolMaxValues.call(this);
                 }
             }
 
             this.appState.map.fitBounds(this.layerType === LayerTypes.HeatMap ? (this.layer as any)._latlngs : this.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
             this.filterUpdatesPending = true;
         }
+
     }
     refreshFilter() {
         if (this.filterUpdatesPending) {
@@ -132,12 +139,32 @@ export class Layer {
         }
         this.filterUpdatesPending = false;
     }
+
+    /**
+     * getColors - calculates the color values based on a field name
+     * @param  layerData    the data containing the GeoJSON string and the color variable
+     */
+    getColors() {
+        let opts = this.colorOptions;
+        if (!opts.colorField) {
+            opts.colorField = this.layerType === LayerTypes.HeatMap ? this.heatMapVariable : this.numberHeaders[0] ? this.numberHeaders[0].label : undefined;
+        }
+
+
+        let values = (this.geoJSON as any).features.map(function(item) {
+            return item.properties[opts.colorField];
+        });
+        let colors = [];
+        opts.limits = chroma.limits(values, opts.mode, opts.steps);
+        colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
+        opts.colors = opts.revert ? colors.reverse() : colors;
+    }
 }
 
 /** Function to run on every point-type data to visualize it according to the settings*/
 function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng: L.LatLng): L.Marker | L.CircleMarker {
     if (col.colors && col.limits)
-        col.fillColor = col.colors.slice().length == 0 ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
+        col.fillColor = col.colors.slice().length == 0 || !col.useMultipleFillColors ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
     let borderColor = col.color;
 
     switch (sym.symbolType) {
@@ -168,7 +195,12 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
                 shape: shape ? shape : sym.icons[0].shape,
                 iconColor: col.iconTextColor,
             });
-            return L.marker(latlng, { icon: customIcon });
+            let mark = L.marker(latlng, { icon: customIcon });
+
+            mark.on('contextmenu', function(e) {
+                //mark.bindTooltip('Whynowork').openTooltip();
+            });
+            return mark;
         case SymbolTypes.Rectangle:
 
             let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
@@ -209,12 +241,6 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
     return L.circleMarker(latlng, col);
 }
 
-function setCircleMarkerRadius(sym: SymbolOptions, layer: any) {
-    layer.eachLayer(function(lyr) {
-        lyr.setRadius(GetSymbolSize(lyr.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
-    });
-}
-
 /** Get feature values in their own dictionary to reduce the amount of common calculations*/
 function getValues(layer: Layer) {
     layer.geoJSON.features.map(function(feat) {
@@ -236,7 +262,7 @@ function getValues(layer: Layer) {
     }
 }
 
-function getMaxValues() {
+function getScaleSymbolMaxValues() {
     let maxXradius, minXradius, maxYradius, minYradius;
     let sym: SymbolOptions = this.symbolOptions;
     (this.layer as any).eachLayer(function(layer) {
@@ -438,52 +464,7 @@ function createHeatLayer(l: Layer) {
     return L.heatLayer(arr, { relative: true, gradient: gradient, radius: l.colorOptions.heatMapRadius })
 }
 
-// function createChoroplethLayer(layer: Layer) {
-//     let opts = layer.colorOptions;
-//
-//     let values = (layer.geoJSON as any).features.map(function(item) {
-//         return item.properties[opts.colorField];
-//     });
-//
-//     if (!opts.limits || opts.limits.length == 0)
-//         opts.limits = chroma.limits(values, opts.mode, opts.steps);
-//     if (!opts.colors || opts.colors.length == 0)
-//         opts.colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
-//     let style = function(feature) {
-//
-//         return {
-//             fillOpacity: opts.fillOpacity,
-//             opacity: opts.opacity,
-//             fillColor: GetFillColor(opts.limits, opts.colors, feature.properties[opts.colorField]),
-//             color: opts.color,
-//             weight: 1,
-//         }
-//     }
-//
-//     let options: L.GeoJSONOptions = {
-//         pointToLayer: layer.pointToLayer.bind(this),
-//         onEachFeature: layer.onEachFeature,
-//         style: style.bind(this),
-//     }
-//
-//     return L.geoJson(layer.geoJSON, options);
-// }
 
-/**
- * getColors - calculates the color values based on a field name
- * @param  layerData    the data containing the GeoJSON string and the color variable
- */
-function getColors(layer: Layer) {
-    let opts = layer.colorOptions;
-
-    let values = (layer.geoJSON as any).features.map(function(item) {
-        return item.properties[opts.colorField];
-    });
-    let colors = [];
-    opts.limits = chroma.limits(values, opts.mode, opts.steps);
-    colors = chroma.scale(opts.colorScheme).colors(opts.limits.length - 1);
-    opts.colors = opts.revert ? colors.reverse() : colors;
-}
 
 /**
  * addPopupsToLayer - adds the feature details popup to layer
@@ -500,7 +481,6 @@ function addPopupsToLayer(feature, layer: L.GeoJSON) {
     if (popupContent != '')
         layer.bindPopup(popupContent);
 }
-
 
 export class ColorOptions implements L.PathOptions {
     /** If not empty, use choropleth coloring */

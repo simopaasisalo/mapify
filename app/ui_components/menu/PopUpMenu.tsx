@@ -1,7 +1,7 @@
 import * as React from 'react';
 let Select = require('react-select');
-import {AppState} from '../Stores/States';
-import {observer} from 'mobx-react';
+import { AppState } from '../Stores/States';
+import { observer } from 'mobx-react';
 
 @observer
 export class PopUpMenu extends React.Component<{
@@ -32,14 +32,15 @@ export class PopUpMenu extends React.Component<{
             <div className="mapify-options">
                 <label>Select the variables to show</label>
                 <Select
-                    options={this.props.state.editingLayer.headers.slice() }
+                    options={this.props.state.editingLayer.headers.slice()}
                     multi
-                    onChange={this.onSelectionChange }
-                    value={this.props.state.editingLayer.popupHeaders.slice() }
+                    onChange={this.onSelectionChange}
+                    value={this.props.state.editingLayer.popupHeaders.slice()}
+                    backspaceRemoves={false}
                     />
 
                 {this.props.state.autoRefresh ? null :
-                    <button className='menuButton' onClick={this.saveValues }>Refresh map</button>
+                    <button className='menuButton' onClick={this.saveValues}>Refresh map</button>
                 }
             </div >
         );

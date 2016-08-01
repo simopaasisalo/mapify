@@ -21,13 +21,19 @@ export class LayerTypeSelectView extends React.Component<{
         this.props.cancel();
     }
     proceed = () => {
+        let col = this.activeLayer.colorOptions;
         if (this.activeLayer.layerType === null) {
             alert('Choose a layer type!');
         }
         else {
             if (this.activeLayer.layerType === LayerTypes.HeatMap) {
-                this.activeLayer.colorOptions.revert = true;
-                this.activeLayer.colorOptions.colorScheme = 'RdYlBu';
+                col.revert = true;
+                col.colorScheme = 'RdYlBu';
+                col.useMultipleFillColors = true;
+            }
+            else if (this.activeLayer.layerType === LayerTypes.ChoroplethMap) {
+                col.useMultipleFillColors = true;
+
             }
             this.props.state.step++
         }

@@ -1,15 +1,15 @@
 import * as React from 'react';
 
-import {LayerTypeSelectView} from './LayerTypeSelectView';
-import {FileUploadView} from './FileUploadView';
-import {FileDetailsView} from './FileDetailsView';
-import {FilePreProcessModel} from '../../models/FilePreProcessModel';
-import {LayerTypes} from "../common_items/common";
+import { LayerTypeSelectView } from './LayerTypeSelectView';
+import { FileUploadView } from './FileUploadView';
+import { FileDetailsView } from './FileDetailsView';
+import { FilePreProcessModel } from '../../models/FilePreProcessModel';
+import { LayerTypes } from "../common_items/common";
 
 let _fileModel = new FilePreProcessModel();
 
-import {ImportWizardState, AppState} from '../Stores/States';
-import {observer} from 'mobx-react';
+import { ImportWizardState, AppState } from '../Stores/States';
+import { observer } from 'mobx-react';
 
 @observer
 export class LayerImportWizard extends React.Component<{
@@ -70,24 +70,26 @@ export class LayerImportWizard extends React.Component<{
      */
     submit() {
         let state = this.props.state;
-
-        if (!state.layer.geoJSON && state.fileExtension === 'csv') {
-            state.layer.geoJSON = _fileModel.ParseCSVToGeoJSON(state.content,
+        let layer = this.props.state.layer;
+        if (!layer.geoJSON && state.fileExtension === 'csv') {
+            layer.geoJSON = _fileModel.ParseCSVToGeoJSON(state.content,
                 state.latitudeField,
                 state.longitudeField,
                 state.delimiter,
                 state.coordinateSystem,
                 state.layer.headers);
 
-            state.layer.headers = state.layer.headers.filter(function(val) { return val.label !== state.longitudeField && val.label !== state.latitudeField });
+            layer.headers = layer.headers.filter(function(val) { return val.label !== state.longitudeField && val.label !== state.latitudeField });
 
         }
 
         else if (state.coordinateSystem && state.coordinateSystem !== 'WGS84') {
-            state.layer.geoJSON = _fileModel.ProjectCoords(state.layer.geoJSON, state.coordinateSystem);
+            layer.geoJSON = _fileModel.ProjectCoords(layer.geoJSON, state.coordinateSystem);
         }
-        this.props.state.layer.blockUpdate = false;
-        this.props.submit(state.layer);
+
+        layer.getColors();
+        layer.blockUpdate = false;
+        this.props.submit(layer);
     }
     getCurrentView() {
         switch (this.props.state.step) {
@@ -96,27 +98,27 @@ export class LayerImportWizard extends React.Component<{
                     <LayerTypeSelectView
                         state = {this.props.state}
                         appState= {this.props.appState}
-                        cancel = {this.cancel.bind(this) }
+                        cancel = {this.cancel.bind(this)}
                         />
                 </div>
             case 1:
                 return <FileUploadView
                     state={this.props.state}
-                    saveValues={this.setFileInfo.bind(this) }
-                    goBack={this.previousStep.bind(this) }
+                    saveValues={this.setFileInfo.bind(this)}
+                    goBack={this.previousStep.bind(this)}
                     />
             case 2:
                 return <FileDetailsView
                     state={this.props.state}
-                    saveValues={this.setFileDetails.bind(this) }
-                    goBack = {this.previousStep.bind(this) }
+                    saveValues={this.setFileDetails.bind(this)}
+                    goBack = {this.previousStep.bind(this)}
                     />
         }
     }
     render() {
         return (
             <div style ={{ overflowX: 'auto' }}>
-                { this.getCurrentView() }
+                {this.getCurrentView()}
             </div>
         )
     }

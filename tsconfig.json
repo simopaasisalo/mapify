@@ -21,7 +21,7 @@
         "typings/browser.d.ts"
     ],
 "files":[
-"typings/main.d.ts",
+"typings/index.d.ts",
 "typings-custom/leaflet.heat.d.ts",
 "typings-custom/leaflet.ExtraMarkers.d.ts",
 "app/ui_components/common_items/commonInterfaces.ts",

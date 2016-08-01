@@ -42,17 +42,23 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             layers: baseLayers,
 
         }).setView([0, 0], 2);
-        this.props.state.map.doubleClickZoom.disable();
 
+        this.props.state.map.doubleClickZoom.disable();
+        this.props.state.map.on('contextmenu', function(e) { //disable context menu opening on right-click
+            return;
+        });
     }
     startLayerImport() {
         this.props.state.importWizardShown = true;
         this.props.state.welcomeShown = false;
+        this.props.state.menuShown = false;
     }
 
     cancelLayerImport() {
         this.props.state.importWizardShown = false;
         this.props.state.menuShown = true;
+        if (this.props.state.layers.length == 0)
+            this.props.state.welcomeShown = true;
     }
 
     /**
@@ -60,12 +66,12 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      *
      * @param  {ILayerData} layerData contains layer name and GeoJSON object
      */
-    layerImportSubmit(layerData: Layer) {
-        layerData.appState = this.props.state;
-        layerData.id = _currentLayerId++;
-        this.props.state.layers.push(layerData);
+    layerImportSubmit(l: Layer) {
+        l.appState = this.props.state;
+        l.id = _currentLayerId++;
+        this.props.state.layers.push(l);
         this.props.state.importWizardShown = false;
-        this.props.state.editingLayer = layerData;
+        this.props.state.editingLayer = l;
         this.props.state.menuShown = true;
     }
 

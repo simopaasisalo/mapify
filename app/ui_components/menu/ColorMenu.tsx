@@ -334,20 +334,25 @@ export class ColorMenu extends React.Component<{
                     </div>
                 }
                 <div style={{ display: 'flex', flexDirection: 'row' }}>
-                    {col.useMultipleFillColors || layer.layerType === LayerTypes.ChoroplethMap || layer.layerType === LayerTypes.HeatMap || isChart ?
+                    {col.useMultipleFillColors || layer.layerType === LayerTypes.HeatMap || isChart ?
                         null :
                         <div className='colorBlock' style={fillColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'fillColor')}>Fill</div>
                     }
-                    <div className='colorBlock' style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor')}>Border</div>
+                    {layer.layerType === LayerTypes.HeatMap ? null :
+                        <div className='colorBlock' style={borderColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'borderColor')}>Border</div>
+                    }
                     {layer.layerType === LayerTypes.SymbolMap && layer.symbolOptions.symbolType === SymbolTypes.Icon ?
                         <div className='colorBlock' style={iconTextColorBlockStyle} onClick={this.toggleColorPick.bind(this, 'iconTextColor')}>Icon</div>
                         : null
                     }
 
                 </div>
-                <label>Opacity</label>
-                <input type='number' max={1} min={0} step={0.1} onChange={this.onOpacityChange} value={col.opacity}/>
-
+                {layer.layerType === LayerTypes.HeatMap ? null :
+                    <div>
+                        <label>Opacity</label>
+                        <input type='number' max={1} min={0} step={0.1} onChange={this.onOpacityChange} value={col.opacity}/>
+                    </div>
+                }
                 <Modal
                     isOpen={state.colorSelectOpen}
                     style={colorSelectStyle}
@@ -369,7 +374,7 @@ export class ColorMenu extends React.Component<{
                     {this.renderSteps()}
                 </div> : null}
                 {
-                    col.useMultipleFillColors || layer.layerType === LayerTypes.ChoroplethMap || layer.layerType === LayerTypes.HeatMap ?
+                    col.useMultipleFillColors && !isChart ?
                         <div>
                             {layer.layerType === LayerTypes.HeatMap ? null :
                                 <div>

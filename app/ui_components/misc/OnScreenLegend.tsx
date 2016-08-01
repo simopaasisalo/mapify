@@ -15,11 +15,11 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         let options = layer;
         let col = options.colorOptions;
         let sym = options.symbolOptions;
-        if (col.colors && col.colors.length !== 0 && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
+        if (col.colors && col.colors.length !== 0 && col.useMultipleFillColors && sym.symbolType !== SymbolTypes.Chart && (sym.symbolType !== SymbolTypes.Icon || sym.iconField !== col.colorField)) {
             let percentages = this.props.state.legend.showPercentages ? this.getStepPercentages(layer.geoJSON, col.colorField, col.limits) : {};
             choroLegend = this.createChoroplethLegend(options, percentages);
         }
-        if (sym.symbolType === SymbolTypes.Chart) {
+        if (sym.symbolType === SymbolTypes.Chart && col.chartColors) {
             chartLegend = this.createChartSymbolLegend(col, sym);
         }
         if (sym.sizeXVar || sym.sizeYVar) {
@@ -237,7 +237,6 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
     createChartSymbolLegend(col: ColorOptions, sym: SymbolOptions) {
         let divs = [];
         let headers = sym.chartFields;
-
         for (let i = 0; i < headers.length; i++) {
             let colorStyle = {
                 background: col.chartColors[headers[i].value],
@@ -266,7 +265,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         let sym = layer.symbolOptions;
         if (limits && limits.length > 0) {
             for (let i = 0; i < limits.length - 1; i++) {
-                let fillColor: string = col.colorField === layer.symbolOptions.iconField ?
+                let fillColor: string = col.colorField === layer.symbolOptions.iconField && col.useMultipleFillColors ?
                     GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), (limits[i] + limits[i + 1]) / 2) //if can be fitted into the same legend, show colors and symbols together. Get fill color by average of icon limits
                     : '000';
                 let icon = GetItemBetweenLimits(sym.iconLimits.slice(), sym.icons.slice(), (limits[i] + limits[i + 1]) / 2);
