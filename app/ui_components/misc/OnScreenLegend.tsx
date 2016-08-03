@@ -27,7 +27,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         }
         if (sym.symbolType === SymbolTypes.Icon) {
             let percentages = this.props.state.legend.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
-            iconLegend = this.createIconLegend(options, percentages, layer.layerName);
+            iconLegend = this.createIconLegend(options, percentages, layer.name);
         }
         if (sym.symbolType === SymbolTypes.Blocks) {
             blockLegend = this.createBlockLegend(options);

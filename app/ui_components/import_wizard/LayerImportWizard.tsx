@@ -58,7 +58,7 @@ export class LayerImportWizard extends React.Component<{
     }
 
     setLayerName(name: string) {
-        this.props.state.layer.layerName = name;
+        this.props.state.layer.name = name;
     }
     cancel() {
         this.props.cancel();

@@ -1,8 +1,9 @@
-import { observable, computed } from 'mobx';
+import { observable, computed, autorun } from 'mobx';
 import { Layer } from './Layer';
 import { Filter } from './Filter';
 import { Legend } from './Legend';
 import { LayerTypes, SymbolTypes } from '../common_items/common';
+let mobx = require('mobx');
 
 
 export class AppState {
@@ -127,6 +128,7 @@ export class LegendMenuState {
 export class LayerMenuState {
     /** The current order of layers */
     @observable order: { name: string, id: number }[] = [];
+
 }
 
 export class ExportMenuState {

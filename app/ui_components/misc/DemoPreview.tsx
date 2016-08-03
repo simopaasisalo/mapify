@@ -27,16 +27,17 @@ export class DemoPreview extends React.Component<IDemoPreviewProps, IDemoPreview
             borderRadius: 15,
             position: 'absolute',
             width: 400,
+            whiteSpace: 'normal',
             zIndex: 90,
             background: 'white',
             bottom: 0.
         }
         return (
-            <div style = {style} onMouseOver={this.setOverlayState.bind(this, true) } onMouseLeave={this.setOverlayState.bind(this, false) }>
+            <div style = {style} onMouseOver={this.setOverlayState.bind(this, true)} onMouseLeave={this.setOverlayState.bind(this, false)}>
                 {this.state.overlayOpen ?
                     <div style={overlayStyle}>
                         {this.props.description}
-                        <button className='primaryButton' onClick={this.loadClicked.bind(this) }>Check it out</button>
+                        <button className='primaryButton' style={{ display: 'block', margin: '0 auto' }} onClick={this.loadClicked.bind(this)}>Check it out</button>
                     </div>
 
                     : null}

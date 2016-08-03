@@ -14,7 +14,7 @@ export class Layer {
     /** The unique identification. Is used for example to delete items*/
     id: number;
     /** The name of the layer. Will be shown in the UI*/
-    @observable layerName: string;
+    @observable name: string;
     /** The GeoJSON representation of the data.*/
     @observable geoJSON: { features: any[], type: string };
     /** The type of the layer. Will affect the options available.*/

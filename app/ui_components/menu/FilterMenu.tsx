@@ -76,7 +76,7 @@ export class FilterMenu extends React.Component<{
         let filter = new Filter();
         filter.id = this.props.state.nextFilterId;
         filter.layer = this.props.state.editingLayer;
-        filter.title = this.props.state.editingLayer.layerName + '-filter';
+        filter.title = this.props.state.editingLayer.name + '-filter';
         filter.fieldToFilter = this.props.state.editingLayer.numberHeaders[0].label;
         filter.appState = this.props.state;
         this.props.state.filters.push(filter);

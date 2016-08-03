@@ -70,30 +70,61 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         l.appState = this.props.state;
         l.id = _currentLayerId++;
         this.props.state.layers.push(l);
+        this.props.state.layerMenuState.order.push({ name: l.name, id: l.id });
         this.props.state.importWizardShown = false;
         this.props.state.editingLayer = l;
         this.props.state.menuShown = true;
     }
 
+    loadSavedMap(saveData: SaveState) {
+        this.props.state.legend = new Legend(saveData.legend);
+        this.props.state.filters = saveData.filters ? saveData.filters : [];
+
+        for (let i in saveData.layers) {
+
+            let lyr = saveData.layers[i];
+            let newLayer = new Layer(this.props.state);
+
+            newLayer.id = _currentLayerId++;
+            newLayer.name = lyr.name
+            newLayer.headers = lyr.headers;
+            newLayer.popupHeaders = lyr.popupHeaders;
+            newLayer.layerType = lyr.layerType;
+            newLayer.heatMapVariable = lyr.heatMapVariable;
+            newLayer.geoJSON = lyr.geoJSON;
+            newLayer.colorOptions = new ColorOptions(lyr.colorOptions);
+            newLayer.symbolOptions = new SymbolOptions(lyr.symbolOptions);
+            newLayer.blockUpdate = false;
+            this.props.state.layers.push(newLayer);
+
+            this.props.state.layerMenuState.order.push({ name: newLayer.name, id: newLayer.id });
+        }
+        this.props.state.welcomeShown = false;
+        this.props.state.editingLayer = this.props.state.layers[0];
+        this.props.state.menuShown = true;
+
+
+    }
 
     /**
      * changeLayerOrder - Redraws the layers in the order given
      *
      * @param   order   the array of layer ids
      */
-    changeLayerOrder(order: number[]) {
-        for (let i of order) {
-            let layer = this.getLayerInfoById(i);
+    changeLayerOrder() {
+        for (let i of this.props.state.layerMenuState.order) {
+            let layer = this.props.state.layers.filter(lyr => lyr.id == i.id)[0];
             if (layer.layer) {
-                (layer.layer as any).bringToFront();
-            }
-        }
-    }
+                if (layer.layerType !== LayerTypes.HeatMap) {
+                    (layer.layer as any).bringToFront();
+                }
+                else {
+                    this.props.state.map.removeLayer(layer.layer);
+                    console.log('removed')
+                    this.props.state.map.addLayer(layer.layer);
+                    console.log('added')
 
-    getLayerInfoById(id: number) {
-        for (let lyr of this.props.state.layers) {
-            if (lyr.id == id) {
-                return lyr;
+                }
             }
         }
     }
@@ -111,7 +142,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      * @param  id   The unique id of the LayerInfo to remove
      */
     deleteLayer(id: number) {
-        let layerInfo = this.getLayerInfoById(id);
+        let layerInfo = this.props.state.layers.filter(lyr => lyr.id == id)[0];
         if (layerInfo) {
             this.props.state.layers = this.props.state.layers.filter((lyr) => { return lyr.id != id });
             this.props.state.map.removeLayer(layerInfo.layer);
@@ -191,33 +222,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         (window as any).saveAs(blob, 'map.mapify');
     }
 
-    loadSavedMap(saveData: SaveState) {
-        this.props.state.legend = new Legend(saveData.legend);
-        this.props.state.filters = saveData.filters ? saveData.filters : [];
 
-        for (let i in saveData.layers) {
-
-            let lyr = saveData.layers[i];
-            let newLayer = new Layer(this.props.state);
-
-            newLayer.id = lyr.id;
-            newLayer.layerName = lyr.layerName
-            newLayer.headers = lyr.headers;
-            newLayer.popupHeaders = lyr.popupHeaders;
-            newLayer.layerType = lyr.layerType;
-            newLayer.heatMapVariable = lyr.heatMapVariable;
-            newLayer.geoJSON = lyr.geoJSON;
-            newLayer.colorOptions = new ColorOptions(lyr.colorOptions);
-            newLayer.symbolOptions = new SymbolOptions(lyr.symbolOptions);
-            newLayer.blockUpdate = false;
-            this.props.state.layers.push(newLayer);
-        }
-        this.props.state.welcomeShown = false;
-        this.props.state.editingLayer = this.props.state.layers[0];
-        this.props.state.menuShown = true;
-
-
-    }
     render() {
         let modalStyle = {
             content: {

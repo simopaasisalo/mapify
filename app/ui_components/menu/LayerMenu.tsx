@@ -12,7 +12,7 @@ export class LayerMenu extends React.Component<{
     /** Function to remove a layer from the map. Triggered by button press*/
     deleteLayer: (id: number) => void,
     /** Save the current order to the map. Triggered by button press*/
-    saveOrder: (order: number[]) => void,
+    saveOrder: () => void,
 }, {}>{
     // shouldComponentUpdate(nextProps: ILayerMenuProps, nextState: ILayerMenuStates) {
     //     return this.props.isVisible !== nextProps.isVisible ||
@@ -41,24 +41,23 @@ export class LayerMenu extends React.Component<{
 
         let arr = [];
         for (let lyr of layers) {
-            arr.push({ name: lyr.layerName, id: lyr.id });
+            arr.push({ name: lyr.name, id: lyr.id });
         }
         return arr;
     }
     handleSort(items: string[]) {
         let arr: { name: string, id: number }[] = [];
         for (let i of items) {
-            arr.push(this.getLayerInfoById(i));
+            arr.push(this.getLayerInfoById(+i));
         }
-        this.setState({
-            order: arr
-        });
-
+        this.props.state.layerMenuState.order = arr;
+        this.props.saveOrder();
     }
-    getLayerInfoById(id: string) {
-        for (let lyr of this.props.state.layerMenuState.order) {
-            if (lyr.id === +id) {
-                return lyr;
+    getLayerInfoById(id: number) {
+
+        for (let lyr of this.props.state.layers) {
+            if (lyr.id === id) {
+                return { name: lyr.name, id: lyr.id };
             }
         }
     }
@@ -69,11 +68,7 @@ export class LayerMenu extends React.Component<{
         this.props.deleteLayer(id);
     }
     saveOrder() {
-        let arr: number[] = [];
-        for (let lyr of this.props.state.layerMenuState.order) {
-            arr.push(lyr.id);
-        }
-        this.props.saveOrder(arr); //unnecessary? just set the state?
+        this.props.saveOrder(); //unnecessary? just set the state?
     }
     render() {
         if (this.props.state.visibleMenu !== 1)
@@ -101,7 +96,7 @@ export class LayerMenu extends React.Component<{
                         </div>;
                     }, this)}
                 </Sortable>
-                <button className='menuButton' onClick={this.saveOrder.bind(this)}>Save</button>
+                {this.props.state.autoRefresh ? null : <button className='menuButton' onClick={this.saveOrder.bind(this)}>Save</button>}
                 <button className='menuButton' onClick={this.addNewLayer.bind(this)}>Add new layer</button>
 
             </div>

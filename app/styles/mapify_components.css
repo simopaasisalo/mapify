@@ -20,6 +20,11 @@ h2,h3{
   text-align: center;;
   margin: 0
 }
+
+hr{
+  color: #cecece;
+  width: 75%;
+}
 .menuHeader{
   line-height: 48px !important;
   width: 100%;
