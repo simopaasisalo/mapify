@@ -23,6 +23,7 @@ let reactDOMServer = require('react-dom/server');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 
+
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 @observer
 export class MapMain extends React.Component<{ state: AppState }, {}>{
@@ -30,7 +31,33 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
+        let asd = this.getUrlParameter("asd");
+        console.log(asd);
     }
+
+
+
+    /**
+     * Get URL parameter value
+     *
+     * http://stackoverflow.com/questions/19491336/get-url-parameter-jquery-or-how-to-get-query-string-values-in-js/21903119#21903119
+     * @param  sParam   parameter to look for
+     * @return false when not found, value when found
+     */
+    getUrlParameter(sParam: string) {
+        var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+            sURLVariables = sPageURL.split('&'),
+            sParameterName,
+            i;
+
+        for (i = 0; i < sURLVariables.length; i++) {
+            sParameterName = sURLVariables[i].split('=');
+
+            if (sParameterName[0] === sParam) {
+                return sParameterName[1] === undefined ? false : sParameterName[1];
+            }
+        }
+    };
     /**
      * initMap - Initializes the map with basic options
      *
