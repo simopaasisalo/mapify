@@ -68,6 +68,7 @@
 	var LayerImportWizard_1 = __webpack_require__(169);
 	var Menu_1 = __webpack_require__(192);
 	var MapInitModel_1 = __webpack_require__(288);
+	var common_1 = __webpack_require__(163);
 	var OnScreenFilter_1 = __webpack_require__(290);
 	var OnScreenLegend_1 = __webpack_require__(293);
 	var WelcomeScreen_1 = __webpack_require__(295);
@@ -116,32 +117,60 @@
 	        l.appState = this.props.state;
 	        l.id = _currentLayerId++;
 	        this.props.state.layers.push(l);
+	        this.props.state.layerMenuState.order.push({ name: l.name, id: l.id });
 	        this.props.state.importWizardShown = false;
 	        this.props.state.editingLayer = l;
 	        this.props.state.menuShown = true;
 	    };
-	    MapMain.prototype.changeLayerOrder = function (order) {
-	        for (var _i = 0, order_1 = order; _i < order_1.length; _i++) {
-	            var i = order_1[_i];
-	            var layer = this.getLayerInfoById(i);
-	            if (layer.layer) {
-	                layer.layer.bringToFront();
-	            }
+	    MapMain.prototype.loadSavedMap = function (saveData) {
+	        this.props.state.legend = new Legend_1.Legend(saveData.legend);
+	        this.props.state.filters = saveData.filters ? saveData.filters : [];
+	        for (var i in saveData.layers) {
+	            var lyr = saveData.layers[i];
+	            var newLayer = new Layer_1.Layer(this.props.state);
+	            newLayer.id = _currentLayerId++;
+	            newLayer.name = lyr.name;
+	            newLayer.headers = lyr.headers;
+	            newLayer.popupHeaders = lyr.popupHeaders;
+	            newLayer.layerType = lyr.layerType;
+	            newLayer.heatMapVariable = lyr.heatMapVariable;
+	            newLayer.geoJSON = lyr.geoJSON;
+	            newLayer.colorOptions = new Layer_1.ColorOptions(lyr.colorOptions);
+	            newLayer.symbolOptions = new Layer_1.SymbolOptions(lyr.symbolOptions);
+	            newLayer.blockUpdate = false;
+	            this.props.state.layers.push(newLayer);
+	            this.props.state.layerMenuState.order.push({ name: newLayer.name, id: newLayer.id });
 	        }
+	        this.props.state.welcomeShown = false;
+	        this.props.state.editingLayer = this.props.state.layers[0];
+	        this.props.state.menuShown = true;
 	    };
-	    MapMain.prototype.getLayerInfoById = function (id) {
-	        for (var _i = 0, _a = this.props.state.layers; _i < _a.length; _i++) {
-	            var lyr = _a[_i];
-	            if (lyr.id == id) {
-	                return lyr;
+	    MapMain.prototype.changeLayerOrder = function () {
+	        var _loop_1 = function(i) {
+	            var layer = this_1.props.state.layers.filter(function (lyr) { return lyr.id == i.id; })[0];
+	            if (layer.layer) {
+	                if (layer.layerType !== common_1.LayerTypes.HeatMap) {
+	                    layer.layer.bringToFront();
+	                }
+	                else {
+	                    this_1.props.state.map.removeLayer(layer.layer);
+	                    console.log('removed');
+	                    this_1.props.state.map.addLayer(layer.layer);
+	                    console.log('added');
+	                }
 	            }
+	        };
+	        var this_1 = this;
+	        for (var _i = 0, _a = this.props.state.layerMenuState.order; _i < _a.length; _i++) {
+	            var i = _a[_i];
+	            _loop_1(i);
 	        }
 	    };
 	    MapMain.prototype.reloadLayer = function (layer, wasImported) {
 	        if (wasImported === void 0) { wasImported = false; }
 	    };
 	    MapMain.prototype.deleteLayer = function (id) {
-	        var layerInfo = this.getLayerInfoById(id);
+	        var layerInfo = this.props.state.layers.filter(function (lyr) { return lyr.id == id; })[0];
 	        if (layerInfo) {
 	            this.props.state.layers = this.props.state.layers.filter(function (lyr) { return lyr.id != id; });
 	            this.props.state.map.removeLayer(layerInfo.layer);
@@ -194,32 +223,10 @@
 	        var blob = new Blob([JSON.stringify(saveData)], { type: "text/plain;charset=utf-8" });
 	        window.saveAs(blob, 'map.mapify');
 	    };
-	    MapMain.prototype.loadSavedMap = function (saveData) {
-	        this.props.state.legend = new Legend_1.Legend(saveData.legend);
-	        this.props.state.filters = saveData.filters ? saveData.filters : [];
-	        for (var i in saveData.layers) {
-	            var lyr = saveData.layers[i];
-	            var newLayer = new Layer_1.Layer(this.props.state);
-	            newLayer.id = lyr.id;
-	            newLayer.layerName = lyr.layerName;
-	            newLayer.headers = lyr.headers;
-	            newLayer.popupHeaders = lyr.popupHeaders;
-	            newLayer.layerType = lyr.layerType;
-	            newLayer.heatMapVariable = lyr.heatMapVariable;
-	            newLayer.geoJSON = lyr.geoJSON;
-	            newLayer.colorOptions = new Layer_1.ColorOptions(lyr.colorOptions);
-	            newLayer.symbolOptions = new Layer_1.SymbolOptions(lyr.symbolOptions);
-	            newLayer.blockUpdate = false;
-	            this.props.state.layers.push(newLayer);
-	        }
-	        this.props.state.welcomeShown = false;
-	        this.props.state.editingLayer = this.props.state.layers[0];
-	        this.props.state.menuShown = true;
-	    };
 	    MapMain.prototype.render = function () {
 	        var modalStyle = {
 	            content: {
-	                border: '4px solid #6891e2',
+	                border: '1px solid #cecece',
 	                borderRadius: '15px',
 	                padding: '0px',
 	            }
@@ -22819,6 +22826,7 @@
 	var Layer_1 = __webpack_require__(162);
 	var Legend_1 = __webpack_require__(168);
 	var common_1 = __webpack_require__(163);
+	var mobx = __webpack_require__(160);
 	var AppState = (function () {
 	    function AppState() {
 	        this.welcomeShown = true;
@@ -23232,7 +23240,7 @@
 	    __decorate([
 	        mobx_1.observable, 
 	        __metadata('design:type', String)
-	    ], Layer.prototype, "layerName", void 0);
+	    ], Layer.prototype, "name", void 0);
 	    __decorate([
 	        mobx_1.observable, 
 	        __metadata('design:type', Object)
@@ -35905,10 +35913,12 @@
 	    function Legend(prev) {
 	        this.title = prev && prev.title || "";
 	        this.meta = prev && prev.meta || "";
-	        this.horizontal = prev && prev.horizontal || true;
+	        this.horizontal = prev && prev.horizontal !== undefined ? prev.horizontal : true;
 	        this.visible = prev && prev.visible || false;
 	        this.showPercentages = prev && prev.showPercentages || false;
 	        this.edit = prev && prev.edit || false;
+	        this.x = prev && prev.x || 0;
+	        this.y = prev && prev.y || 0;
 	    }
 	    __decorate([
 	        mobx_1.observable, 
@@ -36003,7 +36013,7 @@
 	        this.submit();
 	    };
 	    LayerImportWizard.prototype.setLayerName = function (name) {
-	        this.props.state.layer.layerName = name;
+	        this.props.state.layer.name = name;
 	    };
 	    LayerImportWizard.prototype.cancel = function () {
 	        this.props.cancel();
@@ -36099,7 +36109,7 @@
 	        };
 	    }
 	    LayerTypeSelectView.prototype.render = function () {
-	        return (React.createElement("div", null, React.createElement("div", null, React.createElement("div", {className: 'dialogHeader'}, React.createElement("h2", null, "Select a map type to create")), React.createElement("div", {style: { height: 600 }}, React.createElement(LayerType_1.LayerType, {name: 'Choropleth', type: common_1.LayerTypes.ChoroplethMap, imageURL: 'app/images/choropreview.png', description: 'Use this type to create clean and easy to read maps from your polygon data. Color the areas by a single value by selecting a predefined color scheme or define your own.', onClick: this.onMapTypeClick, selected: this.activeLayer.layerType == common_1.LayerTypes.ChoroplethMap}), React.createElement(LayerType_1.LayerType, {name: 'Symbol map', type: common_1.LayerTypes.SymbolMap, imageURL: 'app/images/symbolpreview.png', description: 'Use icons and charts to bring your point data to life! Scale symbol size by a value and give them choropleth-style coloring to create multi-value maps.', onClick: this.onMapTypeClick, selected: this.activeLayer.layerType == common_1.LayerTypes.SymbolMap}), React.createElement(LayerType_1.LayerType, {name: 'Heatmap', type: common_1.LayerTypes.HeatMap, imageURL: 'app/images/heatpreview.png', description: 'Turn your point data into an intensity map with this layer type. In development!', onClick: this.onMapTypeClick, selected: this.activeLayer.layerType === common_1.LayerTypes.HeatMap}))), React.createElement("button", {className: 'secondaryButton', style: { position: 'absolute', left: 15, bottom: 15 }, onClick: this.cancel}, "Cancel"), React.createElement("button", {className: 'primaryButton', disabled: this.activeLayer.layerType === null, style: { position: 'absolute', right: 15, bottom: 15 }, onClick: this.proceed}, "Continue")));
+	        return (React.createElement("div", null, React.createElement("div", null, React.createElement("h2", null, "Select a map type to create"), React.createElement("hr", null), React.createElement("div", {style: { height: 600 }}, React.createElement(LayerType_1.LayerType, {name: 'Choropleth', type: common_1.LayerTypes.ChoroplethMap, imageURL: 'app/images/choropreview.png', description: 'Use this type to create clean and easy to read maps from your polygon data. Color the areas by a single value by selecting a predefined color scheme or define your own.', onClick: this.onMapTypeClick, selected: this.activeLayer.layerType == common_1.LayerTypes.ChoroplethMap}), React.createElement(LayerType_1.LayerType, {name: 'Symbol map', type: common_1.LayerTypes.SymbolMap, imageURL: 'app/images/symbolpreview.png', description: 'Use icons and charts to bring your point data to life! Scale symbol size by a value and give them choropleth-style coloring to create multi-value maps.', onClick: this.onMapTypeClick, selected: this.activeLayer.layerType == common_1.LayerTypes.SymbolMap}), React.createElement(LayerType_1.LayerType, {name: 'Heatmap', type: common_1.LayerTypes.HeatMap, imageURL: 'app/images/heatpreview.png', description: 'Turn your point data into an intensity map with this layer type. In development!', onClick: this.onMapTypeClick, selected: this.activeLayer.layerType === common_1.LayerTypes.HeatMap}))), React.createElement("button", {className: 'secondaryButton', style: { position: 'absolute', left: 15, bottom: 15 }, onClick: this.cancel}, "Cancel"), React.createElement("button", {className: 'primaryButton', disabled: this.activeLayer.layerType === undefined, style: { position: 'absolute', right: 15, bottom: 15 }, onClick: this.proceed}, "Continue")));
 	    };
 	    LayerTypeSelectView = __decorate([
 	        mobx_react_1.observer, 
@@ -36195,7 +36205,7 @@
 	                if (_allowedFileTypes.indexOf(ext) !== -1) {
 	                    this.props.state.content = contents.result;
 	                    this.props.state.fileName = fileName;
-	                    this.activeLayer.layerName = fileName;
+	                    this.activeLayer.name = fileName;
 	                    this.props.state.fileExtension = ext;
 	                }
 	                else {
@@ -36204,7 +36214,7 @@
 	            }
 	        };
 	        this.onLayerNameChange = function (e) {
-	            _this.activeLayer.layerName = e.target.value;
+	            _this.activeLayer.name = e.target.value;
 	        };
 	        this.goBack = function () {
 	            _this.props.goBack();
@@ -36239,7 +36249,7 @@
 	            color: 'grey',
 	            fontWeight: 'bold'
 	        };
-	        return (React.createElement("div", null, React.createElement("div", null, React.createElement("div", {className: 'dialogHeader'}, React.createElement("h2", null, " Upload the file containing the data ")), React.createElement("p", null, "Currently supported file types: "), React.createElement("p", null, " GeoJSON, CSV(point data with coordinates in two columns), KML, GPX, WKT"), React.createElement(Dropzone, {style: dropStyle, onDrop: this.onDrop.bind(this), accept: _allowedFileTypes.map(function (type) { return '.' + type; }).join(', ')}, this.props.state.fileName ? React.createElement("span", null, React.createElement("i", {className: 'fa fa-check', style: { color: '#549341', fontSize: 17 }}), " ", this.props.state.fileName, " ") : React.createElement("span", null, "Drop file or click to open upload menu")), React.createElement("label", null, "Give a name to the layer"), React.createElement("input", {type: "text", onChange: this.onLayerNameChange, value: this.activeLayer.layerName})), React.createElement("button", {className: 'secondaryButton', style: { position: 'absolute', left: 15, bottom: 15 }, onClick: this.goBack.bind(this)}, "Previous"), React.createElement("button", {className: 'primaryButton', disabled: this.props.state.content === '' || this.activeLayer.layerName === '', style: { position: 'absolute', right: 15, bottom: 15 }, onClick: this.proceed.bind(this)}, "Continue")));
+	        return (React.createElement("div", null, React.createElement("div", null, React.createElement("h2", null, " Upload the file containing the data "), React.createElement("hr", null), React.createElement("p", null, "Currently supported file types: "), React.createElement("p", null, " GeoJSON, CSV(point data with coordinates in two columns), KML, GPX, WKT"), React.createElement(Dropzone, {style: dropStyle, onDrop: this.onDrop.bind(this), accept: _allowedFileTypes.map(function (type) { return '.' + type; }).join(', ')}, this.props.state.fileName ? React.createElement("span", null, React.createElement("i", {className: 'fa fa-check', style: { color: '#549341', fontSize: 17 }}), " ", this.props.state.fileName, " ") : React.createElement("span", null, "Drop file or click to open upload menu")), React.createElement("label", null, "Give a name to the layer"), React.createElement("input", {type: "text", onChange: this.onLayerNameChange, value: this.activeLayer.name})), React.createElement("button", {className: 'secondaryButton', style: { position: 'absolute', left: 15, bottom: 15 }, onClick: this.goBack.bind(this)}, "Previous"), React.createElement("button", {className: 'primaryButton', disabled: this.props.state.content === undefined || this.activeLayer.name === '', style: { position: 'absolute', right: 15, bottom: 15 }, onClick: this.proceed.bind(this)}, "Continue")));
 	    };
 	    FileUploadView = __decorate([
 	        mobx_react_1.observer, 
@@ -39350,7 +39360,7 @@
 	        this.props.state.coordinateSystem = 'WGS84';
 	    };
 	    FileDetailsView.prototype.render = function () {
-	        return React.createElement("div", {style: { height: '100%' }}, React.createElement("div", null, React.createElement("div", {className: 'dialogHeader'}, React.createElement("h2", null, "Just a few more details")), this.props.state.isGeoJSON ?
+	        return React.createElement("div", {style: { height: '100%' }}, React.createElement("div", null, React.createElement("h2", null, "Just a few more details"), React.createElement("hr", null), this.props.state.isGeoJSON ?
 	            null :
 	            React.createElement("div", null, React.createElement("label", null, "Select the latitude/Y field name"), React.createElement(Select, {options: this.activeLayer.numberHeaders, onChange: this.onLatitudeSelectionChange, value: this.props.state.latitudeField}), React.createElement("label", null, "Select the longitude/X field name"), React.createElement(Select, {options: this.activeLayer.numberHeaders, onChange: this.onLongitudeSelectionChange, value: this.props.state.longitudeField})), React.createElement("label", null, "Select the coordinate system"), React.createElement(Select, {options: coords, onChange: this.onCoordinateSystemChange, value: this.props.state.coordinateSystem}), React.createElement("p", null, " Not sure? Try with the default (WGS84) and see if the data lines up."), React.createElement("p", null, "Coordinate system missing? Get the Proj4-string for your system from", React.createElement("a", {href: 'http://spatialreference.org/ref/'}, " Spatial Reference")), React.createElement("input", {id: 'customProj', defaultValue: 'Insert custom Proj4-string here', style: { width: 400 }}), this.props.state.isHeatMap ?
 	            React.createElement("div", null, React.createElement("label", null, "Select heat map variable"), React.createElement(Select, {options: this.activeLayer.numberHeaders, onChange: this.onHeatValueChange, value: this.activeLayer.heatMapVariable}))
@@ -41191,11 +41201,11 @@
 	        this.refreshMap = function () {
 	            _this.props.refreshMap(_this.props.state.editingLayer);
 	        };
-	        this.onLayerOrderChange = function (order) {
-	            _this.props.changeLayerOrder(order);
+	        this.onLayerOrderChange = function () {
+	            _this.props.changeLayerOrder();
 	        };
 	        this.showLayerNameOnMenu = function (option) {
-	            return option ? option.layerName : '';
+	            return option ? option.name : '';
 	        };
 	        this.deleteFilter = function (id) {
 	            _this.props.deleteFilter(id);
@@ -41237,16 +41247,17 @@
 	        if (this.props.state.layers) {
 	            for (var _i = 0, _a = this.props.state.layers; _i < _a.length; _i++) {
 	                var layer = _a[_i];
-	                layers.push({ value: layer, label: layer.layerName });
+	                layers.push({ value: layer, label: layer.name });
 	            }
 	        }
-	        return (React.createElement(Menu.Menu, {showDividers: true}, React.createElement(Menu.Brand, null, "Options"), React.createElement(Menu.Item, {style: { backgroundColor: this.props.state.visibleMenu === 1 ? '#1a263f' : '#293c60' }}, React.createElement("p", {className: "menuHeader fa fa-bars", onClick: this.onActiveMenuChange.bind(this, 1)}, " Layers "), React.createElement(LayerMenu_1.LayerMenu, {state: this.props.state, saveOrder: this.onLayerOrderChange, addNewLayer: this.addNewLayer, deleteLayer: this.deleteLayer})), React.createElement(Select, {options: layers, onChange: this.onLayerSelectionChange, value: this.props.state.editingLayer, valueRenderer: this.showLayerNameOnMenu, clearable: false}), this.props.state.editingLayer ?
-	            React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-paint-brush", onClick: this.onActiveMenuChange.bind(this, 2), style: { backgroundColor: this.props.state.visibleMenu === 2 ? '#1a263f' : '#293c60' }}, " Colors "), React.createElement(ColorMenu_1.ColorMenu, {state: this.props.state}))
-	            : React.createElement("div", null), this.props.state.editingLayer && this.props.state.editingLayer.layerType !== common_1.LayerTypes.ChoroplethMap && this.props.state.editingLayer.layerType !== common_1.LayerTypes.HeatMap ?
-	            React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-map-marker", onClick: this.onActiveMenuChange.bind(this, 3), style: { backgroundColor: this.props.state.visibleMenu === 3 ? '#1a263f' : '#293c60' }}, " Symbols "), React.createElement(SymbolMenu_1.SymbolMenu, {state: this.props.state, saveValues: this.refreshMap}))
-	            : React.createElement("div", null), React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-sliders", onClick: this.onActiveMenuChange.bind(this, 4), style: { backgroundColor: this.props.state.visibleMenu === 4 ? '#1a263f' : '#293c60' }}, " Filters "), React.createElement(FilterMenu_1.FilterMenu, {state: this.props.state, deleteFilter: this.deleteFilter})), React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-map-o", onClick: this.onActiveMenuChange.bind(this, 5), style: { backgroundColor: this.props.state.visibleMenu === 5 ? '#1a263f' : '#293c60' }}, " Legend "), React.createElement(LegendMenu_1.LegendMenu, {state: this.props.state})), this.props.state.editingLayer && this.props.state.editingLayer.layerType !== common_1.LayerTypes.HeatMap ?
-	            React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-newspaper-o", onClick: this.onActiveMenuChange.bind(this, 6), style: { backgroundColor: this.props.state.visibleMenu === 6 ? '#1a263f' : '#293c60' }}, " Pop-ups "), React.createElement(PopUpMenu_1.PopUpMenu, {state: this.props.state, saveValues: this.changePopUpHeaders}))
-	            : React.createElement("div", null), React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-download", onClick: this.onActiveMenuChange.bind(this, 7), style: { backgroundColor: this.props.state.visibleMenu === 7 ? '#1a263f' : '#293c60' }}, " Export map "), React.createElement(ExportMenu_1.ExportMenu, {state: this.props.state, saveImage: this.saveImage, saveFile: this.saveFile}))));
+	        return (!this.props.state.menuShown ? null :
+	            React.createElement(Menu.Menu, {showDividers: true}, React.createElement(Menu.Brand, null, "Options"), React.createElement(Menu.Item, {style: { backgroundColor: this.props.state.visibleMenu === 1 ? '#1a263f' : '#293c60' }}, React.createElement("p", {className: "menuHeader fa fa-bars", onClick: this.onActiveMenuChange.bind(this, 1)}, " Layers "), React.createElement(LayerMenu_1.LayerMenu, {state: this.props.state, saveOrder: this.onLayerOrderChange, addNewLayer: this.addNewLayer, deleteLayer: this.deleteLayer})), React.createElement(Select, {options: layers, onChange: this.onLayerSelectionChange, value: this.props.state.editingLayer, valueRenderer: this.showLayerNameOnMenu, clearable: false}), this.props.state.editingLayer ?
+	                React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-paint-brush", onClick: this.onActiveMenuChange.bind(this, 2), style: { backgroundColor: this.props.state.visibleMenu === 2 ? '#1a263f' : '#293c60' }}, " Colors "), React.createElement(ColorMenu_1.ColorMenu, {state: this.props.state}))
+	                : React.createElement("div", null), this.props.state.editingLayer && this.props.state.editingLayer.layerType !== common_1.LayerTypes.ChoroplethMap && this.props.state.editingLayer.layerType !== common_1.LayerTypes.HeatMap ?
+	                React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-map-marker", onClick: this.onActiveMenuChange.bind(this, 3), style: { backgroundColor: this.props.state.visibleMenu === 3 ? '#1a263f' : '#293c60' }}, " Symbols "), React.createElement(SymbolMenu_1.SymbolMenu, {state: this.props.state, saveValues: this.refreshMap}))
+	                : React.createElement("div", null), React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-sliders", onClick: this.onActiveMenuChange.bind(this, 4), style: { backgroundColor: this.props.state.visibleMenu === 4 ? '#1a263f' : '#293c60' }}, " Filters "), React.createElement(FilterMenu_1.FilterMenu, {state: this.props.state, deleteFilter: this.deleteFilter})), React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-map-o", onClick: this.onActiveMenuChange.bind(this, 5), style: { backgroundColor: this.props.state.visibleMenu === 5 ? '#1a263f' : '#293c60' }}, " Legend "), React.createElement(LegendMenu_1.LegendMenu, {state: this.props.state})), this.props.state.editingLayer && this.props.state.editingLayer.layerType !== common_1.LayerTypes.HeatMap ?
+	                React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-newspaper-o", onClick: this.onActiveMenuChange.bind(this, 6), style: { backgroundColor: this.props.state.visibleMenu === 6 ? '#1a263f' : '#293c60' }}, " Pop-ups "), React.createElement(PopUpMenu_1.PopUpMenu, {state: this.props.state, saveValues: this.changePopUpHeaders}))
+	                : React.createElement("div", null), React.createElement(Menu.Item, null, React.createElement("p", {className: "menuHeader fa fa-download", onClick: this.onActiveMenuChange.bind(this, 7), style: { backgroundColor: this.props.state.visibleMenu === 7 ? '#1a263f' : '#293c60' }}, " Download map "), React.createElement(ExportMenu_1.ExportMenu, {state: this.props.state, saveImage: this.saveImage, saveFile: this.saveFile}))));
 	    };
 	    MapifyMenu = __decorate([
 	        mobx_react_1.observer, 
@@ -41300,7 +41311,7 @@
 	        var arr = [];
 	        for (var _i = 0, layers_1 = layers; _i < layers_1.length; _i++) {
 	            var lyr = layers_1[_i];
-	            arr.push({ name: lyr.layerName, id: lyr.id });
+	            arr.push({ name: lyr.name, id: lyr.id });
 	        }
 	        return arr;
 	    };
@@ -41308,17 +41319,16 @@
 	        var arr = [];
 	        for (var _i = 0, items_1 = items; _i < items_1.length; _i++) {
 	            var i = items_1[_i];
-	            arr.push(this.getLayerInfoById(i));
+	            arr.push(this.getLayerInfoById(+i));
 	        }
-	        this.setState({
-	            order: arr
-	        });
+	        this.props.state.layerMenuState.order = arr;
+	        this.props.saveOrder();
 	    };
 	    LayerMenu.prototype.getLayerInfoById = function (id) {
-	        for (var _i = 0, _a = this.props.state.layerMenuState.order; _i < _a.length; _i++) {
+	        for (var _i = 0, _a = this.props.state.layers; _i < _a.length; _i++) {
 	            var lyr = _a[_i];
-	            if (lyr.id === +id) {
-	                return lyr;
+	            if (lyr.id === id) {
+	                return { name: lyr.name, id: lyr.id };
 	            }
 	        }
 	    };
@@ -41329,12 +41339,7 @@
 	        this.props.deleteLayer(id);
 	    };
 	    LayerMenu.prototype.saveOrder = function () {
-	        var arr = [];
-	        for (var _i = 0, _a = this.props.state.layerMenuState.order; _i < _a.length; _i++) {
-	            var lyr = _a[_i];
-	            arr.push(lyr.id);
-	        }
-	        this.props.saveOrder(arr);
+	        this.props.saveOrder();
 	    };
 	    LayerMenu.prototype.render = function () {
 	        if (this.props.state.visibleMenu !== 1)
@@ -41353,7 +41358,7 @@
 	        };
 	        return (React.createElement("div", {className: "mapify-options"}, React.createElement("label", null, "Drag and drop to reorder"), React.createElement(Sortable, {className: 'layerList', onChange: this.handleSort.bind(this)}, this.props.state.layerMenuState.order.map(function (layer) {
 	            return React.createElement("div", {style: layerStyle, key: layer.id, "data-id": layer.id}, layer.name, React.createElement("i", {className: "fa fa-times", onClick: this.deleteLayer.bind(this, layer.id)}));
-	        }, this)), React.createElement("button", {className: 'menuButton', onClick: this.saveOrder.bind(this)}, "Save"), React.createElement("button", {className: 'menuButton', onClick: this.addNewLayer.bind(this)}, "Add new layer")));
+	        }, this)), this.props.state.autoRefresh ? null : React.createElement("button", {className: 'menuButton', onClick: this.saveOrder.bind(this)}, "Save"), React.createElement("button", {className: 'menuButton', onClick: this.addNewLayer.bind(this)}, "Add new layer")));
 	    };
 	    LayerMenu = __decorate([
 	        mobx_react_1.observer, 
@@ -43017,7 +43022,7 @@
 	                backgroundColor: ''
 	            },
 	            content: {
-	                border: '4px solid #6891e2',
+	                border: '1px solid #cecece',
 	                borderRadius: '15px',
 	                padding: '0px',
 	                height: 650,
@@ -81894,7 +81899,7 @@
 	                backgroundColor: ''
 	            },
 	            content: {
-	                border: '4px solid #6891e2',
+	                border: '1px solid #cecece',
 	                borderRadius: '15px',
 	                padding: '0px',
 	                height: 550,
@@ -82092,7 +82097,7 @@
 	            var filter = new Filter_1.Filter();
 	            filter.id = _this.props.state.nextFilterId;
 	            filter.layer = _this.props.state.editingLayer;
-	            filter.title = _this.props.state.editingLayer.layerName + '-filter';
+	            filter.title = _this.props.state.editingLayer.name + '-filter';
 	            filter.fieldToFilter = _this.props.state.editingLayer.numberHeaders[0].label;
 	            filter.appState = _this.props.state;
 	            _this.props.state.filters.push(filter);
@@ -82588,7 +82593,7 @@
 	    }
 	    ExportMenu.prototype.render = function () {
 	        return (this.props.state.visibleMenu === 7 ?
-	            React.createElement("div", null, React.createElement("label", {htmlFor: 'showLegend'}, "Show legend on the image"), React.createElement("input", {id: 'showLegend', type: 'checkbox', checked: this.props.state.exportMenuState.showLegend, onChange: this.onShowLegendChange}), React.createElement("br", null), React.createElement("label", {htmlFor: 'showFilters'}, "Show filters on the image"), React.createElement("input", {id: 'showFilters', type: 'checkbox', checked: this.props.state.exportMenuState.showFilters, onChange: this.onShowFiltersChange}), React.createElement("br", null), React.createElement("button", {className: 'menuButton', onClick: this.onSaveImage}, "Export map as image"), React.createElement("br", null), "Or", React.createElement("br", null), React.createElement("button", {className: 'menuButton', onClick: this.onSaveFile}, "Export map as a file"))
+	            React.createElement("div", null, React.createElement("label", {htmlFor: 'showLegend'}, "Show legend on the image"), React.createElement("input", {id: 'showLegend', type: 'checkbox', checked: this.props.state.exportMenuState.showLegend, onChange: this.onShowLegendChange}), React.createElement("br", null), React.createElement("label", {htmlFor: 'showFilters'}, "Show filters on the image"), React.createElement("input", {id: 'showFilters', type: 'checkbox', checked: this.props.state.exportMenuState.showFilters, onChange: this.onShowFiltersChange}), React.createElement("br", null), React.createElement("button", {className: 'menuButton', onClick: this.onSaveImage}, "Download map as image"), React.createElement("br", null), "Or", React.createElement("br", null), React.createElement("button", {className: 'menuButton', onClick: this.onSaveFile}, "Download map as a file"))
 	            : null);
 	    };
 	    ExportMenu = __decorate([
@@ -98089,6 +98094,10 @@
 	        this.onMetaChange = function (e) {
 	            _this.props.state.legend.meta = e.target.value;
 	        };
+	        this.onDrag = function (e, ui) {
+	            _this.props.state.legend.x = e.clientX;
+	            _this.props.state.legend.y = e.clientY;
+	        };
 	    }
 	    OnScreenLegend.prototype.createLegend = function (layer) {
 	        var choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
@@ -98107,7 +98116,7 @@
 	        }
 	        if (sym.symbolType === common_1.SymbolTypes.Icon) {
 	            var percentages = this.props.state.legend.showPercentages && sym.iconLimits.length > 1 ? this.getStepPercentages(layer.geoJSON, sym.iconField, sym.iconLimits) : {};
-	            iconLegend = this.createIconLegend(options, percentages, layer.layerName);
+	            iconLegend = this.createIconLegend(options, percentages, layer.name);
 	        }
 	        if (sym.symbolType === common_1.SymbolTypes.Blocks) {
 	            blockLegend = this.createBlockLegend(options);
@@ -98116,12 +98125,13 @@
 	    };
 	    OnScreenLegend.prototype.render = function () {
 	        var layers = this.props.state.layers;
-	        return (React.createElement(Draggable, {handle: '.dragDiv', bounds: 'parent'}, React.createElement("div", {className: 'legend', style: {
+	        var legend = this.props.state.legend;
+	        return (React.createElement(Draggable, {handle: '.dragDiv', bounds: 'parent', onDrag: this.onDrag, disabled: legend.edit, defaultPosition: { x: legend.x, y: legend.y - 400 }}, React.createElement("div", {className: 'legend', style: {
 	            width: 'auto',
-	            textAlign: 'center'
-	        }}, React.createElement("h2", {className: 'legendHeader'}, this.props.state.legend.title), React.createElement("div", null, React.createElement("div", {style: { position: 'absolute', left: 0, cursor: 'pointer' }, className: 'dragDiv'}, React.createElement("i", {className: 'fa fa-arrows'})), layers.map(function (m) {
+	            textAlign: 'center',
+	        }}, React.createElement("h2", {className: 'legendHeader'}, legend.title), React.createElement("div", null, React.createElement("div", {style: { position: 'absolute', left: 0, cursor: 'pointer' }, className: 'dragDiv'}, React.createElement("i", {className: 'fa fa-arrows'})), layers.map(function (m) {
 	            return this.createLegend(m);
-	        }, this)), React.createElement("div", {style: { clear: 'both' }}, React.createElement(TextEditor_1.TextEditor, {style: { width: '100%', minHeight: 50 }, content: this.props.state.legend.meta, onChange: this.onMetaChange, edit: this.props.state.legend.edit})))));
+	        }, this)), React.createElement("div", {style: { clear: 'both' }}, React.createElement(TextEditor_1.TextEditor, {style: { width: '100%' }, content: legend.meta, onChange: this.onMetaChange, edit: legend.edit})))));
 	    };
 	    OnScreenLegend.prototype.createChoroplethLegend = function (layer, percentages) {
 	        var divs = [];
@@ -98473,11 +98483,13 @@
 	            borderRadius: 15,
 	            margin: 5,
 	            textAlign: 'center',
-	            lineHeight: '150px',
 	            color: 'grey',
 	            fontWeight: 'bold'
 	        };
-	        return (React.createElement("div", null, React.createElement("a", {href: "https://github.com/simopaasisalo/mapify"}, React.createElement("img", {style: { position: 'absolute', top: 0, right: 0, border: 0 }, src: "https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67", alt: "Fork me on GitHub", "data-canonical-src": "https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"})), React.createElement("h2", null, "Welcome to Mapify!"), "Mapify is an open source mapmaking tool that lets you create powerful visualizations from your spatial data", React.createElement("br", null), "Guides and feedback channels can be found in the ", React.createElement("a", {href: "https://github.com/simopaasisalo/mapify"}, "GitHub page"), ". Contributions and feature requests welcome!", React.createElement("br", null), React.createElement("h3", null, "Check out these demos: "), React.createElement("div", {style: { overflowX: 'auto', overflowY: 'hidden' }}, React.createElement("div", {style: { minWidth: 1400, height: 440 }}, React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/chorodemo.png', description: 'This demo shows the choropleth map type by mapping the United States by population density.', loadDemo: this.loadDemo.bind(this, 'chorodemo')}), React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/symboldemo.png', description: 'This demo demonstrates the different symbol options of Mapify. Data random generated for demo purposes.', loadDemo: this.loadDemo.bind(this, 'symboldemo')}), React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/hki_chartdemo.png', description: 'This demo shows the chart-as-a-symbol map by visualizing distribution between different traffic types in Helsinki using a pie chart. Data acquired from hri.fi', loadDemo: this.loadDemo.bind(this, 'hki_chartdemo')}), React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/hki_heatdemo.png', description: 'This demo showcases the heat map by visualizing the total traffic in Helsinki. Data acquired from hri.fi', loadDemo: this.loadDemo.bind(this, 'hki_heatdemo')}))), React.createElement("div", {style: { height: 300, display: 'inline-flex' }}, React.createElement("div", {style: { width: '50%', display: 'inline-block' }}, React.createElement("h3", null, "Load a previously made map"), "Have a map you worked on previously? Someone sent you a cool map to see for yourself? Upload it here!", React.createElement(Dropzone, {style: dropStyle, onDrop: this.onDrop.bind(this), accept: '.mapify'}, this.state.fileName ? React.createElement("span", null, React.createElement("i", {className: 'fa fa-check', style: { color: '#549341', fontSize: 17 }}), " ", this.state.fileName, " ") : React.createElement("span", null, "Drop file or click to open upload menu")), React.createElement("button", {style: { position: 'absolute', bottom: 10, left: 10 }, className: 'primaryButton', disabled: this.state.fileName === null || this.state.fileName === '', onClick: this.loadMap.bind(this)}, "Load existing map")), React.createElement("div", {style: { width: '50%', display: 'inline-block' }}, React.createElement("h3", null, "Create a new map"), "Start creating your own map from here. Select a layer type, upload your file and get visualizin' in minutes!", React.createElement("br", null), React.createElement("button", {style: { position: 'absolute', bottom: 10, right: 10 }, className: 'primaryButton', onClick: this.createNewMap.bind(this)}, "Create a map")))));
+	        return (React.createElement("div", {style: { textAlign: 'center' }}, React.createElement("a", {href: "https://github.com/simopaasisalo/mapify"}, React.createElement("img", {style: { position: 'absolute', top: 0, right: 0, border: 0 }, src: "https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67", alt: "Fork me on GitHub", "data-canonical-src": "https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"})), React.createElement("img", {src: 'app/images/logo_pre.png', style: { display: 'block', margin: '0 auto', padding: 5 }}), "Mapify is an open source mapmaking tool that lets you create powerful visualizations from your spatial data", React.createElement("br", null), "Guides and feedback channels can be found in the ", React.createElement("a", {href: "https://github.com/simopaasisalo/mapify"}, "GitHub page"), ". Contributions and feature requests welcome!", React.createElement("hr", null), React.createElement("h3", null, "Here's a few demos: "), React.createElement("div", {style: { overflowX: 'visible', overflowY: 'hidden', height: 440, whiteSpace: 'nowrap' }}, React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/chorodemo.png', description: 'This demo shows the choropleth map type by mapping the United States by population density.', loadDemo: this.loadDemo.bind(this, 'chorodemo')}), React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/symboldemo.png', description: 'This demo demonstrates the different symbol options of Mapify. Data random generated for demo purposes.', loadDemo: this.loadDemo.bind(this, 'symboldemo')}), React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/hki_chartdemo.png', description: 'This demo shows the chart-as-a-symbol map by visualizing distribution between different traffic types in Helsinki using a pie chart. Data acquired from hri.fi', loadDemo: this.loadDemo.bind(this, 'hki_chartdemo')}), React.createElement(DemoPreview_1.DemoPreview, {imageURL: 'demos/hki_heatdemo.png', description: 'This demo showcases the heat map by visualizing the total traffic in Helsinki. Data acquired from hri.fi', loadDemo: this.loadDemo.bind(this, 'hki_heatdemo')})), React.createElement("hr", {style: { color: '#cecece', width: '75%' }}), React.createElement("div", {style: { display: 'inline' }}, React.createElement("div", {style: { width: '50%', display: 'inline-block' }}, React.createElement("h3", null, "Load a previously made map"), React.createElement(Dropzone, {style: dropStyle, onDrop: this.onDrop.bind(this), accept: '.mapify'}, this.state.fileName ?
+	            React.createElement("span", null, React.createElement("i", {className: 'fa fa-check', style: { color: '#549341', fontSize: 17 }}), this.state.fileName, React.createElement("div", {style: { margin: '0 auto' }}, React.createElement("button", {className: 'primaryButton', onClick: this.loadMap.bind(this)}, "Show me")))
+	            :
+	                React.createElement("div", {style: { margin: '0 auto' }}, "Have a map you worked on previously? Someone sent you a cool map to see for yourself? Upload it here!", React.createElement("br", null), "Drop a map here or click to upload"))), React.createElement("div", {style: { width: '50%', display: 'inline-block' }}, React.createElement("h3", null, "Create a new map"), "Start creating your own map from here. Select a layer type, upload your file and get visualizin'!", React.createElement("br", null), React.createElement("button", {className: 'primaryButton', onClick: this.createNewMap.bind(this)}, "Create a map")))));
 	    };
 	    return WelcomeScreen;
 	}(React.Component));
@@ -98524,12 +98536,13 @@
 	            borderRadius: 15,
 	            position: 'absolute',
 	            width: 400,
+	            whiteSpace: 'normal',
 	            zIndex: 90,
 	            background: 'white',
 	            bottom: 0.
 	        };
 	        return (React.createElement("div", {style: style, onMouseOver: this.setOverlayState.bind(this, true), onMouseLeave: this.setOverlayState.bind(this, false)}, this.state.overlayOpen ?
-	            React.createElement("div", {style: overlayStyle}, this.props.description, React.createElement("button", {className: 'primaryButton', onClick: this.loadClicked.bind(this)}, "Check it out"))
+	            React.createElement("div", {style: overlayStyle}, this.props.description, React.createElement("button", {className: 'primaryButton', style: { display: 'block', margin: '0 auto' }, onClick: this.loadClicked.bind(this)}, "Check it out"))
 	            : null));
 	    };
 	    return DemoPreview;
@@ -98654,6 +98667,7 @@
 /***/ function(module, exports) {
 
 	"use strict";!function(){function t(i){return this instanceof t?(this._canvas=i="string"==typeof i?document.getElementById(i):i,this._ctx=i.getContext("2d"),this._width=i.width,this._height=i.height,this._max=1,void this.clear()):new t(i)}t.prototype={defaultRadius:25,defaultGradient:{.4:"blue",.6:"cyan",.7:"lime",.8:"yellow",1:"red"},data:function(t,i){return this._data=t,this},max:function(t){return this._max=t,this},add:function(t){return this._data.push(t),this},clear:function(){return this._data=[],this},radius:function(t,i){i=i||15;var a=this._circle=document.createElement("canvas"),s=a.getContext("2d"),e=this._r=t+i;return a.width=a.height=2*e,s.shadowOffsetX=s.shadowOffsetY=200,s.shadowBlur=i,s.shadowColor="black",s.beginPath(),s.arc(e-200,e-200,t,0,2*Math.PI,!0),s.closePath(),s.fill(),this},gradient:function(t){var i=document.createElement("canvas"),a=i.getContext("2d"),s=a.createLinearGradient(0,0,0,256);i.width=1,i.height=256;for(var e in t)s.addColorStop(e,t[e]);return a.fillStyle=s,a.fillRect(0,0,1,256),this._grad=a.getImageData(0,0,1,256).data,this},draw:function(t){this._circle||this.radius(this.defaultRadius),this._grad||this.gradient(this.defaultGradient);var i=this._ctx;i.clearRect(0,0,this._width,this._height);for(var a,s=0,e=this._data.length;e>s;s++)a=this._data[s],i.globalAlpha=Math.max(a[2]/this._max,t||.05),i.drawImage(this._circle,a[0]-this._r,a[1]-this._r);var n=i.getImageData(0,0,this._width,this._height);return this._colorize(n.data,this._grad),i.putImageData(n,0,0),this},_colorize:function(t,i){for(var a,s=3,e=t.length;e>s;s+=4)a=4*t[s],a&&(t[s-3]=i[a],t[s-2]=i[a+1],t[s-1]=i[a+2])}},window.simpleheat=t}(),L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._latlngs=t,L.setOptions(this,i)},setLatLngs:function(t){return this._latlngs=t,this.redraw()},addLatLng:function(t){return this._latlngs.push(t),this.redraw()},setOptions:function(t){return L.setOptions(this,t),this._heat&&this._updateOptions(),this.redraw()},redraw:function(){return!this._heat||this._frame||this._map._animating||(this._frame=L.Util.requestAnimFrame(this._redraw,this)),this},onAdd:function(t){this._map=t,this._canvas||this._initCanvas(),t._panes.overlayPane.appendChild(this._canvas),t.on("moveend",this._reset,this),t.options.zoomAnimation&&L.Browser.any3d&&t.on("zoomanim",this._animateZoom,this),this._reset()},onRemove:function(t){t.getPanes().overlayPane.removeChild(this._canvas),t.off("moveend",this._reset,this),t.options.zoomAnimation&&t.off("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},_initCanvas:function(){var t=this._canvas=L.DomUtil.create("canvas","leaflet-heatmap-layer leaflet-layer"),i=L.DomUtil.testProp(["transformOrigin","WebkitTransformOrigin","msTransformOrigin"]);t.style[i]="50% 50%";var a=this._map.getSize();t.width=a.x,t.height=a.y;var s=this._map.options.zoomAnimation&&L.Browser.any3d;L.DomUtil.addClass(t,"leaflet-zoom-"+(s?"animated":"hide")),this._heat=simpleheat(t),this._updateOptions()},_updateOptions:function(){this._heat.radius(this.options.radius||this._heat.defaultRadius,this.options.blur),this.options.gradient&&this._heat.gradient(this.options.gradient),this.options.max&&this._heat.max(this.options.max)},_reset:function(){var t=this._map.containerPointToLayerPoint([0,0]);L.DomUtil.setPosition(this._canvas,t);var i=this._map.getSize();this._heat._width!==i.x&&(this._canvas.width=this._heat._width=i.x),this._heat._height!==i.y&&(this._canvas.height=this._heat._height=i.y),this._redraw()},_redraw:function(){if(this._map){var t,i,a,s,e,n,h,o,r,_,d=[],l=this._heat._r,m=this._map.getSize(),c=new L.Bounds(L.point([-l,-l]),m.add([l,l])),u=void 0===this.options.max?1:this.options.max,f=void 0===this.options.maxZoom?this._map.getMaxZoom():this.options.maxZoom,g=1/Math.pow(4,Math.max(0,Math.min(f-this._map.getZoom(),12))),p=l/2,v=[],w=this._map._getMapPanePos(),y=w.x%p,x=w.y%p,P=!1;for(t=0,i=this._latlngs.length;i>t;t++)if(a=this._map.latLngToContainerPoint(this._latlngs[t]),c.contains(a)){e=Math.floor((a.x-y)/p)+2,n=Math.floor((a.y-x)/p)+2;var M=void 0!==this._latlngs[t].alt?this._latlngs[t].alt:void 0!==this._latlngs[t][2]?+this._latlngs[t][2]:1;r=M*g,v[n]=v[n]||[],s=v[n][e],s?(s[0]=(s[0]*s[2]+a.x*r)/(s[2]+r),s[1]=(s[1]*s[2]+a.y*r)/(s[2]+r),s[2]+=r,_=s[2]):(_=r,v[n][e]=[a.x,a.y,r]),this.options.relative&&(P===!1?P=_:_>P&&(P=_))}for(t=0,i=v.length;i>t;t++)if(v[t])for(h=0,o=v[t].length;o>h;h++)s=v[t][h],s&&d.push([Math.round(s[0]),Math.round(s[1]),Math.min(s[2],u)]);this.options.relative&&P!==!1&&this._heat.max(P),this._heat.data(d).draw(this.options.minOpacity),this._frame=null}},_animateZoom:function(t){var i=this._map.getZoomScale(t.zoom),a=this._map._getCenterOffset(t.center)._multiplyBy(-i).subtract(this._map._getMapPanePos());L.DomUtil.setTransform?L.DomUtil.setTransform(this._canvas,a,i):this._canvas.style[L.DomUtil.TRANSFORM]=L.DomUtil.getTranslateString(a)+" scale("+i+")"}}),L.heatLayer=function(t,i){return new L.HeatLayer(t,i)};
+
 
 /***/ },
 /* 299 */

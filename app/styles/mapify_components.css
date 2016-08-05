@@ -1,5 +1,5 @@
 body{
-  font-family: Arial;
+  font-family: Segoe UI,Frutiger,Frutiger Linotype,Dejavu Sans,Helvetica Neue,Arial,sans-serif;
   line-height: 1.4;
   margin: 0;
   padding: 0;
@@ -19,6 +19,11 @@ body{
 h2,h3{
   text-align: center;;
   margin: 0
+}
+
+hr{
+  color: #cecece;
+  width: 75%;
 }
 .menuHeader{
   line-height: 48px !important;
