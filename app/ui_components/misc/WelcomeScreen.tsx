@@ -42,7 +42,6 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
             let contents: any = e.target;
             let ext: string = fileName.split('.').pop().toLowerCase();
             if (ext === 'mapify') {
-
                 this.setState({
                     savedJSON: JSON.parse(contents.result),
                     fileName: fileName,
@@ -70,7 +69,7 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
         }
         return (<div style={{ textAlign: 'center' }}>
             <a href="https://github.com/simopaasisalo/mapify"><img style={{ position: 'absolute', top: 0, right: 0, border: 0 }} src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"/></a>
-            <img src='app/images/logo_pre.png' style={{ display: 'block', margin: '0 auto' }}/>
+            <img src='app/images/logo_pre.png' style={{ display: 'block', margin: '0 auto', padding:5 }}/>
             Mapify is an open source mapmaking tool that lets you create powerful visualizations from your spatial data
             <br/>
             Guides and feedback channels can be found in the <a href="https://github.com/simopaasisalo/mapify">GitHub page</a>. Contributions and feature requests welcome!
@@ -101,39 +100,39 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
             </div>
             <hr style={{ color: '#cecece', width: '75%' }}/>
 
-            <div>
+            <div style={{display:'inline'}}>
+                    <div style={{ width: '50%', display: 'inline-block' }}>
+                        <h3>Load a previously made map</h3>
+                        <Dropzone
+                            style={dropStyle}
+                            onDrop={this.onDrop.bind(this)}
+                            accept={'.mapify'}
+                            >
+                            {this.state.fileName ?
+                                <span>
+                                    <i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/>
+                                    {this.state.fileName}
+                                    <div style={{ margin: '0 auto' }}>
+                                    <button  className='primaryButton' onClick={this.loadMap.bind(this)}>Show me</button>
+                                    </div>
+                                </span>
+                                :
+                                <div style={{ margin: '0 auto' }}>
+                                    Have a map you worked on previously? Someone sent you a cool map to see for yourself? Upload it here!
+                                    <br/>
+                                    Drop a map here or click to upload
+                                </div>
+                            }
+                        </Dropzone>
+
+                    </div>
                 {
-                    // <div style={{ width: '50%', display: 'inline-block' }}>
-                    //     <h3>Load a previously made map</h3>
-                    //     <Dropzone
-                    //         style={dropStyle}
-                    //         onDrop={this.onDrop.bind(this)}
-                    //         accept={'.mapify'}
-                    //         >
-                    //         {this.state.fileName ?
-                    //             <span>
-                    //                 <i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/>
-                    //                 {this.state.fileName}
-                    //             </span>
-                    //             :
-                    //             <div style={{ margin: '0 auto' }}>
-                    //                 Have a map you worked on previously? Someone sent you a cool map to see for yourself? Upload it here!
-                    //                 <br/>
-                    //                 Drop a map here or click to upload
-                    //             </div>
-                    //         }
-                    //     </Dropzone>
-                    //     <button  style={{ position: 'absolute', bottom: 10, left: 10 }}  className='primaryButton' disabled={this.state.fileName === null || this.state.fileName === ''} onClick={this.loadMap.bind(this)}>Load existing map</button>
-                    //
-                    // </div>
-                }
-                {
-                    // <div style={{ width: '50%', display: 'inline-block' }}>
-                    //     <h3>Create a new map</h3>
-                    //     Start creating your own map from here. Select a layer type, upload your file and get visualizin' in minutes!
-                    //     <br/>
-                    <button style={{ position: 'absolute', bottom: 10, right: 10 }} className='primaryButton' onClick={this.createNewMap.bind(this)}>Create a map</button>
-                    // </div>
+                     <div style={{ width: '50%', display: 'inline-block' }}>
+                       <h3>Create a new map</h3>
+                        Start creating your own map from here. Select a layer type, upload your file and get visualizin'!
+                        <br/>
+                    <button className='primaryButton' onClick={this.createNewMap.bind(this)}>Create a map</button>
+                    </div>
 
                 }
             </div>

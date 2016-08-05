@@ -1,4 +1,4 @@
-import {observable, computed} from 'mobx';
+import { observable, computed } from 'mobx';
 
 export class Legend {
     /** The name of the legend. Is shown in the UI */
@@ -11,14 +11,20 @@ export class Legend {
     @observable visible: boolean;
     @observable showPercentages: boolean;
     @observable edit: boolean;
+    x: number;
+    y: number;
 
     constructor(prev?: Legend) {
+
         this.title = prev && prev.title || "";
         this.meta = prev && prev.meta || "";
-        this.horizontal = prev && prev.horizontal || true;
+
+        this.horizontal = prev && prev.horizontal !==undefined ? prev.horizontal : true; //longer format needed because default is true: if previous value is false in the shorter syntax, will resolve to false
         this.visible = prev && prev.visible || false;
         this.showPercentages = prev && prev.showPercentages || false;
         this.edit = prev && prev.edit || false;
+        this.x = prev && prev.x || 0;
+        this.y = prev && prev.y || 0;
 
     }
 }

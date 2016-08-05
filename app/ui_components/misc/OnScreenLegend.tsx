@@ -46,18 +46,28 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         this.props.state.legend.meta = e.target.value;
     }
 
+    onDrag = (e, ui) => {
+        this.props.state.legend.x = e.clientX;
+        this.props.state.legend.y = e.clientY;
+    }
+
     render() {
         let layers = this.props.state.layers;
+        let legend = this.props.state.legend;
         return (
             <Draggable
                 handle={'.dragDiv'}
                 bounds={'parent'}
+                onDrag={this.onDrag}
+                disabled={legend.edit}
+                defaultPosition={{x:legend.x, y:legend.y-400}}//hack until I find out why the Y axis starts in the middle of the map instead of the top of the window
                 >
                 <div className='legend' style={{
                     width: 'auto',
-                    textAlign: 'center'
+                    textAlign: 'center',
+
                 }}>
-                    <h2 className='legendHeader'>{this.props.state.legend.title}</h2>
+                    <h2 className='legendHeader'>{legend.title}</h2>
                     <div>
                         <div style={{ position: 'absolute', left: 0, cursor: 'pointer' }} className='dragDiv'><i className='fa fa-arrows'/></div>
                         {layers.map(function(m) {
@@ -66,10 +76,10 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
                     </div>
                     <div style={{ clear: 'both' }}>
                         <TextEditor
-                            style={{ width: '100%', minHeight: 50 }}
-                            content={this.props.state.legend.meta}
+                            style={{ width: '100%' }}
+                            content={legend.meta}
                             onChange={this.onMetaChange}
-                            edit={this.props.state.legend.edit}/>
+                            edit={legend.edit}/>
                     </div>
                 </div >
 

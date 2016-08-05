@@ -40,13 +40,11 @@ export class LayerTypeSelectView extends React.Component<{
     }
 
     public render() {
-
         return (
             <div>
                 <div>
-                    <div className = 'dialogHeader'>
-                        <h2>Select a map type to create</h2>
-                    </div>
+                    <h2>Select a map type to create</h2>
+                    <hr/>
                     <div style = {{ height: 600 }}>
                         <LayerType
                             name = 'Choropleth'
@@ -77,7 +75,7 @@ export class LayerTypeSelectView extends React.Component<{
 
                 </div>
                 <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={this.cancel}>Cancel</button>
-                <button className='primaryButton' disabled={this.activeLayer.layerType === null} style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed}>Continue</button>
+                <button className='primaryButton' disabled={this.activeLayer.layerType === undefined} style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed}>Continue</button>
             </div >
         );
     }

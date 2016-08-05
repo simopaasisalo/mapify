@@ -59,9 +59,8 @@ export class FileDetailsView extends React.Component<
 
         return <div style={{ height: '100%' }}>
             <div>
-                <div className = 'dialogHeader'>
-                    <h2>Just a few more details</h2>
-                </div>
+                <h2>Just a few more details</h2>
+                <hr/>
                 {this.props.state.isGeoJSON ?
                     null :
                     <div>

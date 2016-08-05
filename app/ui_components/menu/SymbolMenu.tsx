@@ -253,7 +253,7 @@ export class SymbolMenu extends React.Component<{
 
             },
             content: {
-                border: '4px solid #6891e2',
+                border: '1px solid #cecece',
                 borderRadius: '15px',
                 padding: '0px',
                 height: 550,
