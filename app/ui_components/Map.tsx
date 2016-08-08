@@ -14,6 +14,7 @@ import { OnScreenLegend } from './misc/OnScreenLegend';
 import { WelcomeScreen } from './misc/WelcomeScreen';
 import 'leaflet';
 import 'Leaflet.extra-markers';
+import 'leaflet-fullscreen';
 let Modal = require('react-modal');
 let d3 = require('d3');
 let chroma = require('chroma-js');
@@ -41,7 +42,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         let map = this.getUrlParameter("map");
         let path = this.getUrlParameter("path");
         if (map) {
-            LoadSavedMap(map, this.loadSavedMap.bind(this, true), path);
+            LoadSavedMap(map, this.loadSavedMap.bind(this), path);
         }
     }
 
@@ -71,10 +72,12 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      */
     initMap() {
         let baseLayers: any = _mapInitModel.InitBaseMaps();
-        this.props.state.map = L.map('map', {
+        let props = {
             layers: baseLayers,
-
-        }).setView([0, 0], 2);
+            fullscreenControl: true,
+            worldCopyJump: true,
+        };
+        this.props.state.map = L.map('map', props).setView([0, 0], 2);
 
         this.props.state.map.doubleClickZoom.disable();
         this.props.state.map.on('contextmenu', function(e) { //disable context menu opening on right-click
@@ -110,7 +113,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         this.props.state.menuShown = true;
     }
 
-    loadSavedMap(embed: boolean, saved: SaveState) {
+    loadSavedMap(saved: SaveState) {
 
         this.props.state.legend = new Legend(saved.legend);
         this.props.state.filters = saved.filters ? saved.filters : [];
@@ -136,7 +139,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         }
         this.props.state.welcomeShown = false;
         this.props.state.editingLayer = this.props.state.layers[0];
-        this.props.state.menuShown = !embed;
+        this.props.state.menuShown = !this.props.state.embed;
 
 
     }

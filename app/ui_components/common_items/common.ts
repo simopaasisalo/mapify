@@ -84,7 +84,7 @@ function GetItemBetweenLimits(limits: any[], items: any[], value: number) {
 function LoadSavedMap(filename: string, onLoad: (string) => void, path?: string) {
 
     let rawFile = new XMLHttpRequest();
-    rawFile.open("GET", (path ? path : '../embedtests/') + filename + '.mapify', false);
+    rawFile.open("GET", (path ? path : 'demos/') + filename + '.mapify', false);
     rawFile.onreadystatechange = uploadComplete.bind(this)
     function uploadComplete() {
         if (rawFile.readyState === 4) {

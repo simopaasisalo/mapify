@@ -46,6 +46,11 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
 
         }
     }
+    loadMap(e){
+      e.preventDefault();
+      e.stopPropagation();
+      this.props.loadMap(this.state.savedJSON);
+    }
     render() {
         let dropStyle = {
             height: 150,

@@ -15,6 +15,7 @@
     "dom-to-image": "^2.4.0",
     "impromptu-react-sidemenu": "^0.1.1",
     "leaflet": "^1.0.0-rc.2",
+    "leaflet-fullscreen": "^1.0.1",
     "leaflet.heat": "git+https://github.com/DuGuille/Leaflet.heat.git#relative-heatmap",
     "mobx": "^2.3.4",
     "mobx-react": "^3.4.0",

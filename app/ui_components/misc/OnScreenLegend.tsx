@@ -9,7 +9,6 @@ import { observer } from 'mobx-react';
 
 @observer
 export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
-
     createLegend(layer: Layer) {
         let choroLegend, scaledLegend, chartLegend, iconLegend, blockLegend;
         let options = layer;
@@ -46,7 +45,7 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         this.props.state.legend.meta = e.target.value;
     }
 
-    onDrag = (e, ui) => {
+    onDragStop = (e, ui) => {
         this.props.state.legend.x = e.clientX;
         this.props.state.legend.y = e.clientY;
     }
@@ -58,9 +57,9 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
             <Draggable
                 handle={'.dragDiv'}
                 bounds={'parent'}
-                onDrag={this.onDrag}
+                onDragStop={this.onDragStop}
                 disabled={legend.edit}
-                defaultPosition={{x:legend.x, y:legend.y-400}}//hack until I find out why the Y axis starts in the middle of the map instead of the top of the window
+                defaultPosition={{ x: legend.x, y: legend.y - 400 }}//hack until I find out why the Y axis starts in the middle of the map instead of the top of the window
                 >
                 <div className='legend' style={{
                     width: 'auto',
