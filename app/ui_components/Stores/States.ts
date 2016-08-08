@@ -47,6 +47,8 @@ export class AppState {
 
     @observable autoRefresh: boolean = true;
 
+    @observable embed: boolean = false;
+
     map: L.Map;
 }
 

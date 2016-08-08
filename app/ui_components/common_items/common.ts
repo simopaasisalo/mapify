@@ -74,4 +74,26 @@ function GetItemBetweenLimits(limits: any[], items: any[], value: number) {
 }
 
 
-export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, CalculateLimits, GetItemBetweenLimits }
+/**
+ * LoadSavedMap - Loads a specified .mapify-file
+ *
+ * @param  filename   name of the file, without extension
+ * @param  onLoad     function to run on load complete
+ * @param  path       custom path. If null, defaults to demos/
+ */
+function LoadSavedMap(filename: string, onLoad: (string) => void, path?: string) {
+
+    let rawFile = new XMLHttpRequest();
+    rawFile.open("GET", (path ? path : '../embedtests/') + filename + '.mapify', false);
+    rawFile.onreadystatechange = uploadComplete.bind(this)
+    function uploadComplete() {
+        if (rawFile.readyState === 4) {
+            if (rawFile.status === 200 || rawFile.status == 0) {
+                onLoad(JSON.parse(rawFile.responseText));
+            }
+        }
+    }
+    rawFile.send(null);
+}
+
+export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, CalculateLimits, GetItemBetweenLimits, LoadSavedMap }

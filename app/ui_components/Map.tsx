@@ -8,7 +8,7 @@ import { Legend } from './Stores/Legend';
 import { LayerImportWizard } from './import_wizard/LayerImportWizard';
 import { MapifyMenu } from './menu/Menu';
 import { MapInitModel } from '../models/MapInitModel';
-import { LayerTypes, SymbolTypes, GetSymbolSize } from './common_items/common';
+import { LayerTypes, SymbolTypes, GetSymbolSize, LoadSavedMap } from './common_items/common';
 import { OnScreenFilter } from './misc/OnScreenFilter';
 import { OnScreenLegend } from './misc/OnScreenLegend';
 import { WelcomeScreen } from './misc/WelcomeScreen';
@@ -23,18 +23,51 @@ let reactDOMServer = require('react-dom/server');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 
+
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 @observer
 export class MapMain extends React.Component<{ state: AppState }, {}>{
 
+
+    componentWillMount() {
+        let map = this.getUrlParameter("map");
+        if (map)
+            this.props.state.embed = true;
+    }
+
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
+        let map = this.getUrlParameter("map");
+        let path = this.getUrlParameter("path");
+        if (map) {
+            LoadSavedMap(map, this.loadSavedMap.bind(this, true), path);
+        }
     }
+
+    /**
+     * Get URL parameter value
+     *
+     * http://stackoverflow.com/questions/19491336/get-url-parameter-jquery-or-how-to-get-query-string-values-in-js/21903119#21903119
+     * @param  sParam   parameter to look for
+     * @return false when not found, value when found
+     */
+    getUrlParameter(sParam: string) {
+        var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+            sURLVariables = sPageURL.split('&'),
+            sParameterName,
+            i;
+        for (i = 0; i < sURLVariables.length; i++) {
+            sParameterName = sURLVariables[i].split('=');
+
+            if (sParameterName[0] === sParam) {
+                return sParameterName[1] === undefined ? false : sParameterName[1];
+            }
+        }
+    };
+
     /**
      * initMap - Initializes the map with basic options
-     *
-     * @return {void}
      */
     initMap() {
         let baseLayers: any = _mapInitModel.InitBaseMaps();
@@ -48,6 +81,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             return;
         });
     }
+
     startLayerImport() {
         this.props.state.importWizardShown = true;
         this.props.state.welcomeShown = false;
@@ -76,13 +110,14 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         this.props.state.menuShown = true;
     }
 
-    loadSavedMap(saveData: SaveState) {
-        this.props.state.legend = new Legend(saveData.legend);
-        this.props.state.filters = saveData.filters ? saveData.filters : [];
+    loadSavedMap(embed: boolean, saved: SaveState) {
 
-        for (let i in saveData.layers) {
+        this.props.state.legend = new Legend(saved.legend);
+        this.props.state.filters = saved.filters ? saved.filters : [];
 
-            let lyr = saveData.layers[i];
+        for (let i in saved.layers) {
+
+            let lyr = saved.layers[i];
             let newLayer = new Layer(this.props.state);
 
             newLayer.id = _currentLayerId++;
@@ -101,7 +136,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         }
         this.props.state.welcomeShown = false;
         this.props.state.editingLayer = this.props.state.layers[0];
-        this.props.state.menuShown = true;
+        this.props.state.menuShown = !embed;
 
 
     }
@@ -128,6 +163,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             }
         }
     }
+
     /**
      * reloadLayer - Update the layer on the map after the user has changed the visualization options
      * @param  layerData  The layer to update
@@ -235,34 +271,39 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             <div>
 
                 <div id='map'/>
-                <Modal
-                    isOpen={this.props.state.welcomeShown}
-                    style = {modalStyle}>
-                    <WelcomeScreen
-                        loadMap={this.loadSavedMap.bind(this)}
-                        openLayerImport={this.startLayerImport.bind(this)}
-                        />
-                </Modal>
-                <Modal
-                    isOpen={this.props.state.importWizardShown}
-                    style = {modalStyle}>
-                    <LayerImportWizard
-                        state={new ImportWizardState()}
-                        appState={this.props.state}
-                        submit={this.layerImportSubmit.bind(this)}
-                        cancel={this.cancelLayerImport.bind(this)}
-                        />
-                </Modal>
-                <MapifyMenu
-                    state = {this.props.state}
-                    refreshMap={this.reloadLayer.bind(this)}
-                    addLayer = {this.startLayerImport.bind(this)}
-                    deleteLayer={this.deleteLayer.bind(this)}
-                    deleteFilter={this.deleteFilter.bind(this)}
-                    changeLayerOrder ={this.changeLayerOrder.bind(this)}
-                    saveImage ={this.saveImage}
-                    saveFile = {this.saveFile.bind(this)}
-                    />
+                {this.props.state.embed ? null :
+                    <div>
+                        <Modal
+                            isOpen={this.props.state.welcomeShown}
+                            style = {modalStyle}>
+                            <WelcomeScreen
+                                loadMap={this.loadSavedMap.bind(this)}
+                                openLayerImport={this.startLayerImport.bind(this)}
+                                />
+                        </Modal>
+
+                        <Modal
+                            isOpen={this.props.state.importWizardShown}
+                            style = {modalStyle}>
+                            <LayerImportWizard
+                                state={new ImportWizardState()}
+                                appState={this.props.state}
+                                submit={this.layerImportSubmit.bind(this)}
+                                cancel={this.cancelLayerImport.bind(this)}
+                                />
+                        </Modal>
+                        <MapifyMenu
+                            state = {this.props.state}
+                            refreshMap={this.reloadLayer.bind(this)}
+                            addLayer = {this.startLayerImport.bind(this)}
+                            deleteLayer={this.deleteLayer.bind(this)}
+                            deleteFilter={this.deleteFilter.bind(this)}
+                            changeLayerOrder ={this.changeLayerOrder.bind(this)}
+                            saveImage ={this.saveImage}
+                            saveFile = {this.saveFile.bind(this)}
+                            />
+                    </div>
+                }
                 {this.getFilters()}
                 {this.showLegend()}
             </div>
