@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { DemoPreview } from './DemoPreview';
 let Dropzone = require('react-dropzone');
+import { LoadSavedMap } from '../common_items/common';
+
 
 export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcomeScreenStates>{
     constructor() {
@@ -14,17 +16,7 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
      * @param  filename  Name of the file (without extension) to load
      */
     loadDemo(filename: string) {
-        let rawFile = new XMLHttpRequest();
-        rawFile.open("GET", 'demos/' + filename + '.mapify', false);
-        rawFile.onreadystatechange = uploadComplete.bind(this)
-        function uploadComplete() {
-            if (rawFile.readyState === 4) {
-                if (rawFile.status === 200 || rawFile.status == 0) {
-                    this.props.loadMap(JSON.parse(rawFile.responseText));
-                }
-            }
-        }
-        rawFile.send(null);
+        LoadSavedMap(filename, this.props.loadMap);
     }
     createNewMap() {
         this.props.openLayerImport();
@@ -54,9 +46,6 @@ export class WelcomeScreen extends React.Component<IWelcomeScreenProps, IWelcome
             }
 
         }
-    }
-    loadMap() {
-        this.props.loadMap(this.state.savedJSON);
     }
     render() {
         let dropStyle = {
