@@ -71,13 +71,14 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      * initMap - Initializes the map with basic options
      */
     initMap() {
-        let baseLayers: any = _mapInitModel.InitBaseMaps();
+        this.props.state.baseLayers = _mapInitModel.InitBaseMaps();
+        this.props.state.activeBaseLayer = this.props.state.baseLayers[0];
         let props = {
-            layers: baseLayers,
+            layers: this.props.state.activeBaseLayer,
             fullscreenControl: true,
             worldCopyJump: true,
         };
-        this.props.state.map = L.map('map', props).setView([0, 0], 2);
+        this.props.state.map = L.map('map', (props as any)).setView([0, 0], 2);
 
         this.props.state.map.doubleClickZoom.disable();
         this.props.state.map.on('contextmenu', function(e) { //disable context menu opening on right-click
@@ -114,7 +115,20 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     }
 
     loadSavedMap(saved: SaveState) {
+        if (saved.baseLayerId) {
+            let oldBase = this.props.state.activeBaseLayer;
+            let newBase: L.TileLayer;
 
+            if (saved.baseLayerId !== oldBase.options.id) {
+                newBase = this.props.state.baseLayers.filter(l => (l as any).options.id === saved.baseLayerId)[0];
+                if (newBase) {
+                    this.props.state.map.removeLayer(oldBase);
+                    this.props.state.map.addLayer(newBase);
+                    this.props.state.activeBaseLayer = newBase;
+
+                }
+            }
+        }
         this.props.state.legend = new Legend(saved.legend);
         this.props.state.filters = saved.filters ? saved.filters : [];
 
@@ -250,6 +264,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
 
     saveFile() {
         let saveData: SaveState = {
+            baseLayerId: this.props.state.activeBaseLayer.options.id,
             layers: this.props.state.layers,
             legend: this.props.state.legend,
             filters: this.props.state.filters,

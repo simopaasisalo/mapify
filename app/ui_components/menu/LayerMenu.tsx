@@ -3,6 +3,7 @@ let Sortable = require('react-sortablejs')
 import { AppState } from '../Stores/States';
 import { Layer } from '../Stores/Layer';
 import { observer } from 'mobx-react';
+let Select = require('react-select');
 
 @observer
 export class LayerMenu extends React.Component<{
@@ -25,6 +26,12 @@ export class LayerMenu extends React.Component<{
     //         order: this.getOriginalOrder(nextProps.layers)
     //     })
     // }
+
+    onBaseMapChange = (e: ISelectData) => {
+        this.props.state.map.removeLayer(this.props.state.activeBaseLayer);
+        this.props.state.activeBaseLayer = e.value;
+        this.props.state.map.addLayer(this.props.state.activeBaseLayer);
+    }
 
     areOrdersDifferent(first: { name: string, id: number }[], second: { name: string, id: number }[]) {
         if (first.length !== second.length)
@@ -87,6 +94,14 @@ export class LayerMenu extends React.Component<{
         }
         return (
             <div className="mapify-options">
+                <label>Select the base map</label>
+                <Select
+                    options={this.props.state.obsBaseLayers}
+                    onChange={this.onBaseMapChange}
+                    value={{ value: this.props.state.activeBaseLayer, label: this.props.state.activeBaseLayer.options.id }}
+                    clearable={false}
+                    />
+                <hr/>
                 <label>Drag and drop to reorder</label>
                 <Sortable className='layerList' onChange={this.handleSort.bind(this)}>
                     {this.props.state.layerMenuState.order.map(function(layer) {

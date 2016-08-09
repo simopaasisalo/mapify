@@ -13,6 +13,18 @@ export class AppState {
     @observable importWizardShown: boolean = false;
     /** Is the options menu icon visible*/
     @observable menuShown: boolean = false;
+    /** Array of all the available base layers*/
+    baseLayers: L.TileLayer[];
+
+    @computed get obsBaseLayers() {
+        let arr: ISelectData[] = [];
+        this.baseLayers.map(function(lyr) {
+            arr.push({ value: lyr, label: (lyr as any).options.id })
+        })
+        return arr;
+    }
+    /** Currently visible base map*/
+    @observable activeBaseLayer;
     /** The layers of the map.*/
     @observable layers: Layer[] = [];
     /** The data filters of the map.*/
@@ -54,6 +66,7 @@ export class AppState {
 
 /** The state to be saved when exportin a map to a file*/
 export class SaveState {
+    baseLayerId: 'string';
     /** The layers of the map.*/
     layers: Layer[] = [];
     /** The data filters of the map.*/
