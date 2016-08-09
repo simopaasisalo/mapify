@@ -74,11 +74,12 @@
 	var WelcomeScreen_1 = __webpack_require__(295);
 	__webpack_require__(289);
 	__webpack_require__(297);
+	__webpack_require__(298);
 	var Modal = __webpack_require__(261);
 	var d3 = __webpack_require__(164);
 	var chroma = __webpack_require__(166);
-	var heat = __webpack_require__(298);
-	var domToImage = __webpack_require__(299);
+	var heat = __webpack_require__(299);
+	var domToImage = __webpack_require__(300);
 	var reactDOMServer = __webpack_require__(165);
 	var _mapInitModel = new MapInitModel_1.MapInitModel();
 	var _currentLayerId = 0;
@@ -88,15 +89,39 @@
 	    function MapMain() {
 	        _super.apply(this, arguments);
 	    }
+	    MapMain.prototype.componentWillMount = function () {
+	        var map = this.getUrlParameter("map");
+	        if (map)
+	            this.props.state.embed = true;
+	    };
 	    MapMain.prototype.componentDidMount = function () {
 	        _mapInitModel.InitCustomProjections();
 	        this.initMap();
+	        var map = this.getUrlParameter("map");
+	        var path = this.getUrlParameter("path");
+	        if (map) {
+	            common_1.LoadSavedMap(map, this.loadSavedMap.bind(this), path);
+	        }
 	    };
+	    MapMain.prototype.getUrlParameter = function (sParam) {
+	        var sPageURL = decodeURIComponent(window.location.search.substring(1)), sURLVariables = sPageURL.split('&'), sParameterName, i;
+	        for (i = 0; i < sURLVariables.length; i++) {
+	            sParameterName = sURLVariables[i].split('=');
+	            if (sParameterName[0] === sParam) {
+	                return sParameterName[1] === undefined ? false : sParameterName[1];
+	            }
+	        }
+	    };
+	    ;
 	    MapMain.prototype.initMap = function () {
-	        var baseLayers = _mapInitModel.InitBaseMaps();
-	        this.props.state.map = L.map('map', {
-	            layers: baseLayers,
-	        }).setView([0, 0], 2);
+	        this.props.state.baseLayers = _mapInitModel.InitBaseMaps();
+	        this.props.state.activeBaseLayer = this.props.state.baseLayers[0];
+	        var props = {
+	            layers: this.props.state.activeBaseLayer,
+	            fullscreenControl: true,
+	            worldCopyJump: true,
+	        };
+	        this.props.state.map = L.map('map', props).setView([0, 0], 2);
 	        this.props.state.map.doubleClickZoom.disable();
 	        this.props.state.map.on('contextmenu', function (e) {
 	            return;
@@ -122,11 +147,23 @@
 	        this.props.state.editingLayer = l;
 	        this.props.state.menuShown = true;
 	    };
-	    MapMain.prototype.loadSavedMap = function (saveData) {
-	        this.props.state.legend = new Legend_1.Legend(saveData.legend);
-	        this.props.state.filters = saveData.filters ? saveData.filters : [];
-	        for (var i in saveData.layers) {
-	            var lyr = saveData.layers[i];
+	    MapMain.prototype.loadSavedMap = function (saved) {
+	        if (saved.baseLayerId) {
+	            var oldBase = this.props.state.activeBaseLayer;
+	            var newBase = void 0;
+	            if (saved.baseLayerId !== oldBase.options.id) {
+	                newBase = this.props.state.baseLayers.filter(function (l) { return l.options.id === saved.baseLayerId; })[0];
+	                if (newBase) {
+	                    this.props.state.map.removeLayer(oldBase);
+	                    this.props.state.map.addLayer(newBase);
+	                    this.props.state.activeBaseLayer = newBase;
+	                }
+	            }
+	        }
+	        this.props.state.legend = new Legend_1.Legend(saved.legend);
+	        this.props.state.filters = saved.filters ? saved.filters : [];
+	        for (var i in saved.layers) {
+	            var lyr = saved.layers[i];
 	            var newLayer = new Layer_1.Layer(this.props.state);
 	            newLayer.id = _currentLayerId++;
 	            newLayer.name = lyr.name;
@@ -143,7 +180,7 @@
 	        }
 	        this.props.state.welcomeShown = false;
 	        this.props.state.editingLayer = this.props.state.layers[0];
-	        this.props.state.menuShown = true;
+	        this.props.state.menuShown = !this.props.state.embed;
 	    };
 	    MapMain.prototype.changeLayerOrder = function () {
 	        var _loop_1 = function(i) {
@@ -213,6 +250,7 @@
 	    };
 	    MapMain.prototype.saveFile = function () {
 	        var saveData = {
+	            baseLayerId: this.props.state.activeBaseLayer.options.id,
 	            layers: this.props.state.layers,
 	            legend: this.props.state.legend,
 	            filters: this.props.state.filters,
@@ -231,7 +269,8 @@
 	                padding: '0px',
 	            }
 	        };
-	        return (React.createElement("div", null, React.createElement("div", {id: 'map'}), React.createElement(Modal, {isOpen: this.props.state.welcomeShown, style: modalStyle}, React.createElement(WelcomeScreen_1.WelcomeScreen, {loadMap: this.loadSavedMap.bind(this), openLayerImport: this.startLayerImport.bind(this)})), React.createElement(Modal, {isOpen: this.props.state.importWizardShown, style: modalStyle}, React.createElement(LayerImportWizard_1.LayerImportWizard, {state: new States_1.ImportWizardState(), appState: this.props.state, submit: this.layerImportSubmit.bind(this), cancel: this.cancelLayerImport.bind(this)})), React.createElement(Menu_1.MapifyMenu, {state: this.props.state, refreshMap: this.reloadLayer.bind(this), addLayer: this.startLayerImport.bind(this), deleteLayer: this.deleteLayer.bind(this), deleteFilter: this.deleteFilter.bind(this), changeLayerOrder: this.changeLayerOrder.bind(this), saveImage: this.saveImage, saveFile: this.saveFile.bind(this)}), this.getFilters(), this.showLegend()));
+	        return (React.createElement("div", null, React.createElement("div", {id: 'map'}), this.props.state.embed ? null :
+	            React.createElement("div", null, React.createElement(Modal, {isOpen: this.props.state.welcomeShown, style: modalStyle}, React.createElement(WelcomeScreen_1.WelcomeScreen, {loadMap: this.loadSavedMap.bind(this), openLayerImport: this.startLayerImport.bind(this)})), React.createElement(Modal, {isOpen: this.props.state.importWizardShown, style: modalStyle}, React.createElement(LayerImportWizard_1.LayerImportWizard, {state: new States_1.ImportWizardState(), appState: this.props.state, submit: this.layerImportSubmit.bind(this), cancel: this.cancelLayerImport.bind(this)})), React.createElement(Menu_1.MapifyMenu, {state: this.props.state, refreshMap: this.reloadLayer.bind(this), addLayer: this.startLayerImport.bind(this), deleteLayer: this.deleteLayer.bind(this), deleteFilter: this.deleteFilter.bind(this), changeLayerOrder: this.changeLayerOrder.bind(this), saveImage: this.saveImage, saveFile: this.saveFile.bind(this)})), this.getFilters(), this.showLegend()));
 	    };
 	    MapMain = __decorate([
 	        mobx_react_1.observer, 
@@ -22843,7 +22882,19 @@
 	        this.layerMenuState = new LayerMenuState();
 	        this.exportMenuState = new ExportMenuState();
 	        this.autoRefresh = true;
+	        this.embed = false;
 	    }
+	    Object.defineProperty(AppState.prototype, "obsBaseLayers", {
+	        get: function () {
+	            var arr = [];
+	            this.baseLayers.map(function (lyr) {
+	                arr.push({ value: lyr, label: lyr.options.id });
+	            });
+	            return arr;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
 	    Object.defineProperty(AppState.prototype, "nextFilterId", {
 	        get: function () {
 	            return this.filters.length > 0 ? this.filters[this.filters.length - 1].id + 1 : 0;
@@ -22871,6 +22922,14 @@
 	        mobx_1.observable, 
 	        __metadata('design:type', Boolean)
 	    ], AppState.prototype, "menuShown", void 0);
+	    __decorate([
+	        mobx_1.computed, 
+	        __metadata('design:type', Object)
+	    ], AppState.prototype, "obsBaseLayers", null);
+	    __decorate([
+	        mobx_1.observable, 
+	        __metadata('design:type', Object)
+	    ], AppState.prototype, "activeBaseLayer", void 0);
 	    __decorate([
 	        mobx_1.observable, 
 	        __metadata('design:type', Array)
@@ -22927,6 +22986,10 @@
 	        mobx_1.observable, 
 	        __metadata('design:type', Boolean)
 	    ], AppState.prototype, "autoRefresh", void 0);
+	    __decorate([
+	        mobx_1.observable, 
+	        __metadata('design:type', Boolean)
+	    ], AppState.prototype, "embed", void 0);
 	    return AppState;
 	}());
 	exports.AppState = AppState;
@@ -23821,6 +23884,20 @@
 	    }
 	}
 	exports.GetItemBetweenLimits = GetItemBetweenLimits;
+	function LoadSavedMap(filename, onLoad, path) {
+	    var rawFile = new XMLHttpRequest();
+	    rawFile.open("GET", (path ? path : 'demos/') + filename + '.mapify', false);
+	    rawFile.onreadystatechange = uploadComplete.bind(this);
+	    function uploadComplete() {
+	        if (rawFile.readyState === 4) {
+	            if (rawFile.status === 200 || rawFile.status == 0) {
+	                onLoad(JSON.parse(rawFile.responseText));
+	            }
+	        }
+	    }
+	    rawFile.send(null);
+	}
+	exports.LoadSavedMap = LoadSavedMap;
 
 
 /***/ },
@@ -35944,6 +36021,14 @@
 	        mobx_1.observable, 
 	        __metadata('design:type', Boolean)
 	    ], Legend.prototype, "edit", void 0);
+	    __decorate([
+	        mobx_1.observable, 
+	        __metadata('design:type', Number)
+	    ], Legend.prototype, "x", void 0);
+	    __decorate([
+	        mobx_1.observable, 
+	        __metadata('design:type', Number)
+	    ], Legend.prototype, "y", void 0);
 	    return Legend;
 	}());
 	exports.Legend = Legend;
@@ -41290,10 +41375,17 @@
 	var React = __webpack_require__(1);
 	var Sortable = __webpack_require__(194);
 	var mobx_react_1 = __webpack_require__(159);
+	var Select = __webpack_require__(184);
 	var LayerMenu = (function (_super) {
 	    __extends(LayerMenu, _super);
 	    function LayerMenu() {
+	        var _this = this;
 	        _super.apply(this, arguments);
+	        this.onBaseMapChange = function (e) {
+	            _this.props.state.map.removeLayer(_this.props.state.activeBaseLayer);
+	            _this.props.state.activeBaseLayer = e.value;
+	            _this.props.state.map.addLayer(_this.props.state.activeBaseLayer);
+	        };
 	    }
 	    LayerMenu.prototype.areOrdersDifferent = function (first, second) {
 	        if (first.length !== second.length)
@@ -41356,7 +41448,7 @@
 	            textAlign: 'center',
 	            lineHeight: '20px',
 	        };
-	        return (React.createElement("div", {className: "mapify-options"}, React.createElement("label", null, "Drag and drop to reorder"), React.createElement(Sortable, {className: 'layerList', onChange: this.handleSort.bind(this)}, this.props.state.layerMenuState.order.map(function (layer) {
+	        return (React.createElement("div", {className: "mapify-options"}, React.createElement("label", null, "Select the base map"), React.createElement(Select, {options: this.props.state.obsBaseLayers, onChange: this.onBaseMapChange, value: { value: this.props.state.activeBaseLayer, label: this.props.state.activeBaseLayer.options.id }, clearable: false}), React.createElement("hr", null), React.createElement("label", null, "Drag and drop to reorder"), React.createElement(Sortable, {className: 'layerList', onChange: this.handleSort.bind(this)}, this.props.state.layerMenuState.order.map(function (layer) {
 	            return React.createElement("div", {style: layerStyle, key: layer.id, "data-id": layer.id}, layer.name, React.createElement("i", {className: "fa fa-times", onClick: this.deleteLayer.bind(this, layer.id)}));
 	        }, this)), this.props.state.autoRefresh ? null : React.createElement("button", {className: 'menuButton', onClick: this.saveOrder.bind(this)}, "Save"), React.createElement("button", {className: 'menuButton', onClick: this.addNewLayer.bind(this)}, "Add new layer")));
 	    };
@@ -82745,14 +82837,39 @@
 	        proj4.defs('ETRS-GK25FIN', "+title=GK25FIN +proj=tmerc +lat_0=0 +lon_0=25 +k=1 +x_0=25500000 +y_0=0 +ellps=GRS80 +units=m +no_defs");
 	    };
 	    MapInitModel.prototype.InitBaseMaps = function () {
-	        var base1 = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpandmbXliNDBjZWd2M2x6bDk3c2ZtOTkifQ._QA7i5Mpkd_m30IGElHziw', {
-	            maxZoom: 18,
-	            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-	                '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-	                'Imagery © <a href="http://mapbox.com">Mapbox</a>',
-	            id: 'mapbox.streets'
-	        });
-	        return [base1];
+	        return [
+	            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	                maxZoom: 19,
+	                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+	                id: 'OSM Streets'
+	            }),
+	            L.tileLayer('http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png', {
+	                maxZoom: 18,
+	                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+	                id: 'OSM Black&White'
+	            }),
+	            L.tileLayer('http://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+	                maxZoom: 17,
+	                attribution: 'Map data: &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+	                id: 'OpenTopoMap'
+	            }),
+	            L.tileLayer('http://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}.{ext}', {
+	                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+	                subdomains: 'abcd',
+	                minZoom: 0,
+	                maxZoom: 20,
+	                ext: 'png',
+	                id: 'Stamen Toner'
+	            }),
+	            L.tileLayer('http://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.{ext}', {
+	                attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+	                subdomains: 'abcd',
+	                minZoom: 1,
+	                maxZoom: 16,
+	                ext: 'png',
+	                id: 'Stamen Watercolor'
+	            })
+	        ];
 	    };
 	    return MapInitModel;
 	}());
@@ -98094,7 +98211,7 @@
 	        this.onMetaChange = function (e) {
 	            _this.props.state.legend.meta = e.target.value;
 	        };
-	        this.onDrag = function (e, ui) {
+	        this.onDragStop = function (e, ui) {
 	            _this.props.state.legend.x = e.clientX;
 	            _this.props.state.legend.y = e.clientY;
 	        };
@@ -98126,7 +98243,7 @@
 	    OnScreenLegend.prototype.render = function () {
 	        var layers = this.props.state.layers;
 	        var legend = this.props.state.legend;
-	        return (React.createElement(Draggable, {handle: '.dragDiv', bounds: 'parent', onDrag: this.onDrag, disabled: legend.edit, defaultPosition: { x: legend.x, y: legend.y - 400 }}, React.createElement("div", {className: 'legend', style: {
+	        return (React.createElement(Draggable, {handle: '.dragDiv', bounds: 'parent', onDragStop: this.onDragStop, disabled: legend.edit, defaultPosition: { x: legend.x, y: legend.y - 400 }}, React.createElement("div", {className: 'legend', style: {
 	            width: 'auto',
 	            textAlign: 'center',
 	        }}, React.createElement("h2", {className: 'legendHeader'}, legend.title), React.createElement("div", null, React.createElement("div", {style: { position: 'absolute', left: 0, cursor: 'pointer' }, className: 'dragDiv'}, React.createElement("i", {className: 'fa fa-arrows'})), layers.map(function (m) {
@@ -98429,6 +98546,7 @@
 	var React = __webpack_require__(1);
 	var DemoPreview_1 = __webpack_require__(296);
 	var Dropzone = __webpack_require__(173);
+	var common_1 = __webpack_require__(163);
 	var WelcomeScreen = (function (_super) {
 	    __extends(WelcomeScreen, _super);
 	    function WelcomeScreen() {
@@ -98436,17 +98554,7 @@
 	        this.state = { fileName: null };
 	    }
 	    WelcomeScreen.prototype.loadDemo = function (filename) {
-	        var rawFile = new XMLHttpRequest();
-	        rawFile.open("GET", 'demos/' + filename + '.mapify', false);
-	        rawFile.onreadystatechange = uploadComplete.bind(this);
-	        function uploadComplete() {
-	            if (rawFile.readyState === 4) {
-	                if (rawFile.status === 200 || rawFile.status == 0) {
-	                    this.props.loadMap(JSON.parse(rawFile.responseText));
-	                }
-	            }
-	        }
-	        rawFile.send(null);
+	        common_1.LoadSavedMap(filename, this.props.loadMap);
 	    };
 	    WelcomeScreen.prototype.createNewMap = function () {
 	        this.props.openLayerImport();
@@ -98473,7 +98581,9 @@
 	            }
 	        }
 	    };
-	    WelcomeScreen.prototype.loadMap = function () {
+	    WelcomeScreen.prototype.loadMap = function (e) {
+	        e.preventDefault();
+	        e.stopPropagation();
 	        this.props.loadMap(this.state.savedJSON);
 	    };
 	    WelcomeScreen.prototype.render = function () {
@@ -98666,11 +98776,170 @@
 /* 298 */
 /***/ function(module, exports) {
 
-	"use strict";!function(){function t(i){return this instanceof t?(this._canvas=i="string"==typeof i?document.getElementById(i):i,this._ctx=i.getContext("2d"),this._width=i.width,this._height=i.height,this._max=1,void this.clear()):new t(i)}t.prototype={defaultRadius:25,defaultGradient:{.4:"blue",.6:"cyan",.7:"lime",.8:"yellow",1:"red"},data:function(t,i){return this._data=t,this},max:function(t){return this._max=t,this},add:function(t){return this._data.push(t),this},clear:function(){return this._data=[],this},radius:function(t,i){i=i||15;var a=this._circle=document.createElement("canvas"),s=a.getContext("2d"),e=this._r=t+i;return a.width=a.height=2*e,s.shadowOffsetX=s.shadowOffsetY=200,s.shadowBlur=i,s.shadowColor="black",s.beginPath(),s.arc(e-200,e-200,t,0,2*Math.PI,!0),s.closePath(),s.fill(),this},gradient:function(t){var i=document.createElement("canvas"),a=i.getContext("2d"),s=a.createLinearGradient(0,0,0,256);i.width=1,i.height=256;for(var e in t)s.addColorStop(e,t[e]);return a.fillStyle=s,a.fillRect(0,0,1,256),this._grad=a.getImageData(0,0,1,256).data,this},draw:function(t){this._circle||this.radius(this.defaultRadius),this._grad||this.gradient(this.defaultGradient);var i=this._ctx;i.clearRect(0,0,this._width,this._height);for(var a,s=0,e=this._data.length;e>s;s++)a=this._data[s],i.globalAlpha=Math.max(a[2]/this._max,t||.05),i.drawImage(this._circle,a[0]-this._r,a[1]-this._r);var n=i.getImageData(0,0,this._width,this._height);return this._colorize(n.data,this._grad),i.putImageData(n,0,0),this},_colorize:function(t,i){for(var a,s=3,e=t.length;e>s;s+=4)a=4*t[s],a&&(t[s-3]=i[a],t[s-2]=i[a+1],t[s-1]=i[a+2])}},window.simpleheat=t}(),L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._latlngs=t,L.setOptions(this,i)},setLatLngs:function(t){return this._latlngs=t,this.redraw()},addLatLng:function(t){return this._latlngs.push(t),this.redraw()},setOptions:function(t){return L.setOptions(this,t),this._heat&&this._updateOptions(),this.redraw()},redraw:function(){return!this._heat||this._frame||this._map._animating||(this._frame=L.Util.requestAnimFrame(this._redraw,this)),this},onAdd:function(t){this._map=t,this._canvas||this._initCanvas(),t._panes.overlayPane.appendChild(this._canvas),t.on("moveend",this._reset,this),t.options.zoomAnimation&&L.Browser.any3d&&t.on("zoomanim",this._animateZoom,this),this._reset()},onRemove:function(t){t.getPanes().overlayPane.removeChild(this._canvas),t.off("moveend",this._reset,this),t.options.zoomAnimation&&t.off("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},_initCanvas:function(){var t=this._canvas=L.DomUtil.create("canvas","leaflet-heatmap-layer leaflet-layer"),i=L.DomUtil.testProp(["transformOrigin","WebkitTransformOrigin","msTransformOrigin"]);t.style[i]="50% 50%";var a=this._map.getSize();t.width=a.x,t.height=a.y;var s=this._map.options.zoomAnimation&&L.Browser.any3d;L.DomUtil.addClass(t,"leaflet-zoom-"+(s?"animated":"hide")),this._heat=simpleheat(t),this._updateOptions()},_updateOptions:function(){this._heat.radius(this.options.radius||this._heat.defaultRadius,this.options.blur),this.options.gradient&&this._heat.gradient(this.options.gradient),this.options.max&&this._heat.max(this.options.max)},_reset:function(){var t=this._map.containerPointToLayerPoint([0,0]);L.DomUtil.setPosition(this._canvas,t);var i=this._map.getSize();this._heat._width!==i.x&&(this._canvas.width=this._heat._width=i.x),this._heat._height!==i.y&&(this._canvas.height=this._heat._height=i.y),this._redraw()},_redraw:function(){if(this._map){var t,i,a,s,e,n,h,o,r,_,d=[],l=this._heat._r,m=this._map.getSize(),c=new L.Bounds(L.point([-l,-l]),m.add([l,l])),u=void 0===this.options.max?1:this.options.max,f=void 0===this.options.maxZoom?this._map.getMaxZoom():this.options.maxZoom,g=1/Math.pow(4,Math.max(0,Math.min(f-this._map.getZoom(),12))),p=l/2,v=[],w=this._map._getMapPanePos(),y=w.x%p,x=w.y%p,P=!1;for(t=0,i=this._latlngs.length;i>t;t++)if(a=this._map.latLngToContainerPoint(this._latlngs[t]),c.contains(a)){e=Math.floor((a.x-y)/p)+2,n=Math.floor((a.y-x)/p)+2;var M=void 0!==this._latlngs[t].alt?this._latlngs[t].alt:void 0!==this._latlngs[t][2]?+this._latlngs[t][2]:1;r=M*g,v[n]=v[n]||[],s=v[n][e],s?(s[0]=(s[0]*s[2]+a.x*r)/(s[2]+r),s[1]=(s[1]*s[2]+a.y*r)/(s[2]+r),s[2]+=r,_=s[2]):(_=r,v[n][e]=[a.x,a.y,r]),this.options.relative&&(P===!1?P=_:_>P&&(P=_))}for(t=0,i=v.length;i>t;t++)if(v[t])for(h=0,o=v[t].length;o>h;h++)s=v[t][h],s&&d.push([Math.round(s[0]),Math.round(s[1]),Math.min(s[2],u)]);this.options.relative&&P!==!1&&this._heat.max(P),this._heat.data(d).draw(this.options.minOpacity),this._frame=null}},_animateZoom:function(t){var i=this._map.getZoomScale(t.zoom),a=this._map._getCenterOffset(t.center)._multiplyBy(-i).subtract(this._map._getMapPanePos());L.DomUtil.setTransform?L.DomUtil.setTransform(this._canvas,a,i):this._canvas.style[L.DomUtil.TRANSFORM]=L.DomUtil.getTranslateString(a)+" scale("+i+")"}}),L.heatLayer=function(t,i){return new L.HeatLayer(t,i)};
+	L.Control.Fullscreen = L.Control.extend({
+	    options: {
+	        position: 'topleft',
+	        title: {
+	            'false': 'View Fullscreen',
+	            'true': 'Exit Fullscreen'
+	        }
+	    },
+
+	    onAdd: function (map) {
+	        var container = L.DomUtil.create('div', 'leaflet-control-fullscreen leaflet-bar leaflet-control');
+
+	        this.link = L.DomUtil.create('a', 'leaflet-control-fullscreen-button leaflet-bar-part', container);
+	        this.link.href = '#';
+
+	        this._map = map;
+	        this._map.on('fullscreenchange', this._toggleTitle, this);
+	        this._toggleTitle();
+
+	        L.DomEvent.on(this.link, 'click', this._click, this);
+
+	        return container;
+	    },
+
+	    _click: function (e) {
+	        L.DomEvent.stopPropagation(e);
+	        L.DomEvent.preventDefault(e);
+	        this._map.toggleFullscreen(this.options);
+	    },
+
+	    _toggleTitle: function() {
+	        this.link.title = this.options.title[this._map.isFullscreen()];
+	    }
+	});
+
+	L.Map.include({
+	    isFullscreen: function () {
+	        return this._isFullscreen || false;
+	    },
+
+	    toggleFullscreen: function (options) {
+	        var container = this.getContainer();
+	        if (this.isFullscreen()) {
+	            if (options && options.pseudoFullscreen) {
+	                this._disablePseudoFullscreen(container);
+	            } else if (document.exitFullscreen) {
+	                document.exitFullscreen();
+	            } else if (document.mozCancelFullScreen) {
+	                document.mozCancelFullScreen();
+	            } else if (document.webkitCancelFullScreen) {
+	                document.webkitCancelFullScreen();
+	            } else if (document.msExitFullscreen) {
+	                document.msExitFullscreen();
+	            } else {
+	                this._disablePseudoFullscreen(container);
+	            }
+	        } else {
+	            if (options && options.pseudoFullscreen) {
+	                this._enablePseudoFullscreen(container);
+	            } else if (container.requestFullscreen) {
+	                container.requestFullscreen();
+	            } else if (container.mozRequestFullScreen) {
+	                container.mozRequestFullScreen();
+	            } else if (container.webkitRequestFullscreen) {
+	                container.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+	            } else if (container.msRequestFullscreen) {
+	                container.msRequestFullscreen();
+	            } else {
+	                this._enablePseudoFullscreen(container);
+	            }
+	        }
+
+	    },
+
+	    _enablePseudoFullscreen: function (container) {
+	        L.DomUtil.addClass(container, 'leaflet-pseudo-fullscreen');
+	        this._setFullscreen(true);
+	        this.invalidateSize();
+	        this.fire('fullscreenchange');
+	    },
+
+	    _disablePseudoFullscreen: function (container) {
+	        L.DomUtil.removeClass(container, 'leaflet-pseudo-fullscreen');
+	        this._setFullscreen(false);
+	        this.invalidateSize();
+	        this.fire('fullscreenchange');
+	    },
+
+	    _setFullscreen: function(fullscreen) {
+	        this._isFullscreen = fullscreen;
+	        var container = this.getContainer();
+	        if (fullscreen) {
+	            L.DomUtil.addClass(container, 'leaflet-fullscreen-on');
+	        } else {
+	            L.DomUtil.removeClass(container, 'leaflet-fullscreen-on');
+	        }
+	    },
+
+	    _onFullscreenChange: function (e) {
+	        var fullscreenElement =
+	            document.fullscreenElement ||
+	            document.mozFullScreenElement ||
+	            document.webkitFullscreenElement ||
+	            document.msFullscreenElement;
+
+	        if (fullscreenElement === this.getContainer() && !this._isFullscreen) {
+	            this._setFullscreen(true);
+	            this.fire('fullscreenchange');
+	        } else if (fullscreenElement !== this.getContainer() && this._isFullscreen) {
+	            this._setFullscreen(false);
+	            this.fire('fullscreenchange');
+	        }
+	    }
+	});
+
+	L.Map.mergeOptions({
+	    fullscreenControl: false
+	});
+
+	L.Map.addInitHook(function () {
+	    if (this.options.fullscreenControl) {
+	        this.fullscreenControl = new L.Control.Fullscreen(this.options.fullscreenControl);
+	        this.addControl(this.fullscreenControl);
+	    }
+
+	    var fullscreenchange;
+
+	    if ('onfullscreenchange' in document) {
+	        fullscreenchange = 'fullscreenchange';
+	    } else if ('onmozfullscreenchange' in document) {
+	        fullscreenchange = 'mozfullscreenchange';
+	    } else if ('onwebkitfullscreenchange' in document) {
+	        fullscreenchange = 'webkitfullscreenchange';
+	    } else if ('onmsfullscreenchange' in document) {
+	        fullscreenchange = 'MSFullscreenChange';
+	    }
+
+	    if (fullscreenchange) {
+	        var onFullscreenChange = L.bind(this._onFullscreenChange, this);
+
+	        this.whenReady(function () {
+	            L.DomEvent.on(document, fullscreenchange, onFullscreenChange);
+	        });
+
+	        this.on('unload', function () {
+	            L.DomEvent.off(document, fullscreenchange, onFullscreenChange);
+	        });
+	    }
+	});
+
+	L.control.fullscreen = function (options) {
+	    return new L.Control.Fullscreen(options);
+	};
 
 
 /***/ },
 /* 299 */
+/***/ function(module, exports) {
+
+	"use strict";!function(){function t(i){return this instanceof t?(this._canvas=i="string"==typeof i?document.getElementById(i):i,this._ctx=i.getContext("2d"),this._width=i.width,this._height=i.height,this._max=1,void this.clear()):new t(i)}t.prototype={defaultRadius:25,defaultGradient:{.4:"blue",.6:"cyan",.7:"lime",.8:"yellow",1:"red"},data:function(t,i){return this._data=t,this},max:function(t){return this._max=t,this},add:function(t){return this._data.push(t),this},clear:function(){return this._data=[],this},radius:function(t,i){i=i||15;var a=this._circle=document.createElement("canvas"),s=a.getContext("2d"),e=this._r=t+i;return a.width=a.height=2*e,s.shadowOffsetX=s.shadowOffsetY=200,s.shadowBlur=i,s.shadowColor="black",s.beginPath(),s.arc(e-200,e-200,t,0,2*Math.PI,!0),s.closePath(),s.fill(),this},gradient:function(t){var i=document.createElement("canvas"),a=i.getContext("2d"),s=a.createLinearGradient(0,0,0,256);i.width=1,i.height=256;for(var e in t)s.addColorStop(e,t[e]);return a.fillStyle=s,a.fillRect(0,0,1,256),this._grad=a.getImageData(0,0,1,256).data,this},draw:function(t){this._circle||this.radius(this.defaultRadius),this._grad||this.gradient(this.defaultGradient);var i=this._ctx;i.clearRect(0,0,this._width,this._height);for(var a,s=0,e=this._data.length;e>s;s++)a=this._data[s],i.globalAlpha=Math.max(a[2]/this._max,t||.05),i.drawImage(this._circle,a[0]-this._r,a[1]-this._r);var n=i.getImageData(0,0,this._width,this._height);return this._colorize(n.data,this._grad),i.putImageData(n,0,0),this},_colorize:function(t,i){for(var a,s=3,e=t.length;e>s;s+=4)a=4*t[s],a&&(t[s-3]=i[a],t[s-2]=i[a+1],t[s-1]=i[a+2])}},window.simpleheat=t}(),L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._latlngs=t,L.setOptions(this,i)},setLatLngs:function(t){return this._latlngs=t,this.redraw()},addLatLng:function(t){return this._latlngs.push(t),this.redraw()},setOptions:function(t){return L.setOptions(this,t),this._heat&&this._updateOptions(),this.redraw()},redraw:function(){return!this._heat||this._frame||this._map._animating||(this._frame=L.Util.requestAnimFrame(this._redraw,this)),this},onAdd:function(t){this._map=t,this._canvas||this._initCanvas(),t._panes.overlayPane.appendChild(this._canvas),t.on("moveend",this._reset,this),t.options.zoomAnimation&&L.Browser.any3d&&t.on("zoomanim",this._animateZoom,this),this._reset()},onRemove:function(t){t.getPanes().overlayPane.removeChild(this._canvas),t.off("moveend",this._reset,this),t.options.zoomAnimation&&t.off("zoomanim",this._animateZoom,this)},addTo:function(t){return t.addLayer(this),this},_initCanvas:function(){var t=this._canvas=L.DomUtil.create("canvas","leaflet-heatmap-layer leaflet-layer"),i=L.DomUtil.testProp(["transformOrigin","WebkitTransformOrigin","msTransformOrigin"]);t.style[i]="50% 50%";var a=this._map.getSize();t.width=a.x,t.height=a.y;var s=this._map.options.zoomAnimation&&L.Browser.any3d;L.DomUtil.addClass(t,"leaflet-zoom-"+(s?"animated":"hide")),this._heat=simpleheat(t),this._updateOptions()},_updateOptions:function(){this._heat.radius(this.options.radius||this._heat.defaultRadius,this.options.blur),this.options.gradient&&this._heat.gradient(this.options.gradient),this.options.max&&this._heat.max(this.options.max)},_reset:function(){var t=this._map.containerPointToLayerPoint([0,0]);L.DomUtil.setPosition(this._canvas,t);var i=this._map.getSize();this._heat._width!==i.x&&(this._canvas.width=this._heat._width=i.x),this._heat._height!==i.y&&(this._canvas.height=this._heat._height=i.y),this._redraw()},_redraw:function(){if(this._map){var t,i,a,s,e,n,h,o,r,_,d=[],l=this._heat._r,m=this._map.getSize(),c=new L.Bounds(L.point([-l,-l]),m.add([l,l])),u=void 0===this.options.max?1:this.options.max,f=void 0===this.options.maxZoom?this._map.getMaxZoom():this.options.maxZoom,g=1/Math.pow(4,Math.max(0,Math.min(f-this._map.getZoom(),12))),p=l/2,v=[],w=this._map._getMapPanePos(),y=w.x%p,x=w.y%p,P=!1;for(t=0,i=this._latlngs.length;i>t;t++)if(a=this._map.latLngToContainerPoint(this._latlngs[t]),c.contains(a)){e=Math.floor((a.x-y)/p)+2,n=Math.floor((a.y-x)/p)+2;var M=void 0!==this._latlngs[t].alt?this._latlngs[t].alt:void 0!==this._latlngs[t][2]?+this._latlngs[t][2]:1;r=M*g,v[n]=v[n]||[],s=v[n][e],s?(s[0]=(s[0]*s[2]+a.x*r)/(s[2]+r),s[1]=(s[1]*s[2]+a.y*r)/(s[2]+r),s[2]+=r,_=s[2]):(_=r,v[n][e]=[a.x,a.y,r]),this.options.relative&&(P===!1?P=_:_>P&&(P=_))}for(t=0,i=v.length;i>t;t++)if(v[t])for(h=0,o=v[t].length;o>h;h++)s=v[t][h],s&&d.push([Math.round(s[0]),Math.round(s[1]),Math.min(s[2],u)]);this.options.relative&&P!==!1&&this._heat.max(P),this._heat.data(d).draw(this.options.minOpacity),this._frame=null}},_animateZoom:function(t){var i=this._map.getZoomScale(t.zoom),a=this._map._getCenterOffset(t.center)._multiplyBy(-i).subtract(this._map._getMapPanePos());L.DomUtil.setTransform?L.DomUtil.setTransform(this._canvas,a,i):this._canvas.style[L.DomUtil.TRANSFORM]=L.DomUtil.getTranslateString(a)+" scale("+i+")"}}),L.heatLayer=function(t,i){return new L.HeatLayer(t,i)};
+
+
+/***/ },
+/* 300 */
 /***/ function(module, exports, __webpack_require__) {
 
 	(function (global) {
