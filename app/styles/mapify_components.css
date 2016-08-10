@@ -46,11 +46,6 @@ hr{
   color: white;
 }
 
-.draggableHeader{
-  background: #6891e2;
-  color: white;
-}
-
 .react-draggable{
   position: absolute;
   left: 0px;

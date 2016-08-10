@@ -8,8 +8,6 @@ import { observer } from 'mobx-react';
 @observer
 export class FilterMenu extends React.Component<{
     state: AppState,
-    /** Removes filter by specified id from the map */
-    deleteFilter: (id: number) => void,
 }, {}>{
 
     onFilterVariableChange = (val) => {
@@ -94,8 +92,11 @@ export class FilterMenu extends React.Component<{
             this.props.state.editingFilter.steps = this.getStepValues();
         }
     }
-    deleteFilter() {
-        this.props.deleteFilter(this.props.state.editingFilter.id);
+    deleteFilter = () => {
+        let filter = this.props.state.editingFilter;
+        filter.currentMax = filter.totalMax;
+        filter.currentMin = filter.totalMin;
+        this.props.state.filters = this.props.state.filters.filter(function(f) { return f.id !== filter.id });
         this.props.state.filterMenuState.selectedFilterId = - 1;
     }
     getStepValues() {
@@ -137,15 +138,18 @@ export class FilterMenu extends React.Component<{
                         <label>Give a name to the filter
                             <input type="text" onChange={this.onFilterTitleChange} value={filter ? filter.title : ''}/>
                         </label>
-                        <div>
-                            <label>Select the variable by which to filter
-                                <Select
-                                    options={layer.numberHeaders}
-                                    onChange={this.onFilterVariableChange}
-                                    value={filter ? filter.fieldToFilter : ''}
-                                    />
-                            </label>
-                        </div>
+                        {filter.show ? <br/>
+                            :
+                            <div>
+                                <label>Select the filter variable
+                                    <Select
+                                        options={layer.numberHeaders}
+                                        onChange={this.onFilterVariableChange}
+                                        value={filter ? filter.fieldToFilter : ''}
+                                        />
+                                </label>
+                            </div>
+                        }
                         <label forHTML='steps'>
                             Use predefined steps
                             <input

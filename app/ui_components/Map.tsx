@@ -24,6 +24,7 @@ let reactDOMServer = require('react-dom/server');
 let _mapInitModel = new MapInitModel();
 let _currentLayerId: number = 0;
 
+let _parameters: string[];
 
 L.Icon.Default.imagePath = 'app/images/leaflet-images';
 @observer
@@ -31,18 +32,20 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
 
 
     componentWillMount() {
-        let map = this.getUrlParameter("map");
-        if (map)
+        let sPageURL = decodeURIComponent(window.location.search.substring(1));
+        _parameters = sPageURL.split('&');
+        let parameterMapFile = this.getUrlParameter("map");
+        if (parameterMapFile)
             this.props.state.embed = true;
     }
 
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
-        let map = this.getUrlParameter("map");
+        let parameterMapFile = this.getUrlParameter("map");
         let path = this.getUrlParameter("path");
-        if (map) {
-            LoadSavedMap(map, this.loadSavedMap.bind(this), path);
+        if (parameterMapFile) {
+            LoadSavedMap(parameterMapFile, this.loadSavedMap.bind(this), path);
         }
     }
 
@@ -54,12 +57,9 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      * @return false when not found, value when found
      */
     getUrlParameter(sParam: string) {
-        var sPageURL = decodeURIComponent(window.location.search.substring(1)),
-            sURLVariables = sPageURL.split('&'),
-            sParameterName,
-            i;
-        for (i = 0; i < sURLVariables.length; i++) {
-            sParameterName = sURLVariables[i].split('=');
+        var sParameterName, i;
+        for (i = 0; i < _parameters.length; i++) {
+            sParameterName = _parameters[i].split('=');
 
             if (sParameterName[0] === sParam) {
                 return sParameterName[1] === undefined ? false : sParameterName[1];
@@ -150,7 +150,9 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             this.props.state.layers.push(newLayer);
 
             this.props.state.layerMenuState.order.push({ name: newLayer.name, id: newLayer.id });
+            this.props.state.map.fitBounds(newLayer.layerType === LayerTypes.HeatMap ? (newLayer.layer as any)._latlngs : newLayer.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
         }
+
         this.props.state.welcomeShown = false;
         this.props.state.editingLayer = this.props.state.layers[0];
         this.props.state.menuShown = !this.props.state.embed;
@@ -188,33 +190,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
      */
     reloadLayer(layer: Layer, wasImported: boolean = false) {
     }
-
-    /**
-     * deleteLayer - Removes a layer from the map and layer list
-     *
-     * @param  id   The unique id of the LayerInfo to remove
-     */
-    deleteLayer(id: number) {
-        let layerInfo = this.props.state.layers.filter(lyr => lyr.id == id)[0];
-        if (layerInfo) {
-            this.props.state.layers = this.props.state.layers.filter((lyr) => { return lyr.id != id });
-            this.props.state.map.removeLayer(layerInfo.layer);
-        }
-
-    }
-
-    /**
-     * deleteFilter - Removes a filter from the map
-     *
-     * @param  id  The id of the layer to delete
-     */
-    deleteFilter(id: number) {
-        let filterToDelete = this.props.state.filters.filter(function(f) { return f.id === id })[0];
-        //this.filterLayer(id, filterToDelete.totalMin, filterToDelete.totalMax); //reset filter
-        this.props.state.filters = this.props.state.filters.filter(function(f) { return f.id !== id });
-
-    }
-
 
 
     /**
@@ -314,8 +289,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                             state = {this.props.state}
                             refreshMap={this.reloadLayer.bind(this)}
                             addLayer = {this.startLayerImport.bind(this)}
-                            deleteLayer={this.deleteLayer.bind(this)}
-                            deleteFilter={this.deleteFilter.bind(this)}
                             changeLayerOrder ={this.changeLayerOrder.bind(this)}
                             saveImage ={this.saveImage}
                             saveFile = {this.saveFile.bind(this)}

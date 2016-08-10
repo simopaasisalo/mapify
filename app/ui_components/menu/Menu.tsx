@@ -25,10 +25,6 @@ export class MapifyMenu extends React.Component<{
     changeLayerOrder: () => void,
     /** Add a new layer (by opening import wizard)*/
     addLayer: () => void,
-    /** Remove a layer from the map*/
-    deleteLayer: (id: number) => void,
-    /** Remove a filter from the map */
-    deleteFilter: (id: number) => void,
     /** Export map as .png */
     saveImage: () => void,
     /** Export map as .mapify*/
@@ -66,9 +62,6 @@ export class MapifyMenu extends React.Component<{
         this.props.state.editingLayer = val.value;
     }
 
-    deleteLayer = (id: number) => {
-        this.props.deleteLayer(id);
-    }
     addNewLayer = () => {
         this.props.state.editingLayer = null;
         this.props.state.visibleMenu = 0;
@@ -85,10 +78,6 @@ export class MapifyMenu extends React.Component<{
         return option ? option.name : '';
     }
 
-
-    deleteFilter = (id: number) => {
-        this.props.deleteFilter(id);
-    }
     changePopUpHeaders = () => {
         let lyr: Layer = this.props.state.editingLayer;
         let headers = this.props.state.editingLayer.popupHeaders;
@@ -141,7 +130,6 @@ export class MapifyMenu extends React.Component<{
                             state={this.props.state}
                             saveOrder={this.onLayerOrderChange}
                             addNewLayer = {this.addNewLayer}
-                            deleteLayer = {this.deleteLayer}
                             />
 
                     </Menu.Item>
@@ -186,7 +174,6 @@ export class MapifyMenu extends React.Component<{
 
                         <FilterMenu
                             state={this.props.state}
-                            deleteFilter={this.deleteFilter}
                             />
                     </Menu.Item>
                     <Menu.Item>

@@ -1,9 +1,9 @@
 import * as React from 'react';
-import {Filter} from '../Stores/Filter';
+import { Filter } from '../Stores/Filter';
 
 let Slider = require('react-slider');
 let Draggable = require('react-draggable');
-import {observer} from 'mobx-react';
+import { observer } from 'mobx-react';
 
 @observer
 export class OnScreenFilter extends React.Component<{ state: Filter }, {}>{
@@ -84,32 +84,32 @@ export class OnScreenFilter extends React.Component<{ state: Filter }, {}>{
 
                         }}
                         key={step}
-                        onClick={this.onCustomStepClick.bind(this, index) }
+                        onClick={this.onCustomStepClick.bind(this, index)}
                         >{step[0] + '-' + step[1]}
                     </div>)
                 index++;
             }, this);
 
         }
-        return <div> {rows.map(function(e) { return e }) } </div>
+        return <div> {rows.map(function(e) { return e })} </div>
     }
 
 
     render() {
         return <Draggable
-            handle={'.draggableHeader'}
+            handle={'.filterhead'}
             >
             <div className='filter'>
-                <h2 className='draggableHeader'>{this.props.state.title}</h2>
-                {this.renderSteps.call(this) }
+                <h2 className='filterhead'>{this.props.state.title}</h2>
+                {this.renderSteps.call(this)}
                 <span>
-                    <input type='number' style={{ width: '60px' }} value={this.props.state.currentMin.toFixed(0) } onChange={this.onCurrentMinChange }/>
+                    <input type='number' style={{ width: '70px' }} value={this.props.state.currentMin.toFixed(0)} onChange={this.onCurrentMinChange}/>
                     <label>Lock distance</label>
-                    <input type='checkbox' checked={this.props.state.lockDistance} onChange={this.onLockDistanceChange }/>
-                    <input type='number' style={{ float: 'right', width: '60px' }} value={this.props.state.currentMax.toFixed(0) } onChange={this.onCurrentMaxChange }/>
+                    <input type='checkbox' checked={this.props.state.lockDistance} onChange={this.onLockDistanceChange}/>
+                    <input type='number' style={{ float: 'right', width: '70px' }} value={this.props.state.currentMax.toFixed(0)} onChange={this.onCurrentMaxChange}/>
                 </span>
                 <Slider className='horizontal-slider'
-                    onChange={this.onFilterScaleChange }
+                    onChange={this.onFilterScaleChange}
                     value={[this.props.state.currentMin, this.props.state.currentMax]}
                     min={this.props.state.totalMin - 1}
                     max={this.props.state.totalMax + 1}

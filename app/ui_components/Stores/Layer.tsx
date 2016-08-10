@@ -95,7 +95,6 @@ export class Layer {
                 }));
             }
 
-
         }
         if (layer) {
             if (this.layerType === LayerTypes.SymbolMap && this.symbolOptions.symbolType === SymbolTypes.Circle && this.symbolOptions.sizeXVar) {
@@ -119,8 +118,6 @@ export class Layer {
                     getScaleSymbolMaxValues.call(this);
                 }
             }
-
-            this.appState.map.fitBounds(this.layerType === LayerTypes.HeatMap ? (this.layer as any)._latlngs : this.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
             this.filterUpdatesPending = true;
         }
 

@@ -1,7 +1,7 @@
-import {observable, computed} from 'mobx';
-import {LayerTypes, SymbolTypes} from '../common_items/common';
-import {Layer} from './Layer';
-import {AppState} from './States';
+import { observable, computed } from 'mobx';
+import { LayerTypes, SymbolTypes } from '../common_items/common';
+import { Layer } from './Layer';
+import { AppState } from './States';
 let mobx = require('mobx');
 
 export class Filter {
@@ -72,7 +72,7 @@ export class Filter {
     * Remove or show items based on changes on a filter
     */
     filterLayer() {
-        if (this.layer && this.layer.layer && this.currentMax && this.currentMin) {
+        if (this.show) {
             if (this.layer.layerType !== LayerTypes.HeatMap) {
 
                 for (let val in this.filterValues) {
@@ -121,7 +121,7 @@ export class Filter {
                 let arr: number[][] = [];
                 let max = 0;
                 this.layer.geoJSON.features.map(function(feat) {
-                    if (feat.properties[this.fieldToFilter] > this.currentMin && feat.properties[this.fieldToFilter] < this.currentMax) {
+                    if (feat.properties[this.fieldToFilter] >= this.currentMin && feat.properties[this.fieldToFilter] <= this.currentMax) {
                         let pos = [];
                         let heatVal = feat.properties[this.layer.heatMapVariable];
                         if (heatVal > max)

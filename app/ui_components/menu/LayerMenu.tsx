@@ -10,8 +10,6 @@ export class LayerMenu extends React.Component<{
     state: AppState,
     /** Function to signal the opening of the layer import wizard. Triggered by button press*/
     addNewLayer: () => void,
-    /** Function to remove a layer from the map. Triggered by button press*/
-    deleteLayer: (id: number) => void,
     /** Save the current order to the map. Triggered by button press*/
     saveOrder: () => void,
 }, {}>{
@@ -72,7 +70,11 @@ export class LayerMenu extends React.Component<{
         this.props.addNewLayer();
     }
     deleteLayer(id: number) {
-        this.props.deleteLayer(id);
+        let layerInfo = this.props.state.layers.filter(lyr => lyr.id == id)[0];
+        if (layerInfo) {
+            this.props.state.layers = this.props.state.layers.filter((lyr) => { return lyr.id != id });
+            this.props.state.map.removeLayer(layerInfo.layer);
+        }
     }
     saveOrder() {
         this.props.saveOrder(); //unnecessary? just set the state?
