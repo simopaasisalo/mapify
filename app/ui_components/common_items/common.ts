@@ -75,20 +75,43 @@ function GetItemBetweenLimits(limits: any[], items: any[], value: number) {
 
 
 /**
- * LoadSavedMap - Loads a specified .mapify-file
+ * LoadLocalMap - Load a .mapify file from server
  *
  * @param  filename   name of the file, without extension
  * @param  onLoad     function to run on load complete
  * @param  path       custom path. If null, defaults to demos/
  */
-function LoadSavedMap(filename: string, onLoad: (string) => void, path?: string) {
+function LoadLocalMap(filename: string, onLoad: (string) => void, path?: string) {
+    LoadSavedMap(path ? path : 'demos/' + filename + '.mapify', onLoad)
+
+}
+
+
+/**
+ * LoadExternalMap - Load a .mapify file from external URL
+ *
+ * @param  URL      File URL
+ * @param  onLoad     function to run on load complete
+ */
+function LoadExternalMap(URL: string, onLoad: (string) => void) {
+
+    LoadSavedMap(URL, onLoad);
+}
+
+/**
+ * LoadSavedMap - Loads a specified .mapify-file
+ * @param  path      File path
+ * @param  onLoad     function to run on load complete
+ */
+function LoadSavedMap(path: string, onLoad: (string) => void) {
 
     let rawFile = new XMLHttpRequest();
-    rawFile.open("GET", (path ? path : 'demos/') + filename + '.mapify', false);
+    rawFile.open("GET", path, false);
     rawFile.onreadystatechange = uploadComplete.bind(this)
     function uploadComplete() {
         if (rawFile.readyState === 4) {
             if (rawFile.status === 200 || rawFile.status == 0) {
+
                 onLoad(JSON.parse(rawFile.responseText));
             }
         }
@@ -96,4 +119,6 @@ function LoadSavedMap(filename: string, onLoad: (string) => void, path?: string)
     rawFile.send(null);
 }
 
-export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, CalculateLimits, GetItemBetweenLimits, LoadSavedMap }
+
+
+export { LayerTypes, SymbolTypes, DefaultProjections, GetSymbolSize, CalculateLimits, GetItemBetweenLimits, LoadLocalMap, LoadExternalMap }

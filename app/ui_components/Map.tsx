@@ -8,7 +8,7 @@ import { Legend } from './Stores/Legend';
 import { LayerImportWizard } from './import_wizard/LayerImportWizard';
 import { MapifyMenu } from './menu/Menu';
 import { MapInitModel } from '../models/MapInitModel';
-import { LayerTypes, SymbolTypes, GetSymbolSize, LoadSavedMap } from './common_items/common';
+import { LayerTypes, SymbolTypes, GetSymbolSize, LoadLocalMap, LoadExternalMap } from './common_items/common';
 import { OnScreenFilter } from './misc/OnScreenFilter';
 import { OnScreenLegend } from './misc/OnScreenLegend';
 import { WelcomeScreen } from './misc/WelcomeScreen';
@@ -34,19 +34,44 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
     componentWillMount() {
         let sPageURL = decodeURIComponent(window.location.search.substring(1));
         _parameters = sPageURL.split('&');
-        let parameterMapFile = this.getUrlParameter("map");
-        if (parameterMapFile)
+
+        if (this.getUrlParameter("mapFile") || this.getUrlParameter("mapURL") || this.getUrlParameter("mapGeoJSON"))
             this.props.state.embed = true;
     }
 
     componentDidMount() {
         _mapInitModel.InitCustomProjections();
         this.initMap();
-        let parameterMapFile = this.getUrlParameter("map");
-        let path = this.getUrlParameter("path");
-        if (parameterMapFile) {
-            LoadSavedMap(parameterMapFile, this.loadSavedMap.bind(this), path);
+        if (this.props.state.embed)
+            this.embed();
+
+    }
+
+    /** Parse URL parameters and act accordingly */
+    embed() {
+        //Local file name on server
+        let mapFile = this.getUrlParameter("mapFile");
+        if (mapFile) {
+            //Custom path on server
+            let path = this.getUrlParameter("path");
+            LoadLocalMap(mapFile, this.loadSavedMap.bind(this), path);
+            return;
         }
+        //Pure GeoJSON without styling as string
+        let mapGeoJSON = this.getUrlParameter("mapGeoJSON");
+        if (mapGeoJSON) {
+
+            this.layerImportSubmit(new Layer(this.props.state).geoJSON = mapGeoJSON)
+            return;
+        }
+        //URL to get a .mapify-file
+        let mapURL = this.getUrlParameter("mapURL");
+        if (mapURL) {
+
+            LoadExternalMap(mapURL, this.loadSavedMap.bind(this));
+            return;
+        }
+
     }
 
     /**
@@ -101,8 +126,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
 
     /**
      * layerImportSubmit - Layer importing was completed -> draw to map
-     *
-     * @param  {ILayerData} layerData contains layer name and GeoJSON object
      */
     layerImportSubmit(l: Layer) {
         l.appState = this.props.state;
@@ -112,6 +135,8 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         this.props.state.importWizardShown = false;
         this.props.state.editingLayer = l;
         this.props.state.menuShown = true;
+        this.props.state.map.fitBounds(l.layerType === LayerTypes.HeatMap ? (l.layer as any)._latlngs : l.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
+
     }
 
     loadSavedMap(saved: SaveState) {

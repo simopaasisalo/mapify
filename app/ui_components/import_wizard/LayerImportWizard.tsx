@@ -88,7 +88,6 @@ export class LayerImportWizard extends React.Component<{
         }
 
         layer.getColors();
-        this.props.appState.map.fitBounds(layer.layerType === LayerTypes.HeatMap ? (layer.layer as any)._latlngs : layer.layer.getBounds()); //leaflet.heat doesn't utilize getBounds, so get it directly
 
         layer.blockUpdate = false;
         this.props.submit(layer);
