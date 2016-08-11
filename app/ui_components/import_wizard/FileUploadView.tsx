@@ -43,9 +43,6 @@ export class FileUploadView extends React.Component<{
         }
     }
 
-    onLayerNameChange = (e) => {
-        this.activeLayer.name = e.target.value;
-    }
     goBack = () => {
         this.props.goBack();
     }
@@ -92,7 +89,9 @@ export class FileUploadView extends React.Component<{
                         {this.props.state.fileName ? <span><i className='fa fa-check' style={{ color: '#549341', fontSize: 17 }}/> {this.props.state.fileName} </span> : <span>Drop file or click to open upload menu</span>}
                     </Dropzone>
                     <label>Give a name to the layer</label>
-                    <input type="text" onChange={this.onLayerNameChange} value={this.activeLayer.name}/>
+                    <input type="text" onChange={(e) => {
+                        this.activeLayer.name = (e.target as any).value;
+                    } } value={this.activeLayer.name}/>
 
                 </div>
                 <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this)}>Previous</button>

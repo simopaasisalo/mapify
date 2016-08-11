@@ -39,11 +39,24 @@ export class LayerImportWizard extends React.Component<{
                 state.layer.geoJSON = JSON.parse(state.content);
             else if (ext === 'kml' || ext === 'gpx' || ext === 'wkt')
                 state.layer.geoJSON = _fileModel.ParseToGeoJSON(state.content, ext)
-            let props = state.layer.geoJSON.features ? state.layer.geoJSON.features[0].properties : {};
-            for (let h of Object.keys(props)) {
-                state.layer.headers.push({ value: h, label: h, type: isNaN(parseFloat(props[h])) ? 'string' : 'number' });
-            }
+            for (let i of state.layer.geoJSON.features) { //have to loop every feature here, because each can have different properties
+                let props = state.layer.geoJSON.features ? i.properties : {};
+                for (let h of Object.keys(props)) {
+                    let isnumber = !isNaN(parseFloat(props[h]));
+                    if (isnumber)
+                        props[h] = +props[h];
+                    let header = state.layer.headers.slice().filter(function(e) { return e.label === h })[0];
 
+                    if (!header) {
+                        state.layer.headers.push({ value: h, label: h, type: isnumber ? 'number' : 'string' });
+                    }
+                    else {
+                        if (header.type === 'number' && !isnumber) { //previously marked as number but new value is text => mark as string
+                            header.type = 'string';
+                        }
+                    }
+                }
+            }
             this.nextStep();
         }
     }

@@ -42,8 +42,8 @@ function GetSymbolSize(val: number, sizeMultiplier: number, minSize: number, max
 /** Calculate a set of limits between a minimum and maximum values*/
 function CalculateLimits(min: number, max: number, count: number) {
     let limits: number[] = [];
-    for (let i = min; i < max; i += (max - min) / count) {
-        limits.push(Math.round(i));
+    for (let i = +min; i < max; i += (max - min) / count) {
+        limits.push(+i.toFixed(3));
     }
     if (limits.indexOf(max) === -1)
         limits.push(max)
@@ -59,7 +59,8 @@ function GetItemBetweenLimits(limits: any[], items: any[], value: number) {
                 if (i < limits.length - 1) {
                     let lowerLimit = limits[i];
                     let upperLimit = limits[i + 1];
-                    if (lowerLimit <= value && value <= upperLimit) {
+
+                    if (lowerLimit <= value && value < upperLimit) {
                         return items[i];
                     }
                 }

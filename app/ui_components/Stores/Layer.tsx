@@ -32,7 +32,7 @@ export class Layer {
     /** The Leaflet layer. Will be modified by changing options*/
     layer: any;
     /** The function to run on every feature of the layer. Is used to place pop-ups to map features */
-    onEachFeature: (feature: any, layer: L.GeoJSON) => void = addPopupsToLayer;
+    onEachFeature: (feature: any, layer: L.GeoJSON) => void = addPopupsToLayer.bind(this);
     /** The coloring options of the layer. Contains ie. border color and opacity */
     @observable colorOptions: ColorOptions = new ColorOptions();
     /**  The symbol options for symbol layers. Contains ie. symbol type  */
@@ -72,7 +72,6 @@ export class Layer {
                     layer = createHeatLayer(this);
             }
             else {
-
                 let style = function(opts: ColorOptions, feature) {
 
                     return {
@@ -461,8 +460,6 @@ function createHeatLayer(l: Layer) {
     return L.heatLayer(arr, { relative: true, gradient: gradient, radius: l.colorOptions.heatMapRadius })
 }
 
-
-
 /**
  * addPopupsToLayer - adds the feature details popup to layer
  *
@@ -470,10 +467,14 @@ function createHeatLayer(l: Layer) {
  * @param   layer   layer to add popup to
  */
 function addPopupsToLayer(feature, layer: L.GeoJSON) {
+    let headers: string[] = [];
+    this.popupHeaders.map(function(h) { headers.push(h.label) })
     var popupContent = '';
     for (var prop in feature.properties) {
-        popupContent += prop + ": " + feature.properties[prop];
-        popupContent += "<br />";
+        if (headers.indexOf(prop) != -1) {
+            popupContent += prop + ": " + feature.properties[prop];
+            popupContent += "<br />";
+        }
     }
     if (popupContent != '')
         layer.bindPopup(popupContent);

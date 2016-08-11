@@ -182,7 +182,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         this.props.state.editingLayer = this.props.state.layers[0];
         this.props.state.menuShown = !this.props.state.embed;
 
-
     }
 
     /**
@@ -199,10 +198,7 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                 }
                 else {
                     this.props.state.map.removeLayer(layer.layer);
-                    console.log('removed')
                     this.props.state.map.addLayer(layer.layer);
-                    console.log('added')
-
                 }
             }
         }

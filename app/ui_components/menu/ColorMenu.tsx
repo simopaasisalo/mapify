@@ -76,9 +76,6 @@ export class ColorMenu extends React.Component<{
         this.calculateValues();
         this.props.state.editingLayer.blockUpdate = false;
     }
-    onMultipleColorsChange = (e) => {
-        this.props.state.editingLayer.colorOptions.useMultipleFillColors = e.target.checked;
-    }
     onRevertChange = (e) => {
         this.props.state.editingLayer.blockUpdate = true;
         this.props.state.editingLayer.colorOptions.revert = e.target.checked;
@@ -102,11 +99,13 @@ export class ColorMenu extends React.Component<{
         let layer = this.props.state.editingLayer;
         let limits = layer.colorOptions.limits;
         let val = e.currentTarget.valueAsNumber;
+        if (step === 0 && val > layer.values[layer.colorOptions.colorField][0])//the lowest limit cannot be increased, since this would lead to some items not having a color
+            return
         layer.blockUpdate = true;
-        if (limits[step + 1] && limits[step + 1] <= val) { //if collides with the next limit
+        if (limits[step + 1] !== undefined && limits[step + 1] <= val) { //if collides with the next limit
             limits = this.increaseLimitStep(limits, val, step);
         }
-        else if (limits[step - 1] && limits[step - 1] >= val) { //if collides with the previous limit
+        else if (limits[step - 1] !== undefined && limits[step - 1] >= val) { //if collides with the previous limit
             limits = this.decreaseLimitStep(limits, val, step);
         }
         else {
@@ -158,15 +157,29 @@ export class ColorMenu extends React.Component<{
      * calculateValues - Performs the chroma-js calculation to get colors and steps
      */
     calculateValues = () => {
-
         let lyr: Layer = this.props.state.editingLayer;
         let field: string = lyr.colorOptions.colorField;
-        let limits: number[] = !lyr.colorOptions.useCustomScheme ?
-            chroma.limits(lyr.values[field], lyr.colorOptions.mode, lyr.colorOptions.steps) :
-            CalculateLimits(lyr.values[field][0], lyr.values[field][lyr.values[field].length - 1], lyr.colorOptions.steps);
-        for (let i in limits) {
-            limits[i] = Math.round(limits[i]); //TODO: layer-specific accuracy on decimals. For example two decimal accuracy:  * 100) / 100
+        let uniqueValues: number[] = lyr.values[field].filter(function(e, i, arr) {
+            return arr.lastIndexOf(e) === i;
+        });
+        let steps: number = Math.min(uniqueValues.length, lyr.colorOptions.steps);
+        let limits: number[] = [];
+        if (!lyr.colorOptions.useCustomScheme) {
+            limits = chroma.limits(lyr.values[field], lyr.colorOptions.mode, steps);
         }
+        else {
+            if (steps === uniqueValues.length) {
+
+                uniqueValues.push(uniqueValues[uniqueValues.length - 1] + 1);
+                limits = uniqueValues;
+            }
+            else
+                limits = CalculateLimits(lyr.values[field][0], lyr.values[field][lyr.values[field].length - 1], steps);
+        }
+        // for (let i in limits) {
+        //     limits[i] = Math.round(limits[i]); //TODO: layer-specific accuracy on decimals. For example two decimal accuracy:  * 100) / 100
+        // }
+        //
         let colors: string[];
         if (!lyr.colorOptions.useCustomScheme) {
             colors = chroma.scale(lyr.colorOptions.colorScheme).colors(limits.length - 1);
@@ -328,7 +341,9 @@ export class ColorMenu extends React.Component<{
                             <input
                                 id='multipleSelect'
                                 type='checkbox'
-                                onChange={this.onMultipleColorsChange}
+                                onChange={(e) => {
+                                    this.props.state.editingLayer.colorOptions.useMultipleFillColors = (e.target as any).checked;
+                                } }
                                 checked={col.useMultipleFillColors}/>
                         </label>
                     </div>
