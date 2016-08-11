@@ -45,45 +45,55 @@ export class OnScreenLegend extends React.Component<{ state: AppState }, {}>{
         this.props.state.legend.meta = e.target.value;
     }
 
-    onDragStop = (e, ui) => {
-        this.props.state.legend.x = e.clientX;
-        this.props.state.legend.y = e.clientY;
-    }
+    // onDragStop = (e, ui) => {
+    //     this.props.state.legend.x = e.clientX;
+    //     this.props.state.legend.y = e.clientY;
+    // }
 
     render() {
         let layers = this.props.state.layers;
         let legend = this.props.state.legend;
+        // <Draggable
+        //     handle={'.dragDiv'}
+        //     bounds={'parent'}
+        //     onDragStop={this.onDragStop}
+        //     disabled={legend.edit}
+        //defaultPosition={{ x: legend.x, y: legend.y - 400 }}//hack until I find out why the Y axis starts in the middle of the map instead of the top of the window
+        //     >
+
         return (
-            <Draggable
-                handle={'.dragDiv'}
-                bounds={'parent'}
-                onDragStop={this.onDragStop}
-                disabled={legend.edit}
-                defaultPosition={{ x: legend.x, y: legend.y - 400 }}//hack until I find out why the Y axis starts in the middle of the map instead of the top of the window
-                >
-                <div className='legend' style={{
-                    width: 'auto',
-                    textAlign: 'center',
-
-                }}>
-                    <h2 className='legendHeader'>{legend.title}</h2>
-                    <div>
-                        <div style={{ position: 'absolute', left: 0, cursor: 'pointer' }} className='dragDiv'><i className='fa fa-arrows'/></div>
-                        {layers.map(function(m) {
+            <div className='legend' style={{
+                width: 'auto',
+                textAlign: 'center',
+                position: 'absolute',
+                left: legend.left ? 0 : '',
+                right: legend.right ? 0 : '',
+                bottom: legend.bottom ? 15 : '', //15 to keep the legend above map attributions
+                top: legend.top ? 0 : '',
+                background: "#FFF",
+                borderRadius: 15,
+            }}>
+                <h2 className='legendHeader'>{legend.title}</h2>
+                <div>
+                    {
+                        //<div style={{ position: 'absolute', left: 0, cursor: 'pointer' }} className='dragDiv'><i className='fa fa-arrows'/></div>
+                    }
+                    {
+                        layers.map(function(m) {
                             return this.createLegend(m);
-                        }, this)}
-                    </div>
-                    <div style={{ clear: 'both' }}>
-                        <TextEditor
-                            style={{ width: '100%' }}
-                            content={legend.meta}
-                            onChange={this.onMetaChange}
-                            edit={legend.edit}/>
-                    </div>
-                </div >
+                        }, this)
+                    }
+                </div>
+                <div style={{ clear: 'both' }}>
+                    <TextEditor
+                        style={{ width: '100%' }}
+                        content={legend.meta}
+                        onChange={this.onMetaChange}
+                        edit={legend.edit}/>
+                </div>
+            </div >
 
 
-            </Draggable >
         );
     }
 

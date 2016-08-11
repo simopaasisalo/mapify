@@ -270,7 +270,8 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             filters: this.props.state.filters,
         };
         saveData.layers = saveData.layers.slice();
-        saveData.layers.forEach(function(e) { delete e.appState; delete e.layer });
+
+        saveData.layers.forEach(function(e) { delete e.appState; delete e.layer; delete e.values; });
         saveData.filters.forEach(function(e) { delete e.appState });
         let blob = new Blob([JSON.stringify(saveData)], { type: "text/plain;charset=utf-8" });
         (window as any).saveAs(blob, 'map.mapify');

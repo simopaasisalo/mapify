@@ -11,8 +11,10 @@ export class Legend {
     @observable visible: boolean;
     @observable showPercentages: boolean;
     @observable edit: boolean;
-    @observable x: number;
-    @observable y: number;
+    @observable top: boolean;
+    @observable bottom: boolean;
+    @observable left: boolean;
+    @observable right: boolean;
 
     constructor(prev?: Legend) {
 
@@ -23,8 +25,11 @@ export class Legend {
         this.visible = prev && prev.visible || false;
         this.showPercentages = prev && prev.showPercentages || false;
         this.edit = prev && prev.edit || false;
-        this.x = prev && prev.x || 0;
-        this.y = prev && prev.y || 0;
+        this.top = prev && prev.top !== undefined ? prev.top : false;
+        this.bottom = prev && prev.bottom !== undefined ? prev.bottom : true;
+        this.left = prev && prev.left !== undefined ? prev.left : false;
+        this.right = prev && prev.right !== undefined ? prev.right : true;
+
 
     }
 }

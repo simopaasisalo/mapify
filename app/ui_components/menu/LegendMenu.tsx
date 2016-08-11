@@ -9,22 +9,6 @@ export class LegendMenu extends React.Component<{
     state: AppState,
 }, {}>{
 
-    onTitleChange = (e) => {
-        this.props.state.legend.title = e.target.value;
-    }
-
-    onEditChange = (e) => {
-        this.props.state.legend.edit = e.currentTarget.checked;
-    }
-    onVisibleChange = (e) => {
-        this.props.state.legend.visible = e.currentTarget.checked;
-    }
-    onHorizontalChange = (e) => {
-        this.props.state.legend.horizontal = e.currentTarget.checked;
-    }
-    onPercentageChange = (e) => {
-        this.props.state.legend.showPercentages = e.currentTarget.checked;
-    }
     render() {
         if (this.props.state.visibleMenu !== 5)
             return <div/>
@@ -43,7 +27,7 @@ export class LegendMenu extends React.Component<{
             },
             content: {
                 border: '4px solid #6891e2',
-                borderRadius: '15px',
+                borderRadius: 15,
                 padding: '0px',
                 height: 650,
                 width: 300,
@@ -53,28 +37,68 @@ export class LegendMenu extends React.Component<{
                 left: '',
             }
         }
+
         return (
             <div className="mapify-options">
                 <label htmlFor='showLegend'>Show legend
-                    <input id='showLegend' type='checkbox' checked={legend.visible} onChange={this.onVisibleChange}/>
+                    <input id='showLegend' type='checkbox' checked={legend.visible} onChange={(e) => {
+                        this.props.state.legend.visible = (e.currentTarget as any).checked;
+                    } }/>
                 </label>
                 <br/>
                 <label>Title</label>
-                <input type='text' style={{ width: '100%' }} value={legend.title} onChange={this.onTitleChange}/>
+                <input type='text' style={{ width: '100%' }} value={legend.title} onChange={(e) => {
+                    this.props.state.legend.title = (e.target as any).value;
+                } }/>
                 <br/>
                 <label htmlFor='showEdit'>Show legend edit options
-                    <input id='showEdit' type='checkbox' checked={legend.edit} onChange={this.onEditChange}/>
+                    <input id='showEdit' type='checkbox' checked={legend.edit} onChange={(e) => {
+                        legend.edit = (e.currentTarget as any).checked;
+                    } }/>
                 </label>
                 <br/>
                 <label htmlFor='showPercentages'>Show distribution
-                    <input id='showPercentages' type='checkbox' checked={legend.showPercentages} onChange={this.onPercentageChange}/>
+                    <input id='showPercentages' type='checkbox' checked={legend.showPercentages} onChange={(e) => {
+                        this.props.state.legend.showPercentages = (e.currentTarget as any).checked;
+                    } }/>
                 </label>
                 <br/>
                 <label htmlFor='makeHorizontal'>Align horizontally
-                    <input id='makeHorizontal' type='checkbox' checked={legend.horizontal} onChange={this.onHorizontalChange}/>
+                    <input id='makeHorizontal' type='checkbox' checked={legend.horizontal} onChange={(e) => {
+                        this.props.state.legend.horizontal = (e.currentTarget as any).checked;
+                    } }/>
                 </label>
-                <br/>
-                <i>TIP: drag the legend on screen to place it where you wish</i>
+                <hr/>
+                <label>Legend position</label>
+                <table style={{ cursor: 'pointer', border: "1px solid #999999", width: 50, height: 50, margin: '0 auto' }}>
+                    <tbody>
+                        <tr>
+                            <td style={{
+                                border: "1px solid #999999", borderRadius: 5,
+                                background: legend.top && legend.left ? "#FFF" : ""
+                            }}
+                                onClick={() => { legend.top = true; legend.left = true; legend.bottom = false; legend.right = false; } }/>
+                            <td style={{
+                                border: "1px solid #999999", borderRadius: 5,
+                                background: legend.top && legend.right ? "#FFF" : ""
+                            }}
+                                onClick={() => { legend.top = true; legend.right = true; legend.bottom = false; legend.left = false; } }/>
+                        </tr>
+                        <tr>
+                            <td style={{
+                                border: "1px solid #999999", borderRadius: 5,
+                                background: legend.bottom && legend.left ? "#FFF" : ""
+                            }}
+                                onClick={() => { legend.bottom = true; legend.left = true; legend.top = false; legend.right = false; } }/>
+                            <td style={{
+                                border: "1px solid #999999", borderRadius: 5,
+                                background: legend.bottom && legend.right ? "#FFF" : ""
+                            }}
+                                onClick={() => { legend.bottom = true; legend.right = true; legend.top = false; legend.left = false; } }/>
+                        </tr>
+                    </tbody>
+                </table>
+
             </div >)
     }
 }
