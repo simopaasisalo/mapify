@@ -442,7 +442,7 @@ export class SymbolMenu extends React.Component<{
                 {sym.symbolType === SymbolTypes.Blocks ?
                     <div>
                         <label>Single block value</label>
-                        <input type="number" value={sym.blockValue} onChange={this.onBlockValueChange} min={0}/>
+                        <input type="number" value={sym.blockValue} onChange={this.onBlockValueChange} min={1}/>
                     </div>
                     : null
 

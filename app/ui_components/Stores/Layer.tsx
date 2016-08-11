@@ -96,12 +96,6 @@ export class Layer {
 
         }
         if (layer) {
-            if (this.layerType === LayerTypes.SymbolMap && this.symbolOptions.symbolType === SymbolTypes.Circle && this.symbolOptions.sizeXVar) {
-                let sym = this.symbolOptions;
-                this.layer.eachLayer(function(lyr) {
-                    lyr.setRadius(GetSymbolSize(lyr.feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit));
-                });
-            }
             layer.addTo(this.appState.map);
             if (this.layer)
                 this.appState.map.removeLayer(this.layer)
@@ -110,10 +104,14 @@ export class Layer {
                 this.values = {};
                 getValues(this)
             }
+
             if (this.layerType === LayerTypes.SymbolMap) {
-                //if needs to scale and is of scalable type
-                //
-                if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar && (this.symbolOptions.symbolType === SymbolTypes.Circle || this.symbolOptions.symbolType === SymbolTypes.Rectangle || this.symbolOptions.symbolType === SymbolTypes.Blocks)) {
+                if (this.symbolOptions.sizeXVar || this.symbolOptions.sizeYVar &&
+                    (this.symbolOptions.symbolType === SymbolTypes.Circle ||
+                        this.symbolOptions.symbolType === SymbolTypes.Rectangle ||
+                        this.symbolOptions.symbolType === SymbolTypes.Blocks
+                    )
+                ) {
                     getScaleSymbolMaxValues.call(this);
                 }
             }
@@ -162,6 +160,8 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
     if (col.colors && col.limits)
         col.fillColor = col.colors.slice().length == 0 || !col.useMultipleFillColors ? col.fillColor : GetItemBetweenLimits(col.limits.slice(), col.colors.slice(), feature.properties[col.colorField]);
     let borderColor = col.color;
+    let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
+    let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
 
     switch (sym.symbolType) {
         case SymbolTypes.Icon:
@@ -198,11 +198,8 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
             });
             return mark;
         case SymbolTypes.Rectangle:
-
-            let x: number = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
-            let y: number = sym.sizeYVar ? GetSymbolSize(feature.properties[sym.sizeYVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 10;
             let rectHtml = '<div style="height: ' + y + 'px; width: ' + x + 'px; opacity:' + col.opacity + '; background-color:' + col.fillColor + '; border: 1px solid ' + borderColor + '"/>';
-            let rectMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: rectHtml, className: '' });
+            let rectMarker = L.divIcon({ iconAnchor: L.point(x / 2, y / 2), html: rectHtml, className: '' });
             return L.marker(latlng, { icon: rectMarker });
         case SymbolTypes.Chart:
             let vals = [];
@@ -212,7 +209,7 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
                     vals.push({ feat: e, val: feature.properties[e.value], color: col.chartColors[e.value] });
                 i++;
             });
-            let radius = sym.sizeXVar ? GetSymbolSize(feature.properties[sym.sizeXVar], sym.sizeMultiplier, sym.sizeLowLimit, sym.sizeUpLimit) : 30;
+            let radius = sym.sizeXVar ? x : 30;
             let chartHtml = makePieChart({
                 fullCircle: sym.chartType === 'pie',
                 data: vals,
@@ -225,16 +222,16 @@ function pointToLayerFunc(col: ColorOptions, sym: SymbolOptions, feature, latlng
                 borderColor: col.color,
                 opacity: col.fillOpacity
             });
-            let marker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: chartHtml, className: '' });
+            let marker = L.divIcon({ iconAnchor: L.point(radius, radius), html: chartHtml, className: '' });
             return L.marker(latlng, { icon: marker });
         case SymbolTypes.Blocks:
             let side = Math.ceil(Math.sqrt(feature.properties[sym.sizeXVar] / sym.blockValue));
             let blockCount = Math.ceil(feature.properties[sym.sizeXVar] / sym.blockValue);
             let blockHtml = makeBlockSymbol(side, blockCount, col.fillColor, borderColor);
-            let blockMarker = L.divIcon({ iconAnchor: L.point(feature.geometry[0], feature.geometry[1]), html: blockHtml, className: '' });
+            let blockMarker = L.divIcon({ iconAnchor: L.point(5 * side, 5 * side), html: blockHtml, className: '' });
             return L.marker(latlng, { icon: blockMarker });
     }
-    return L.circleMarker(latlng, col);
+    return L.circleMarker(latlng, col).setRadius(x);
 }
 
 /** Get feature values in their own dictionary to reduce the amount of common calculations*/
