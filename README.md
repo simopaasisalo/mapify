@@ -4,7 +4,11 @@
 
  [![build status](https://travis-ci.org/simopaasisalo/mapify.svg?branch=master)](http://travis-ci.org/simopaasisalo/mapify)
 
-Mapify is a map making tool that takes in data in multiple formats and outputs a highly customizable map. 
+![alt text](https://github.com/simopaasisalo/mapify/blob/master/misc/map_preview.png "Map previews")
+
+
+
+Mapify is a map making tool that takes in data in multiple formats and outputs a powerfully visualized map. 
 
 It is built on Leaflet and OpenStreetMaps by React/TypeScript using MobX for state control. 
 
