@@ -10,33 +10,31 @@ export class ExportMenu extends React.Component<{
     /** Save map as a .mapify file*/
     saveFile: () => void,
 }, {}>{
-    onShowLegendChange = (e) => {
-        this.props.state.exportMenuState.showLegend = e.currentTarget.checked;
-    }
-    onShowFiltersChange = (e) => {
-        this.props.state.exportMenuState.showFilters = e.currentTarget.checked;
-    }
-    onSaveImage = () => {
-        this.props.saveImage();
-    }
-    onSaveFile = () => {
-        this.props.saveFile();
-    }
+
     render() {
         return (
             this.props.state.visibleMenu === 7 ?
                 <div>
                     <label htmlFor='showLegend'>Show legend on the image</label>
-                    <input id='showLegend' type='checkbox' checked={this.props.state.exportMenuState.showLegend} onChange={this.onShowLegendChange}/>
+                    <input id='showLegend' type='checkbox' checked={this.props.state.exportMenuState.showLegend} onChange={(e) => {
+                        this.props.state.exportMenuState.showLegend = (e.currentTarget as any).checked;
+                    } }/>
                     <br/>
                     <label htmlFor='showFilters'>Show filters on the image</label>
-                    <input id='showFilters' type='checkbox' checked={this.props.state.exportMenuState.showFilters} onChange={this.onShowFiltersChange}/>
+                    <input id='showFilters' type='checkbox' checked={this.props.state.exportMenuState.showFilters}
+                        onChange={(e) => {
+                            this.props.state.exportMenuState.showFilters = (e.currentTarget as any).checked;
+                        } }/>
                     <br/>
-                    <button className='menuButton' onClick={this.onSaveImage}>Download map as image</button>
+                    <button className='menuButton' onClick={() => {
+                        this.props.saveImage();
+                    } }>Download map as image</button>
                     <br/>
                     Or
                     <br/>
-                    <button className='menuButton' onClick={this.onSaveFile}>Download map as a file</button>
+                    <button className='menuButton' onClick={() => {
+                        this.props.saveFile();
+                    } }>Download map as a file</button>
 
                 </div>
                 : null

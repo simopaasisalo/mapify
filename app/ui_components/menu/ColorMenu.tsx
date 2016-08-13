@@ -137,10 +137,6 @@ export class ColorMenu extends React.Component<{
         }
     }
 
-    onHeatRadiusChange = (e) => {
-        this.props.state.editingLayer.colorOptions.heatMapRadius = e.currentTarget.valueAsNumber;
-    }
-
     toggleColorPick = (property: string) => {
         let state = this.props.state.colorMenuState;
         let col = this.props.state.editingLayer.colorOptions;
@@ -497,7 +493,9 @@ export class ColorMenu extends React.Component<{
                                                 max={100}
                                                 min={10}
                                                 step={1}
-                                                onChange={this.onHeatRadiusChange}
+                                                onChange={(e) => {
+                                                    this.props.state.editingLayer.colorOptions.heatMapRadius = (e.currentTarget as any).valueAsNumber;
+                                                } }
                                                 value={col.heatMapRadius}/>
                                         </div>
                                         : null}

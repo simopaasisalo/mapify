@@ -66,18 +66,12 @@ export class LayerMenu extends React.Component<{
             }
         }
     }
-    addNewLayer() {
-        this.props.addNewLayer();
-    }
     deleteLayer(id: number) {
         let layerInfo = this.props.state.layers.filter(lyr => lyr.id == id)[0];
         if (layerInfo) {
             this.props.state.layers = this.props.state.layers.filter((lyr) => { return lyr.id != id });
             this.props.state.map.removeLayer(layerInfo.layer);
         }
-    }
-    saveOrder() {
-        this.props.saveOrder(); //unnecessary? just set the state?
     }
     render() {
         if (this.props.state.visibleMenu !== 1)
@@ -113,8 +107,14 @@ export class LayerMenu extends React.Component<{
                         </div>;
                     }, this)}
                 </Sortable>
-                {this.props.state.autoRefresh ? null : <button className='menuButton' onClick={this.saveOrder.bind(this)}>Save</button>}
-                <button className='menuButton' onClick={this.addNewLayer.bind(this)}>Add new layer</button>
+                {this.props.state.autoRefresh ? null :
+                    <button className='menuButton'
+                        onClick={() => {
+                            this.props.saveOrder(); //unnecessary? just set the state?
+                        } }>Save</button>}
+                <button className='menuButton' onClick={() => {
+                    this.props.addNewLayer();
+                } }>Add new layer</button>
 
             </div>
         );

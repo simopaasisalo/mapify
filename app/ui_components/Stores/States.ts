@@ -100,6 +100,7 @@ export class ImportWizardState {
     @computed get isHeatMap() {
         return this.layer.layerType === LayerTypes.HeatMap;
     }
+
 }
 
 //TODO: filterstore, layerstore, legendstore(?)

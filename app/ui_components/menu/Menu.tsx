@@ -19,8 +19,6 @@ let Menu = require('impromptu-react-sidemenu');
 export class MapifyMenu extends React.Component<{
     /** Application state*/
     state: AppState,
-    /** Update the selected layer with new options*/
-    refreshMap: (options: Layer) => void,
     /** Reorder the layers on the map*/
     changeLayerOrder: () => void,
     /** Add a new layer (by opening import wizard)*/
@@ -67,16 +65,6 @@ export class MapifyMenu extends React.Component<{
         this.props.state.visibleMenu = 0;
         this.props.addLayer();
     }
-    refreshMap = () => {
-        this.props.refreshMap(this.props.state.editingLayer);
-    }
-    onLayerOrderChange = () => {
-        this.props.changeLayerOrder();
-    }
-    showLayerNameOnMenu = (option: Layer) => {
-
-        return option ? option.name : '';
-    }
 
     changePopUpHeaders = () => {
         let lyr: Layer = this.props.state.editingLayer;
@@ -98,14 +86,8 @@ export class MapifyMenu extends React.Component<{
         this.setState({
             selectedLayer: lyr
         })
-        this.refreshMap();
     }
-    saveImage = () => {
-        this.props.saveImage();
-    }
-    saveFile = () => {
-        this.props.saveFile();
-    }
+
 
     render() {
         let layers = [];
@@ -128,7 +110,9 @@ export class MapifyMenu extends React.Component<{
                             > Layers </p>
                         <LayerMenu
                             state={this.props.state}
-                            saveOrder={this.onLayerOrderChange}
+                            saveOrder={() => {
+                                this.props.changeLayerOrder();
+                            } }
                             addNewLayer = {this.addNewLayer}
                             />
 
@@ -137,7 +121,9 @@ export class MapifyMenu extends React.Component<{
                         options={layers}
                         onChange = {this.onLayerSelectionChange}
                         value = {this.props.state.editingLayer}
-                        valueRenderer = {this.showLayerNameOnMenu}
+                        valueRenderer = {(option: Layer) => {
+                            return option ? option.name : '';
+                        } }
                         clearable={false}
                         />
                     {this.props.state.editingLayer ?
@@ -160,8 +146,6 @@ export class MapifyMenu extends React.Component<{
                                 style={{ backgroundColor: this.props.state.visibleMenu === 3 ? '#1a263f' : '#293c60' }}> Symbols </p>
                             <SymbolMenu
                                 state = {this.props.state}
-                                saveValues = {this.refreshMap}
-
                                 />
                         </Menu.Item>
                         : <div/>
@@ -207,8 +191,12 @@ export class MapifyMenu extends React.Component<{
                             style={{ backgroundColor: this.props.state.visibleMenu === 7 ? '#1a263f' : '#293c60' }}> Download map </p>
                         <ExportMenu
                             state={this.props.state}
-                            saveImage = {this.saveImage}
-                            saveFile = {this.saveFile}
+                            saveImage = {() => {
+                                this.props.saveImage();
+                            } }
+                            saveFile = {() => {
+                                this.props.saveFile();
+                            } }
                             />
                     </Menu.Item>
                 </Menu.Menu >

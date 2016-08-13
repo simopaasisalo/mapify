@@ -9,6 +9,7 @@ import { LayerTypes } from "../common_items/common";
 let _fileModel = new FilePreProcessModel();
 
 import { ImportWizardState, AppState } from '../Stores/States';
+import { Layer } from '../Stores/Layer';
 import { observer } from 'mobx-react';
 
 @observer
@@ -70,12 +71,6 @@ export class LayerImportWizard extends React.Component<{
         this.submit();
     }
 
-    setLayerName(name: string) {
-        this.props.state.layer.name = name;
-    }
-    cancel() {
-        this.props.cancel();
-    }
     /**
      * submit - Parse given data to GeoJSON and pass to Map
      *
@@ -105,6 +100,7 @@ export class LayerImportWizard extends React.Component<{
         layer.blockUpdate = false;
         this.props.submit(layer);
     }
+
     getCurrentView() {
         switch (this.props.state.step) {
             case 0:
@@ -112,7 +108,9 @@ export class LayerImportWizard extends React.Component<{
                     <LayerTypeSelectView
                         state = {this.props.state}
                         appState= {this.props.appState}
-                        cancel = {this.cancel.bind(this)}
+                        cancel = {() => {
+                            this.props.cancel();
+                        } }
                         />
                 </div>
             case 1:
@@ -129,6 +127,7 @@ export class LayerImportWizard extends React.Component<{
                     />
         }
     }
+
     render() {
         return (
             <div style ={{ overflowX: 'auto' }}>

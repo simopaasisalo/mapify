@@ -16,9 +16,6 @@ export class FilterMenu extends React.Component<{
         this.getMinMax()
 
     }
-    onUseStepsChange = (e) => {
-        this.props.state.filterMenuState.useCustomSteps = e.target.checked;
-    }
 
     onUseDistinctValuesChange = (e) => {
         this.props.state.filterMenuState.useDistinctValues = e.target.checked;
@@ -63,13 +60,6 @@ export class FilterMenu extends React.Component<{
         }
     }
 
-    onFilterTitleChange = (e) => {
-        this.props.state.editingFilter.title = e.target.value;
-    }
-    onFilterSelectChange = (id: ISelectData) => {
-        this.props.state.filterMenuState.selectedFilterId = id.value;
-        // this.props.state.editingFilter.titleTitle: this.props.filters.filter(function(f) { return f.id === id.value })[0].title
-    }
     createNewFilter = () => {
         let filter = new Filter();
         filter.id = this.props.state.nextFilterId;
@@ -108,9 +98,6 @@ export class FilterMenu extends React.Component<{
         }
         return steps;
     }
-    changeFilterMethod(remove: boolean) {
-        this.props.state.editingFilter.remove = remove;
-    }
 
     render() {
         if (this.props.state.visibleMenu !== 4)
@@ -129,14 +116,18 @@ export class FilterMenu extends React.Component<{
                         <label>Select the filter to update</label>
                         <Select
                             options={filters}
-                            onChange={this.onFilterSelectChange}
+                            onChange={(id: ISelectData) => {
+                                this.props.state.filterMenuState.selectedFilterId = id.value;
+                            } }
                             value={state.selectedFilterId}
                             />
                         Or
                         <button onClick={this.createNewFilter}>Create new filter</button>
                         <br/>
                         <label>Give a name to the filter
-                            <input type="text" onChange={this.onFilterTitleChange} value={filter ? filter.title : ''}/>
+                            <input type="text" onChange={(e) => {
+                                this.props.state.editingFilter.title = (e.target as any).value;
+                            } } value={filter ? filter.title : ''}/>
                         </label>
                         {filter.show ? <br/>
                             :
@@ -154,7 +145,9 @@ export class FilterMenu extends React.Component<{
                             Use predefined steps
                             <input
                                 type='checkbox'
-                                onChange={this.onUseStepsChange}
+                                onChange={(e) => {
+                                    this.props.state.filterMenuState.useCustomSteps = (e.target as any).checked;
+                                } }
                                 checked={state.useCustomSteps}
                                 id='steps'
                                 />
@@ -183,7 +176,9 @@ export class FilterMenu extends React.Component<{
                                     Remove filtered items
                                     <input
                                         type='radio'
-                                        onChange={this.changeFilterMethod.bind(this, true)}
+                                        onChange={() => {
+                                            this.props.state.editingFilter.remove = true;
+                                        } }
                                         checked={filter.remove}
                                         name='filterMethod'
                                         id='remove'
@@ -197,7 +192,9 @@ export class FilterMenu extends React.Component<{
                                     Change opacity
                                     <input
                                         type='radio'
-                                        onChange={this.changeFilterMethod.bind(this, false)}
+                                        onChange={() => {
+                                            this.props.state.editingFilter.remove = false;
+                                        } }
                                         checked={!filter.remove}
                                         name='filterMethod'
                                         id='opacity'

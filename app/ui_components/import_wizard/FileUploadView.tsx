@@ -15,7 +15,6 @@ export class FileUploadView extends React.Component<{
     /** Go back to the previous step of the wizard */
     goBack: () => void
 }, {}>{
-    private activeLayer = this.props.state.layer;
 
     // shouldComponentUpdate(nextProps: IFileUploadProps, nextState: IFileUploadStates) {
     //     return this.state.layerName !== nextState.layerName;
@@ -34,7 +33,7 @@ export class FileUploadView extends React.Component<{
             if (_allowedFileTypes.indexOf(ext) !== -1) {
                 this.props.state.content = contents.result;
                 this.props.state.fileName = fileName;
-                this.activeLayer.name = fileName;
+                this.props.state.layer.name = fileName;
                 this.props.state.fileExtension = ext;
             }
             else {
@@ -43,15 +42,13 @@ export class FileUploadView extends React.Component<{
         }
     }
 
-    goBack = () => {
-        this.props.goBack();
-    }
     proceed = () => {
+        let layer = this.props.state.layer;
         if (this.props.state.fileExtension === 'csv') {
             let head, delim;
             [head, delim] = _fileModel.ParseHeadersFromCSV(this.props.state.content);
             for (let i of head) {
-                this.activeLayer.headers.push({ value: i.name, label: i.name, type: i.type });
+                layer.headers.push({ value: i.name, label: i.name, type: i.type });
             }
             this.props.state.delimiter = delim;
         }
@@ -64,6 +61,7 @@ export class FileUploadView extends React.Component<{
         }
     }
     render() {
+        let layer = this.props.state.layer;
         let dropStyle = {
             height: 100,
             border: this.props.state.fileName ? '1px solid #549341' : '1px dotted #549341',
@@ -90,12 +88,14 @@ export class FileUploadView extends React.Component<{
                     </Dropzone>
                     <label>Give a name to the layer</label>
                     <input type="text" onChange={(e) => {
-                        this.activeLayer.name = (e.target as any).value;
-                    } } value={this.activeLayer.name}/>
+                        layer.name = (e.target as any).value;
+                    } } value={layer.name}/>
 
                 </div>
-                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={this.goBack.bind(this)}>Previous</button>
-                <button className='primaryButton' disabled={this.props.state.content === undefined || this.activeLayer.name === ''}  style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this)}>Continue</button>
+                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }} onClick={() => {
+                    this.props.goBack();
+                } }>Previous</button>
+                <button className='primaryButton' disabled={this.props.state.content === undefined || layer.name === ''}  style={{ position: 'absolute', right: 15, bottom: 15 }} onClick={this.proceed.bind(this)}>Continue</button>
             </div>
         );
     }

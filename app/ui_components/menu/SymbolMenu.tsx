@@ -9,7 +9,6 @@ import { observer } from 'mobx-react';
 @observer
 export class SymbolMenu extends React.Component<{
     state: AppState,
-    saveValues: () => void
 }, {}>{
 
     onTypeChange = (type: SymbolTypes) => {
@@ -46,22 +45,6 @@ export class SymbolMenu extends React.Component<{
         this.props.state.editingLayer.blockUpdate = false;
     }
 
-    onSizeMultiplierChange = (e) => {
-        this.props.state.editingLayer.symbolOptions.sizeMultiplier = e.currentTarget.valueAsNumber;
-    }
-
-    onSizeLowLimitChange = (e) => {
-        this.props.state.editingLayer.symbolOptions.sizeLowLimit = e.currentTarget.valueAsNumber;
-    }
-
-    onSizeUpLimitChange = (e) => {
-        this.props.state.editingLayer.symbolOptions.sizeUpLimit = e.currentTarget.valueAsNumber;
-    }
-
-    onBlockValueChange = (e) => {
-        this.props.state.editingLayer.symbolOptions.blockValue = e.currentTarget.valueAsNumber;
-    }
-
     onFAIconChange = (e) => {
         if (e.currentTarget) { //if event triggered from input
             e = e.currentTarget.value
@@ -71,11 +54,6 @@ export class SymbolMenu extends React.Component<{
 
     onIconShapeChange = (shape: 'circle' | 'square' | 'star' | 'penta') => {
         this.props.state.editingLayer.symbolOptions.icons[this.props.state.symbolMenuState.currentIconIndex].shape = shape;
-    }
-
-    onChartTypeChange = (type: 'pie' | 'donut') => {
-
-        this.props.state.editingLayer.symbolOptions.chartType = type;
     }
 
     onChartFieldsChange = (e: IHeader[]) => {
@@ -168,7 +146,6 @@ export class SymbolMenu extends React.Component<{
     }
 
     saveOptions = () => {
-        this.props.saveValues();
     }
 
     getIcon(shape: string, fa: string, stroke: string, fill: string, onClick) {
@@ -250,7 +227,6 @@ export class SymbolMenu extends React.Component<{
                 top: 20,
                 left: '',
                 backgroundColor: ''
-
             },
             content: {
                 border: '1px solid #cecece',
@@ -347,20 +323,24 @@ export class SymbolMenu extends React.Component<{
                         </div> : null}
                         {sym.symbolType !== SymbolTypes.Blocks && (sym.sizeXVar || sym.sizeYVar) ?
                             <div><label>Size multiplier</label>
-                                <input type="number" value={sym.sizeMultiplier} onChange={this.onSizeMultiplierChange} min={0.1} max={10} step={0.1}/>
+                                <input type="number" value={sym.sizeMultiplier} onChange={(e) => {
+                                    this.props.state.editingLayer.symbolOptions.sizeMultiplier = (e.currentTarget as any).valueAsNumber;
+                                } } min={0.1} max={10} step={0.1}/>
                                 <br/>
                                 <label>Size lower limit</label>
-                                <input type="number" value={sym.sizeLowLimit} onChange={this.onSizeLowLimitChange} min={0}/>
+                                <input type="number" value={sym.sizeLowLimit} onChange={(e) => {
+                                    this.props.state.editingLayer.symbolOptions.sizeLowLimit = (e.currentTarget as any).valueAsNumber;
+                                } } min={0}/>
                                 <br/>
                                 <label>Size upper limit</label>
-                                <input type="number" value={sym.sizeUpLimit} onChange={this.onSizeUpLimitChange} min={1}/>
+                                <input type="number" value={sym.sizeUpLimit} onChange={(e) => {
+                                    this.props.state.editingLayer.symbolOptions.sizeUpLimit = (e.currentTarget as any).valueAsNumber;
+                                } } min={1}/>
                             </div>
                             : null}
                     </div>
-
                     : null
                 }
-
                 {
                     sym.symbolType === SymbolTypes.Icon ?
                         <div>
@@ -390,11 +370,9 @@ export class SymbolMenu extends React.Component<{
 
                                 </div>
                             }
-
                             <br/>
                             Change icon colors in the color menu
                         </div>
-
                         : null
                 }
                 {sym.symbolType === SymbolTypes.Chart ?
@@ -414,7 +392,9 @@ export class SymbolMenu extends React.Component<{
                             Pie
                             <input
                                 type='radio'
-                                onChange={this.onChartTypeChange.bind(this, 'pie')}
+                                onChange={() => {
+                                    this.props.state.editingLayer.symbolOptions.chartType = 'pie';
+                                } }
                                 checked={sym.chartType === 'pie'}
                                 name='charttype'
                                 id='rect'
@@ -426,7 +406,9 @@ export class SymbolMenu extends React.Component<{
                             Donut
                             <input
                                 type='radio'
-                                onChange={this.onChartTypeChange.bind(this, 'donut')}
+                                onChange={() => {
+                                    this.props.state.editingLayer.symbolOptions.chartType = 'donut';
+                                } }
                                 checked={sym.chartType === 'donut'}
                                 name='charttype'
                                 id='donut'
@@ -442,7 +424,9 @@ export class SymbolMenu extends React.Component<{
                 {sym.symbolType === SymbolTypes.Blocks ?
                     <div>
                         <label>Single block value</label>
-                        <input type="number" value={sym.blockValue} onChange={this.onBlockValueChange} min={1}/>
+                        <input type="number" value={sym.blockValue} onChange={(e) => {
+                            this.props.state.editingLayer.symbolOptions.blockValue = (e.currentTarget as any).valueAsNumber;
+                        } } min={1}/>
                     </div>
                     : null
 

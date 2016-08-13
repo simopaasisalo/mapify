@@ -181,7 +181,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         this.props.state.welcomeShown = false;
         this.props.state.editingLayer = this.props.state.layers[0];
         this.props.state.menuShown = !this.props.state.embed;
-
     }
 
     /**
@@ -195,23 +194,16 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
             if (layer.layer) {
                 if (layer.layerType !== LayerTypes.HeatMap) {
                     (layer.layer as any).bringToFront();
+
                 }
-                else {
+                else {//for some reason this places the heat map to the top and will not come back down
                     this.props.state.map.removeLayer(layer.layer);
                     this.props.state.map.addLayer(layer.layer);
+
                 }
             }
         }
     }
-
-    /**
-     * reloadLayer - Update the layer on the map after the user has changed the visualization options
-     * @param  layerData  The layer to update
-     * @param  wasImported  Was layer imported from a previously saved map
-     */
-    reloadLayer(layer: Layer, wasImported: boolean = false) {
-    }
-
 
     /**
      * getFilters - Gets the currently active filters for rendering
@@ -284,7 +276,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
         }
         return (
             <div>
-
                 <div id='map'/>
                 {this.props.state.embed ? null :
                     <div>
@@ -309,7 +300,6 @@ export class MapMain extends React.Component<{ state: AppState }, {}>{
                         </Modal>
                         <MapifyMenu
                             state = {this.props.state}
-                            refreshMap={this.reloadLayer.bind(this)}
                             addLayer = {this.startLayerImport.bind(this)}
                             changeLayerOrder ={this.changeLayerOrder.bind(this)}
                             saveImage ={this.saveImage}

@@ -24,9 +24,6 @@ export class PopUpMenu extends React.Component<{
             headers.push(e[i]);
         }
     }
-    saveValues = () => {
-        this.props.saveValues();
-    }
     render() {
         return (this.props.state.visibleMenu !== 6 ? null :
             <div className="mapify-options">
@@ -40,7 +37,9 @@ export class PopUpMenu extends React.Component<{
                     />
 
                 {this.props.state.autoRefresh ? null :
-                    <button className='menuButton' onClick={this.saveValues}>Refresh map</button>
+                    <button className='menuButton' onClick={() => {
+                        this.props.saveValues();
+                    } }>Refresh map</button>
                 }
             </div >
         );

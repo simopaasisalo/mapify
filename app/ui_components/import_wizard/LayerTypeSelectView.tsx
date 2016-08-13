@@ -12,26 +12,26 @@ export class LayerTypeSelectView extends React.Component<{
     /** cancels the layer import wizard */
     cancel: () => void,
 }, {}>{
-    private activeLayer = this.props.state.layer = new Layer(this.props.appState);
+    newlayer = this.props.state.layer = new Layer(this.props.appState);
+
 
     onMapTypeClick = (type: LayerTypes) => {
-        this.activeLayer.layerType = type;
+        this.props.state.layer.layerType = type;
     }
-    cancel = () => {
-        this.props.cancel();
-    }
+
     proceed = () => {
-        let col = this.activeLayer.colorOptions;
-        if (this.activeLayer.layerType === null) {
+        let layer = this.props.state.layer;
+        let col = layer.colorOptions;
+        if (layer.layerType === null) {
             alert('Choose a layer type!');
         }
         else {
-            if (this.activeLayer.layerType === LayerTypes.HeatMap) {
+            if (layer.layerType === LayerTypes.HeatMap) {
                 col.revert = true;
                 col.colorScheme = 'RdYlBu';
                 col.useMultipleFillColors = true;
             }
-            else if (this.activeLayer.layerType === LayerTypes.ChoroplethMap) {
+            else if (layer.layerType === LayerTypes.ChoroplethMap) {
                 col.useMultipleFillColors = true;
 
             }
@@ -40,6 +40,8 @@ export class LayerTypeSelectView extends React.Component<{
     }
 
     public render() {
+        let layer = this.props.state.layer;
+
         return (
             <div>
                 <div>
@@ -52,7 +54,7 @@ export class LayerTypeSelectView extends React.Component<{
                             imageURL = 'app/images/choropreview.png'
                             description = 'Use this type to create clean and easy to read maps from your polygon data. Color the areas by a single value by selecting a predefined color scheme or define your own.'
                             onClick = {this.onMapTypeClick}
-                            selected = {this.activeLayer.layerType == LayerTypes.ChoroplethMap}
+                            selected = {layer.layerType == LayerTypes.ChoroplethMap}
                             />
                         <LayerType
                             name = 'Symbol map'
@@ -60,7 +62,7 @@ export class LayerTypeSelectView extends React.Component<{
                             imageURL = 'app/images/symbolpreview.png'
                             description = 'Use icons and charts to bring your point data to life! Scale symbol size by a value and give them choropleth-style coloring to create multi-value maps.'
                             onClick = {this.onMapTypeClick}
-                            selected = {this.activeLayer.layerType == LayerTypes.SymbolMap}
+                            selected = {layer.layerType == LayerTypes.SymbolMap}
 
                             />
                         <LayerType
@@ -69,13 +71,15 @@ export class LayerTypeSelectView extends React.Component<{
                             imageURL = 'app/images/heatpreview.png'
                             description = 'Turn your point data into an intensity map with this layer type. In development!'
                             onClick = {this.onMapTypeClick}
-                            selected = {this.activeLayer.layerType === LayerTypes.HeatMap}
+                            selected = {layer.layerType === LayerTypes.HeatMap}
                             />
                     </div>
 
                 </div>
-                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={this.cancel}>Cancel</button>
-                <button className='primaryButton' disabled={this.activeLayer.layerType === undefined} style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed}>Continue</button>
+                <button className='secondaryButton' style={{ position: 'absolute', left: 15, bottom: 15 }}  onClick={() => {
+                    this.props.cancel();
+                } }>Cancel</button>
+                <button className='primaryButton' disabled={layer.layerType === undefined} style={{ position: 'absolute', right: 15, bottom: 15 }}  onClick={this.proceed}>Continue</button>
             </div >
         );
     }
